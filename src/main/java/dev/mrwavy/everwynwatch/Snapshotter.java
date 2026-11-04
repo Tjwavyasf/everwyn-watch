@@ -19,10 +19,12 @@ public final class Snapshotter {
     private final MinecraftServer server;
     private final WatchConfig cfg;
     private final Markers markers;
+    private final Challenges challenges;
     private volatile String json = "{}";
     private double avgMspt = 0;
 
-    public Snapshotter(MinecraftServer server, WatchConfig cfg, Markers markers) {
+    public Snapshotter(MinecraftServer server, WatchConfig cfg, Markers markers, Challenges challenges) {
+        this.challenges = challenges;
         this.server = server;
         this.cfg = cfg;
         this.markers = markers;
@@ -83,6 +85,7 @@ public final class Snapshotter {
         JsonObject m = markers.toJson();
         root.add("waypoints", m.get("waypoints"));
         root.add("deaths", m.get("deaths"));
+        root.add("challenges", challenges.toJson());
 
         json = root.toString();
     }

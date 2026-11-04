@@ -38,13 +38,15 @@ public final class WebServer {
     private final EventLog events;
     private final TileRenderer tiles;
     private final Markers markers;
+    private final Challenges challenges;
     private final byte[] tokenBytes;
     private final Map<String, int[]> failures = new ConcurrentHashMap<>(); // ip -> {count, windowStartSeconds}
     private HttpServer http;
     private ExecutorService pool;
 
-    public WebServer(MinecraftServer server, WatchConfig cfg, Snapshotter snapshotter, EventLog events, TileRenderer tiles, Markers markers) {
+    public WebServer(MinecraftServer server, WatchConfig cfg, Snapshotter snapshotter, EventLog events, TileRenderer tiles, Markers markers, Challenges challenges) {
         this.markers = markers;
+        this.challenges = challenges;
         this.server = server;
         this.cfg = cfg;
         this.snapshotter = snapshotter;
@@ -74,7 +76,20 @@ public final class WebServer {
     private void handle(HttpExchange ex) throws IOException {
         try {
             String path = ex.getRequestURI().getPath();
-            if (path.startsWith("/api/")) {
+            if (path.equals("/icon") && "GET".equals(ex.getRequestMethod())) {
+                String id = query(ex.getRequestURI().getRawQuery()).getOrDefault("id", "");
+                byte[] png = Catalog.icon(id);
+                if (png == null) {
+                    send(ex, 404, "text/plain", "No icon");
+                } else {
+                    ex.getResponseHeaders().set("Content-Type", "image/png");
+                    ex.getResponseHeaders().set("Cache-Control", "public, max-age=86400");
+                    ex.sendResponseHeaders(200, png.length);
+                    try (OutputStream os = ex.getResponseBody()) {
+                        os.write(png);
+                    }
+                }
+            } else if (path.startsWith("/api/")) {
                 api(ex, path);
             } else if (STATIC.containsKey(path) && "GET".equals(ex.getRequestMethod())) {
                 serveStatic(ex, STATIC.get(path));
@@ -116,6 +131,7 @@ public final class WebServer {
                 sendJson(ex, 200, o.toString());
             }
             case "/api/state" -> sendJson(ex, 200, snapshotter.json());
+            case "/api/catalog" -> sendJson(ex, 200, server.submit(Catalog::json).get(20, TimeUnit.SECONDS));
             case "/api/events" -> {
                 long after = parseLong(q.get("after"), 0);
                 sendJson(ex, 200, events.since(after).toString());
@@ -146,7 +162,7 @@ public final class WebServer {
                 byte[] body = ex.getRequestBody().readNBytes(8192);
                 JsonObject req = JsonParser.parseString(new String(body, StandardCharsets.UTF_8)).getAsJsonObject();
                 try {
-                    String msg = server.submit(() -> AdminActions.run(server, events, markers, req)).get(5, TimeUnit.SECONDS);
+                    String msg = server.submit(() -> AdminActions.run(server, events, markers, challenges, req)).get(5, TimeUnit.SECONDS);
                     server.execute(snapshotter::refresh); // show the change in the app right away
                     JsonObject o = new JsonObject();
                     o.addProperty("ok", true);

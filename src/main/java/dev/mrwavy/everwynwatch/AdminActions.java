@@ -13,9 +13,17 @@ final class AdminActions {
     private AdminActions() {}
 
     /** Returns a short result message; throws IllegalArgumentException for bad input. */
-    static String run(MinecraftServer server, EventLog events, Markers markers, JsonObject req) {
+    static String run(MinecraftServer server, EventLog events, Markers markers, Challenges challenges, JsonObject req) {
         String action = str(req, "action");
         String result = switch (action) {
+            case "package" -> challenges.dropPackage(
+                    req.has("name") ? str(req, "name") : "Care package", str(req, "dim"),
+                    (int) Math.floor(num(req, "x")), (int) Math.floor(num(req, "y")), (int) Math.floor(num(req, "z")),
+                    req.has("items") && req.get("items").isJsonArray() ? req.getAsJsonArray("items") : null,
+                    !req.has("announce") || req.get("announce").getAsBoolean(),
+                    req.has("share") && req.get("share").getAsBoolean());
+            case "wave_create" -> challenges.createWave(req);
+            case "wave_cancel" -> challenges.cancel(str(req, "id"));
             case "waypoint_add" -> {
                 String name = waypointName(str(req, "name"));
                 String dim = str(req, "dim");

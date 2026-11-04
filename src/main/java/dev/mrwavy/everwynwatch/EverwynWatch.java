@@ -4,6 +4,7 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -28,6 +29,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
     }
     private EventLog events;
     private Markers markers;
+    private Challenges challenges;
     private Snapshotter snapshotter;
     private TileRenderer tiles;
     private WebServer web;
@@ -49,7 +51,13 @@ public class EverwynWatch implements DedicatedServerModInitializer {
                         p.getWorld().getRegistryKey().getValue().toString(),
                         p.getX(), p.getY(), p.getZ(),
                         source.getDeathMessage(p).getString());
+                if (challenges != null) challenges.onPlayerDeath(p);
             }
+        });
+
+        // Clean up leftover wave mobs after a crash or restart
+        ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (challenges != null) challenges.onEntityLoad(entity);
         });
 
         // Player chat
@@ -66,11 +74,12 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            snapshotter = new Snapshotter(server, config, markers);
+            challenges = new Challenges(server, events, FabricLoader.getInstance().getConfigDir().resolve("everwyn-watch-challenges.json"));
+            snapshotter = new Snapshotter(server, config, markers, challenges);
             tiles = new TileRenderer(server, config);
             snapshotter.refresh();
             try {
-                web = new WebServer(server, config, snapshotter, events, tiles, markers);
+                web = new WebServer(server, config, snapshotter, events, tiles, markers, challenges);
                 web.start();
                 LOG.info("Everwyn Watch dashboard running on port {}. Your login token is in config/everwyn-watch.json", config.port);
             } catch (IOException e) {
@@ -81,12 +90,14 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             if (web != null) web.stop();
             web = null;
+            if (challenges != null) challenges.shutdown();
         });
 
         ServerTickEvents.START_SERVER_TICK.register(server -> tickStartNanos = System.nanoTime());
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (snapshotter == null) return;
+            challenges.tick();
             snapshotter.recordTick((System.nanoTime() - tickStartNanos) / 1_000_000.0);
             if (++tickCounter >= Math.max(5, config.snapshotIntervalTicks)) {
                 tickCounter = 0;
