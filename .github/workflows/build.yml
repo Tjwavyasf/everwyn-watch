@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,8 +20,22 @@ jobs:
         with:
           gradle-version: "8.10"
       - run: gradle build --no-daemon
+      - name: Pick the mod jar
+        run: |
+          JAR=$(ls build/libs/*.jar | grep -v -e sources -e dev | head -n 1)
+          cp "$JAR" everwyn-watch.jar
       - uses: actions/upload-artifact@v4
         with:
           name: everwyn-watch-jar
-          path: build/libs/everwyn-watch-*.jar
+          path: everwyn-watch.jar
           if-no-files-found: error
+      # Puts the jar on the repo's Releases page so it's one tap to download
+      - name: Publish download
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest everwyn-watch.jar \
+            --title "Everwyn Watch (latest build)" \
+            --notes "Download everwyn-watch.jar below and put it in your server's mods folder."
