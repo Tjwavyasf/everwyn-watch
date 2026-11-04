@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#141915">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Everwyn">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
+<title>Everwyn Watch</title>
+<style>
+:root{
+  --bg:#141915; --panel:#1c231e; --panel2:#232c26; --line:#2f3b33; --text:#e6ebe3; --muted:#8e9b91;
+  --grass:#5caa4a; --grass-d:#3f7d33; --teal:#40baaa; --gold:#e8b33a; --red:#d9564f; --purple:#a77bff;
+  --pix:'Silkscreen', ui-monospace, monospace;
+  --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.pix{font-family:var(--pix);letter-spacing:.02em}
+.hidden{display:none!important}
+
+/* blocky button */
+.btn{background:var(--panel2);border:0;padding:10px 14px;cursor:pointer;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.07), 0 0 0 2px #0b0e0c;
+  border-radius:2px;font-family:var(--pix);font-size:13px;min-height:42px}
+.btn:active{transform:translateY(1px);box-shadow:inset 0 -1px 0 rgba(0,0,0,.35),0 0 0 2px #0b0e0c}
+.btn.green{background:var(--grass-d)} .btn.red{background:#7a2b27} .btn.gold{background:#7a5d1c}
+.btn.small{min-height:34px;padding:6px 10px;font-size:12px}
+
+/* app frame */
+#app{display:flex;flex-direction:column;height:100%}
+header{padding:calc(10px + var(--safe-t)) 14px 10px;display:flex;align-items:center;gap:10px;background:var(--panel);border-bottom:2px solid #0b0e0c}
+header h1{font-family:var(--pix);font-size:16px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-family:var(--pix);font-size:11px;padding:4px 8px;background:var(--panel2);border-radius:2px;white-space:nowrap}
+.pill .dot{display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--grass)}
+main{flex:1;position:relative;overflow:hidden}
+section.view{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+nav{display:flex;background:var(--panel);border-top:2px solid #0b0e0c;padding-bottom:var(--safe-b)}
+nav button{flex:1;background:none;border:0;padding:10px 0 8px;font-family:var(--pix);font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+nav button.on{color:var(--text)}
+nav button.on .ico{background:var(--grass)}
+nav .ico{width:22px;height:22px;background:var(--line);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.i-map{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 1h2v6H0zM3 0h2v7H3zM6 1h2v6H6z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 1h2v6H0zM3 0h2v7H3zM6 1h2v6H6z'/%3E%3C/svg%3E")}
+.i-ppl{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h4v3H2zM1 4h6v4H1z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h4v3H2zM1 4h6v4H1z'/%3E%3C/svg%3E")}
+.i-feed{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h8v5H3L1 7V5H0z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h8v5H3L1 7V5H0z'/%3E%3C/svg%3E")}
+
+/* map */
+#view-map{overflow:hidden;touch-action:none}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.map-top{position:absolute;left:10px;right:10px;top:10px;display:flex;gap:8px;align-items:center;pointer-events:none}
+.map-top > *{pointer-events:auto}
+.map-top select{background:var(--panel);border:0;box-shadow:0 0 0 2px #0b0e0c;padding:8px;font-family:var(--pix);font-size:12px;border-radius:2px;min-height:38px}
+.chips{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font-family:var(--pix);font-size:11px;padding:8px 10px;background:var(--panel);box-shadow:0 0 0 2px #0b0e0c;border:0;border-radius:2px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--grass-d)}
+.chip i{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:0}
+.map-side{position:absolute;right:10px;bottom:12px;display:flex;flex-direction:column;gap:8px}
+.map-side .btn{width:44px;padding:0;font-size:18px}
+.map-info{position:absolute;left:10px;bottom:12px;font-family:var(--pix);font-size:11px;background:rgba(20,25,21,.85);padding:6px 8px;box-shadow:0 0 0 2px #0b0e0c;border-radius:2px}
+.map-info b{color:var(--teal);font-weight:normal}
+
+/* lists */
+.wrap{padding:12px 12px 24px;max-width:720px;margin:0 auto}
+.card{background:var(--panel);box-shadow:0 0 0 2px #0b0e0c, inset 0 2px 0 rgba(255,255,255,.04);border-radius:2px;padding:12px;margin-bottom:10px}
+.prow{display:flex;gap:12px;align-items:center;cursor:pointer}
+.avatar{width:40px;height:40px;flex:none;display:grid;place-items:center;font-family:var(--pix);font-size:16px;color:#0b0e0c;box-shadow:inset -3px -3px 0 rgba(0,0,0,.25), inset 3px 3px 0 rgba(255,255,255,.2)}
+.pmain{flex:1;min-width:0}
+.pname{font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{font-family:var(--pix);font-size:10px;padding:2px 5px;background:var(--panel2);color:var(--muted);border-radius:2px}
+.sub{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:8px;background:#0b0e0c;margin-top:6px;position:relative}
+.bar > span{position:absolute;left:0;top:0;bottom:0;background:var(--red)}
+.bar.food > span{background:#c98a3b}
+.empty{color:var(--muted);text-align:center;padding:40px 12px;font-family:var(--pix);font-size:12px}
+h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 8px;font-weight:normal}
+
+/* feed */
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.ev{display:flex;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line);align-items:flex-start}
+.ev time{font-family:var(--pix);font-size:10px;color:var(--muted);padding-top:3px;flex:none;width:38px}
+.ev .k{flex:none;width:10px;height:10px;margin-top:5px}
+.ev .t{flex:1;word-break:break-word}
+.ev .who{font-weight:600}
+.k-chat{background:var(--text)} .k-join{background:var(--grass)} .k-leave{background:var(--muted)}
+.k-death{background:var(--red)} .k-advancement{background:var(--purple)} .k-admin{background:var(--gold)} .k-server{background:var(--teal)}
+.say{display:flex;gap:8px}
+.say input,.field input,.field select{flex:1;min-width:0;background:#0f1310;border:0;box-shadow:inset 0 0 0 2px var(--line);padding:10px;border-radius:2px;min-height:42px}
+
+/* sheet */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}
+#sheet{position:fixed;left:0;right:0;bottom:0;max-height:88%;background:var(--panel);z-index:21;border-top:2px solid #0b0e0c;
+  display:flex;flex-direction:column;padding-bottom:var(--safe-b);transform:translateY(0);transition:transform .2s}
+#sheet.closed{transform:translateY(105%)}
+.sheet-head{display:flex;gap:12px;align-items:center;padding:14px;border-bottom:2px solid #0b0e0c}
+.sheet-head .pname{font-size:17px}
+.sheet-body{overflow-y:auto;padding:12px 14px 20px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--panel2);padding:8px 10px;border-radius:2px}
+.stat .l{font-family:var(--pix);font-size:10px;color:var(--muted)}
+.stat .v{font-weight:600;margin-top:2px;word-break:break-word}
+.stat.wide{grid-column:1/-1}
+.inv{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;max-width:420px}
+.slot{aspect-ratio:1;background:#8b8b8b;box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff;position:relative;display:grid;place-items:center;cursor:pointer;overflow:hidden}
+.slot.sel{outline:2px solid #fff;outline-offset:-1px}
+.slot .ab{font-family:var(--pix);font-size:10px;width:72%;height:72%;display:grid;place-items:center;color:#0b0e0c;box-shadow:inset -2px -2px 0 rgba(0,0,0,.25), inset 2px 2px 0 rgba(255,255,255,.25)}
+.slot.ench .ab{box-shadow:0 0 0 2px var(--purple), inset -2px -2px 0 rgba(0,0,0,.25)}
+.slot .ct{position:absolute;right:2px;bottom:0;font-family:var(--pix);font-size:10px;color:#fff;text-shadow:1px 1px 0 #3f3f3f}
+.slot .du{position:absolute;left:12%;right:12%;bottom:3px;height:2px;background:#000}
+.slot .du span{display:block;height:100%}
+.equip{display:flex;gap:3px;margin-bottom:8px;max-width:420px}
+.equip .slot{width:calc((100% - 24px)/9)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.score{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+
+/* login + modal + toast */
+#login{position:fixed;inset:0;z-index:40;background:var(--bg);display:grid;place-items:center;padding:24px}
+.login-box{width:100%;max-width:360px;text-align:center}
+.login-box img{width:96px;height:96px;image-rendering:pixelated;box-shadow:0 0 0 3px #0b0e0c}
+.login-box h1{font-family:var(--pix);font-size:22px;margin:16px 0 4px}
+.login-box p{color:var(--muted);margin:0 0 20px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;text-align:left}
+.field label{font-family:var(--pix);font-size:11px;color:var(--muted)}
+.err{color:var(--red);min-height:20px;font-size:13px;margin-top:8px}
+#modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:grid;place-items:end center;padding:12px 12px calc(12px + var(--safe-b))}
+#modal .card{width:100%;max-width:420px;margin:0}
+#modal h3{font-family:var(--pix);font-size:14px;margin:0 0 12px}
+#toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);z-index:60;background:#0b0e0c;color:var(--text);
+  padding:10px 14px;border-radius:2px;font-size:14px;max-width:90%;box-shadow:0 0 0 2px var(--line);transition:opacity .2s;pointer-events:none}
+#toast.off{opacity:0}
+.map-hint{position:absolute;left:50%;top:62px;transform:translateX(-50%);font-family:var(--pix);font-size:11px;background:rgba(20,25,21,.9);
+  padding:8px 10px;box-shadow:0 0 0 2px #0b0e0c;border-radius:2px;white-space:nowrap}
+.wpdot{width:14px;height:14px;transform:rotate(45deg);flex:none;box-shadow:0 0 0 2px #0b0e0c;margin:0 6px}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choices .sub{white-space:normal;margin-bottom:6px}
+.swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.swatches label{aspect-ratio:1;cursor:pointer;box-shadow:0 0 0 2px #0b0e0c;display:block;position:relative}
+.swatches input{position:absolute;opacity:0}
+.swatches input:checked + span{position:absolute;inset:-4px;box-shadow:0 0 0 3px #fff}
+.banner{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.banner b{color:var(--text)}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form class="login-box" id="loginForm" autocomplete="off">
+    <img src="/icon-192.png" alt="">
+    <h1>Everwyn Watch</h1>
+    <p>Enter the token from <b>config/everwyn-watch.json</b> on your server.</p>
+    <div class="field">
+      <label for="tokenIn">Token</label>
+      <input id="tokenIn" type="password" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+    </div>
+    <button class="btn green" style="width:100%" type="submit">Connect</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1 id="title">Everwyn</h1>
+    <span class="pill" id="onlinePill">0 online</span>
+    <span class="pill" id="tpsPill"><span class="dot"></span>-- TPS</span>
+  </header>
+  <main>
+    <section class="view" id="view-map">
+      <canvas id="map"></canvas>
+      <div class="map-top">
+        <select id="dimSel" aria-label="Dimension"></select>
+        <div class="chips" id="mapChips"></div>
+      </div>
+      <div class="map-info" id="mapInfo"></div>
+      <div class="map-hint hidden" id="mapHint">Hold anywhere on the map to drop a waypoint</div>
+      <div class="map-side">
+        <button class="btn" id="layersBtn" aria-label="Markers" style="font-size:12px">◆</button>
+        <button class="btn" id="zoomIn" aria-label="Zoom in">+</button>
+        <button class="btn" id="zoomOut" aria-label="Zoom out">−</button>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-players">
+      <div class="wrap">
+        <div class="card banner hidden" id="installTip">
+          <span>Tip: use <b>Share → Add to Home Screen</b> to open this like an app.</span>
+          <button class="btn small" id="tipClose">OK</button>
+        </div>
+        <div id="playerList"></div>
+        <h2 class="sec">Waypoints</h2>
+        <div id="waypointList"></div>
+        <h2 class="sec">Worlds</h2>
+        <div id="worldList"></div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-feed">
+      <div class="wrap">
+        <form class="say card hidden" id="sayForm">
+          <input id="sayIn" placeholder="Broadcast to the server…" maxlength="256">
+          <button class="btn gold" type="submit">Send</button>
+        </form>
+        <div class="filters" id="filters"></div>
+        <div id="feed"></div>
+      </div>
+    </section>
+  </main>
+  <nav>
+    <button data-view="map" class="on"><span class="ico i-map"></span>Map</button>
+    <button data-view="players"><span class="ico i-ppl"></span>Players</button>
+    <button data-view="feed"><span class="ico i-feed"></span>Feed</button>
+  </nav>
+</div>
+
+<div id="scrim" class="hidden"></div>
+<div id="sheet" class="closed" role="dialog" aria-modal="true">
+  <div class="sheet-head" id="sheetHead"></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<div id="modal" class="hidden"><div class="card"><h3 id="modalTitle"></h3><form id="modalForm"></form></div></div>
+<div id="toast" class="off"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DIM_NAMES = {"minecraft:overworld":"Overworld","minecraft:the_nether":"Nether","minecraft:the_end":"The End"};
+const dimName = id => DIM_NAMES[id] || (id.split(":")[1] || id).replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+function hashHue(s){ let h=0; for (const c of String(s)) h = (h*31 + c.charCodeAt(0)) | 0; return Math.abs(h) % 360; }
+const playerColor = n => `hsl(${hashHue(n)} 70% 62%)`;
+// Xaero's 16 waypoint colors (same order as its color picker)
+const XAERO = ["#000000","#0000AA","#00AA00","#00AAAA","#AA0000","#AA00AA","#FFAA00","#AAAAAA","#555555","#5555FF","#55FF55","#55FFFF","#FF5555","#FF55FF","#FFFF55","#FFFFFF"];
+const XAERO_NAMES = ["Black","Dark blue","Dark green","Dark aqua","Dark red","Purple","Gold","Gray","Dark gray","Blue","Green","Aqua","Red","Pink","Yellow","White"];
+let showMarkers = store.get("ew_markers") !== "0";
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return "just now"; if (m < 60) return m + "m ago";
+  const h = Math.round(m / 60); if (h < 48) return h + "h ago";
+  return Math.round(h / 24) + "d ago";
+}
+function goTo(dim, x, z, minScale = 2) {
+  follow = null; setDim(dim); view.cx = x; view.cz = z; view.scale = Math.max(view.scale, minScale);
+  closeSheet(); showView("map"); renderChips(); drawMap();
+}
+
+let TOKEN = store.get("ew_token") || "";
+let state = null, online = true;
+let lastEvent = 0, events = [], feedFilter = "all";
+let currentView = "map";
+let sheetPlayer = null;
+
+/* ---------- api ---------- */
+async function api(path, opts = {}) {
+  const headers = { "X-Watch-Token": TOKEN };
+  if (opts.body) headers["Content-Type"] = "application/json";
+  const res = await fetch(path, { ...opts, headers });
+  if (res.status === 401) { logout("That token didn't work."); throw new Error("auth"); }
+  return res;
+}
+async function action(body) {
+  try {
+    const res = await api("/api/action", { method: "POST", body: JSON.stringify(body) });
+    const data = await res.json();
+    toast(data.ok ? data.message : (data.error || "Something went wrong"));
+    if (data.ok) setTimeout(pollEventsOnce, 300);
+    return data.ok;
+  } catch (e) { if (e.message !== "auth") toast("Couldn't reach the server"); return false; }
+}
+
+/* ---------- login ---------- */
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  TOKEN = $("#tokenIn").value.trim();
+  $("#loginErr").textContent = "";
+  try {
+    const res = await fetch("/api/ping", { headers: { "X-Watch-Token": TOKEN } });
+    if (res.ok) { store.set("ew_token", TOKEN); start(); }
+    else if (res.status === 429) $("#loginErr").textContent = "Too many tries. Wait a few minutes.";
+    else $("#loginErr").textContent = "That token didn't work.";
+  } catch { $("#loginErr").textContent = "Can't reach the server."; }
+});
+function logout(msg) {
+  store.del("ew_token"); TOKEN = "";
+  $("#app").classList.add("hidden"); $("#login").classList.remove("hidden");
+  $("#loginErr").textContent = msg || "";
+  running = false;
+}
+
+/* ---------- polling ---------- */
+let running = false;
+function start() {
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  if (!store.get("ew_tip")) $("#installTip").classList.remove("hidden");
+  if (running) return;
+  running = true; lastEvent = 0; events = [];
+  loopState(); loopEvents(); resizeMap();
+}
+async function pollStateOnce() {
+  try {
+    const res = await api("/api/state");
+    state = await res.json(); setOnline(true); onState();
+  } catch (e) { if (e.message !== "auth") setOnline(false); }
+}
+async function pollEventsOnce() {
+  try {
+    const res = await api("/api/events?after=" + lastEvent);
+    const data = await res.json();
+    if (data.last < lastEvent) { events = []; } // server restarted
+    if (data.events.length) { events.push(...data.events); if (events.length > 600) events = events.slice(-600); renderFeed(); }
+    lastEvent = data.last;
+  } catch (e) {}
+}
+async function loopState(){ if (!running) return; await pollStateOnce(); setTimeout(loopState, document.hidden ? 8000 : 1500); }
+async function loopEvents(){ if (!running) return; await pollEventsOnce(); setTimeout(loopEvents, document.hidden ? 10000 : 2000); }
+function setOnline(v) {
+  online = v;
+  const p = $("#tpsPill");
+  if (!v) { p.innerHTML = '<span class="dot" style="background:var(--red)"></span>Offline'; }
+}
+
+function onState() {
+  $("#title").textContent = state.serverName || "Everwyn";
+  $("#onlinePill").textContent = `${state.players.length}/${state.maxPlayers} online`;
+  const tps = state.tps ?? 20, col = tps >= 19 ? "var(--grass)" : tps >= 15 ? "var(--gold)" : "var(--red)";
+  $("#tpsPill").innerHTML = `<span class="dot" style="background:${col}"></span>${tps.toFixed(1)} TPS`;
+  $("#sayForm").classList.toggle("hidden", !state.adminActions);
+  renderDims(); renderChips(); renderPlayers();
+  if (state.adminActions && !store.get("ew_hint")) {
+    store.set("ew_hint", "1"); $("#mapHint").classList.remove("hidden");
+    setTimeout(() => $("#mapHint").classList.add("hidden"), 6000);
+  }
+  if (sheetPlayer) renderSheet();
+  if (follow) { const p = findPlayer(follow); if (p) { if (p.dim !== view.dim) setDim(p.dim); view.cx = p.x; view.cz = p.z; } else follow = null; }
+  drawMap();
+}
+const findPlayer = n => state?.players.find(p => p.name === n);
+
+/* ---------- views ---------- */
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+function showView(v) {
+  currentView = v;
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  document.querySelectorAll("section.view").forEach(s => s.classList.toggle("hidden", s.id !== "view-" + v));
+  if (v === "map") resizeMap();
+}
+$("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
+
+/* ---------- players ---------- */
+function avatar(name, size = 40) {
+  return `<div class="avatar" style="background:${playerColor(name)};width:${size}px;height:${size}px">${esc(name[0]?.toUpperCase() || "?")}</div>`;
+}
+function renderPlayers() {
+  const list = [...state.players].sort((a,b) => a.name.localeCompare(b.name));
+  $("#playerList").innerHTML = list.length ? list.map(p => `
+    <div class="card prow" data-player="${esc(p.name)}">
+      ${avatar(p.name)}
+      <div class="pmain">
+        <div class="pname">${esc(p.name)} <span class="tag">${esc(dimName(p.dim))}</span>${p.origin ? `<span class="tag">${esc(p.origin)}</span>` : ""}${p.gamemode !== "survival" ? `<span class="tag">${esc(p.gamemode)}</span>` : ""}</div>
+        <div class="sub">${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)} · Lv ${p.level} · ${p.ping}ms</div>
+        <div class="bar"><span style="width:${Math.max(0, Math.min(100, p.health / p.maxHealth * 100))}%"></span></div>
+      </div>
+    </div>`).join("") : `<div class="empty">Nobody online right now</div>`;
+  const wps = state.waypoints || [];
+  $("#waypointList").innerHTML = wps.length ? wps.map(w => `
+    <div class="card prow" data-wp="${esc(w.id)}">
+      <span class="wpdot" style="background:${XAERO[w.color] || XAERO[10]}"></span>
+      <div class="pmain"><div class="pname">${esc(w.name)}</div>
+        <div class="sub">${esc(dimName(w.dim))} · ${w.x}, ${w.y}, ${w.z}</div></div>
+    </div>`).join("") : `<div class="card sub" style="white-space:normal">No waypoints yet. Hold a spot on the map, or use “Waypoint here” on a player.</div>`;
+  $("#worldList").innerHTML = state.worlds.map(w => {
+    const t = w.timeOfDay, night = t > 13000 && t < 23000;
+    const wx = w.thundering ? "Storm" : w.raining ? "Rain" : "Clear";
+    return `<div class="card prow" style="cursor:default"><div class="pmain"><div class="pname">${esc(dimName(w.id))}</div>
+      <div class="sub">${w.players} player${w.players === 1 ? "" : "s"} · ${night ? "Night" : "Day"} · ${wx}</div></div></div>`;
+  }).join("");
+}
+$("#playerList").addEventListener("click", e => { const c = e.target.closest("[data-player]"); if (c) openSheet(c.dataset.player); });
+$("#waypointList").addEventListener("click", e => {
+  const c = e.target.closest("[data-wp]"); if (!c) return;
+  const w = (state.waypoints || []).find(x => x.id === c.dataset.wp); if (w) waypointMenu(w);
+});
+
+/* ---------- waypoints + deaths ---------- */
+async function addWaypoint(dim, x, y, z, suggested) {
+  if (!state?.adminActions) { toast("Admin actions are turned off in the config"); return; }
+  const v = await ask(`New waypoint · ${dimName(dim)} ${x}, ${z}`, [
+    { name: "name", label: "Name", value: suggested || "", placeholder: "Base, Portal, Village…" },
+    { name: "y", label: "Y (height)", type: "number", value: y },
+    { name: "color", label: "Color", type: "color", value: 10 },
+  ], "Save");
+  if (v && v.name.trim()) action({ action: "waypoint_add", name: v.name.trim(), dim, x, y: v.y, z, color: v.color });
+  else if (v) toast("Give the waypoint a name");
+}
+async function waypointMenu(w) {
+  const buttons = [{ key: "map", label: "Show on map" }];
+  if (state.adminActions) {
+    if (state.players.length) {
+      buttons.push({ key: "all", label: "Send to everyone's Xaero's", cls: "green" });
+      buttons.push({ key: "one", label: "Send to one player" });
+    }
+    buttons.push({ key: "del", label: "Delete", cls: "red" });
+  }
+  const k = await choose(w.name, `${dimName(w.dim)} · ${w.x}, ${w.y}, ${w.z}`, buttons);
+  if (k === "map") goTo(w.dim, w.x + .5, w.z + .5);
+  else if (k === "all") action({ action: "waypoint_share", id: w.id, to: "all" });
+  else if (k === "one") {
+    const v = await ask(`Send “${w.name}” to`, [{ name: "to", label: "Player", type: "select", options: state.players.map(p => [p.name, p.name]) }], "Send");
+    if (v) action({ action: "waypoint_share", id: w.id, to: v.to });
+  } else if (k === "del") {
+    if (await choose(`Delete “${w.name}”?`, "This only removes it from the app, not from anyone's Xaero's map.", [{ key: "yes", label: "Delete", cls: "red" }]) === "yes")
+      action({ action: "waypoint_delete", id: w.id });
+  }
+}
+async function deathMenu(d) {
+  const buttons = [{ key: "map", label: "Show on map" }];
+  if (state.adminActions) buttons.push({ key: "save", label: "Save as waypoint", cls: "green" });
+  const k = await choose(`${d.player}'s last death`, `${d.message}\n${dimName(d.dim)} · ${d.x}, ${d.y}, ${d.z} · ${ago(d.time)}`, buttons);
+  if (k === "map") goTo(d.dim, d.x + .5, d.z + .5);
+  else if (k === "save") addWaypoint(d.dim, d.x, d.y, d.z, `${d.player} death`);
+}
+$("#layersBtn").addEventListener("click", () => {
+  showMarkers = !showMarkers; store.set("ew_markers", showMarkers ? "1" : "0");
+  $("#layersBtn").style.opacity = showMarkers ? 1 : .5;
+  toast(showMarkers ? "Waypoints and deaths shown" : "Waypoints and deaths hidden");
+  drawMap();
+});
+$("#layersBtn").style.opacity = showMarkers ? 1 : .5;
+
+/* ---------- feed ---------- */
+const FILTERS = [["all","All"],["chat","Chat"],["join","Joins"],["death","Deaths"],["advancement","Advancements"],["admin","Admin"]];
+$("#filters").innerHTML = FILTERS.map(([k,l]) => `<button class="chip ${k==="all"?"on":""}" data-f="${k}">${l}</button>`).join("");
+$("#filters").addEventListener("click", e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  feedFilter = b.dataset.f;
+  document.querySelectorAll("#filters .chip").forEach(c => c.classList.toggle("on", c === b));
+  renderFeed();
+});
+function renderFeed() {
+  const match = e => feedFilter === "all" || e.type === feedFilter || (feedFilter === "join" && e.type === "leave");
+  const list = events.filter(match).slice(-200).reverse();
+  $("#feed").innerHTML = list.length ? list.map(e => {
+    const d = new Date(e.time), tm = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    const body = e.type === "chat" ? `<span class="who">${esc(e.who)}</span> ${esc(e.text)}` : esc(e.text);
+    return `<div class="ev"><time>${tm}</time><span class="k k-${esc(e.type)}"></span><div class="t">${body}</div></div>`;
+  }).join("") : `<div class="empty">Nothing here yet</div>`;
+}
+$("#sayForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("#sayIn").value.trim(); if (!text) return;
+  if (await action({ action: "broadcast", text })) $("#sayIn").value = "";
+});
+
+/* ---------- player sheet ---------- */
+function openSheet(name) {
+  sheetPlayer = name; renderSheet();
+  $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
+}
+function closeSheet() {
+  sheetPlayer = null;
+  $("#scrim").classList.add("hidden"); $("#sheet").classList.add("closed");
+}
+$("#scrim").addEventListener("click", closeSheet);
+
+function itemAbbr(id) {
+  const path = (id.split(":")[1] || id).split("_").filter(w => !["of","the","a"].includes(w));
+  return (path.length > 1 ? path[0][0] + path[path.length-1][0] : path[0].slice(0, 2)).toUpperCase();
+}
+function slotHtml(it, idx, sel) {
+  if (!it) return `<div class="slot${sel ? " sel" : ""}"></div>`;
+  const durCol = it.dur > 50 ? "#55ff55" : it.dur > 20 ? "#ffff55" : "#ff5555";
+  return `<div class="slot${it.ench ? " ench" : ""}${sel ? " sel" : ""}" data-item="${esc(it.name)}|${esc(it.id)}">
+    <div class="ab" style="background:hsl(${hashHue(it.id)} 45% 62%)">${esc(itemAbbr(it.id))}</div>
+    ${it.count > 1 ? `<span class="ct">${it.count}</span>` : ""}
+    ${it.dur != null && it.dur < 100 ? `<span class="du"><span style="width:${it.dur}%;background:${durCol}"></span></span>` : ""}
+  </div>`;
+}
+function renderSheet() {
+  const p = findPlayer(sheetPlayer);
+  if (!p) {
+    $("#sheetHead").innerHTML = `<div class="pmain"><div class="pname">${esc(sheetPlayer)}</div><div class="sub">Went offline</div></div><button class="btn small" data-a="close">Close</button>`;
+    $("#sheetBody").innerHTML = "";
+    return;
+  }
+  const keepScroll = $("#sheetBody").scrollTop;
+  $("#sheetHead").innerHTML = `${avatar(p.name, 44)}
+    <div class="pmain"><div class="pname">${esc(p.name)}</div><div class="sub">${esc(p.gamemode)} · ${p.ping}ms${p.sleeping ? " · sleeping" : ""}</div></div>
+    <button class="btn small" data-a="close">Close</button>`;
+
+  let html = `<div class="stats">
+    <div class="stat"><div class="l">Health</div><div class="v">${p.health} / ${p.maxHealth}</div><div class="bar"><span style="width:${Math.min(100, p.health / p.maxHealth * 100)}%"></span></div></div>
+    <div class="stat"><div class="l">Food</div><div class="v">${p.food} / 20</div><div class="bar food"><span style="width:${p.food * 5}%"></span></div></div>
+    <div class="stat"><div class="l">XP level</div><div class="v">${p.level}</div></div>
+    <div class="stat"><div class="l">Origin</div><div class="v">${esc(p.origin || "—")}</div></div>
+    <div class="stat wide"><div class="l">${esc(dimName(p.dim))}</div><div class="v">${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}</div></div>`;
+  const death = (state.deaths || []).find(d => d.player === p.name);
+  if (death) {
+    html += `<div class="stat wide prow" data-a="death"><div class="pmain"><div class="l">Last death · ${ago(death.time)}</div>
+      <div class="v">${esc(death.message)}</div><div class="sub">${esc(dimName(death.dim))} · ${death.x}, ${death.y}, ${death.z}</div></div>
+      <span class="tag">Show</span></div>`;
+  }
+  html += `</div>`;
+
+  if (p.scores?.length) {
+    html += `<h2 class="sec">Scores</h2><div class="card" style="padding:4px 12px">` +
+      p.scores.map(s => `<div class="score"><span>${esc(s.name)}</span><b>${s.value}</b></div>`).join("") + `</div>`;
+  }
+  if (p.inventory) {
+    const inv = p.inventory, a = inv.armor || [];
+    html += `<h2 class="sec">Gear</h2><div class="equip">${[3,2,1,0].map(i => slotHtml(a[i])).join("")}<div style="width:12px"></div>${slotHtml((inv.offhand || [])[0])}</div>`;
+    html += `<h2 class="sec">Inventory</h2><div class="inv">${inv.main.slice(9, 36).map(it => slotHtml(it)).join("")}</div>`;
+    html += `<div class="inv" style="margin-top:8px">${inv.main.slice(0, 9).map((it, i) => slotHtml(it, i, i === inv.selected)).join("")}</div>`;
+  }
+  html += `<h2 class="sec">Actions</h2><div class="actions">
+    <button class="btn" data-a="map">Show on map</button>`;
+  if (state.adminActions) {
+    html += `<button class="btn" data-a="wp">Waypoint here</button>
+      <button class="btn" data-a="msg">Message</button>
+      <button class="btn green" data-a="heal">Heal</button>
+      <button class="btn" data-a="tp">Teleport</button>
+      <button class="btn" data-a="gm">Gamemode</button>
+      <button class="btn red" data-a="kick">Kick</button>`;
+  }
+  html += `</div>`;
+  $("#sheetBody").innerHTML = html;
+  $("#sheetBody").scrollTop = keepScroll;
+}
+
+$("#sheet").addEventListener("click", async e => {
+  const slot = e.target.closest("[data-item]");
+  if (slot) { const [n, id] = slot.dataset.item.split("|"); toast(`${n}  (${id})`); return; }
+  const b = e.target.closest("[data-a]"); if (!b) return;
+  const name = sheetPlayer, p = findPlayer(name);
+  switch (b.dataset.a) {
+    case "close": closeSheet(); break;
+    case "map":
+      if (p) { follow = name; setDim(p.dim); view.cx = p.x; view.cz = p.z; view.scale = Math.max(view.scale, 2); }
+      closeSheet(); showView("map"); renderChips(); drawMap(); break;
+    case "msg": {
+      const v = await ask(`Message ${name}`, [{ name: "text", label: "Message", placeholder: "Shows up in their chat" }], "Send");
+      if (v?.text) action({ action: "message", player: name, text: v.text }); break;
+    }
+    case "heal": action({ action: "heal", player: name }); break;
+    case "wp": if (p) addWaypoint(p.dim, Math.floor(p.x), Math.floor(p.y), Math.floor(p.z), ""); break;
+    case "death": { const d = (state.deaths || []).find(x => x.player === name); if (d) deathMenu(d); break; }
+    case "gm": {
+      const v = await ask(`Gamemode for ${name}`, [{ name: "mode", label: "Mode", type: "select", value: p?.gamemode,
+        options: [["survival","Survival"],["creative","Creative"],["adventure","Adventure"],["spectator","Spectator"]] }], "Set");
+      if (v) action({ action: "gamemode", player: name, mode: v.mode }); break;
+    }
+    case "tp": {
+      const others = state.players.filter(o => o.name !== name);
+      const v = await ask(`Teleport ${name}`, [
+        { name: "target", label: "To player", type: "select", options: [["", "— use coordinates —"], ...others.map(o => [o.name, o.name])] },
+        { name: "x", label: "X", type: "number", value: p ? Math.round(p.x) : 0 },
+        { name: "y", label: "Y", type: "number", value: p ? Math.round(p.y) : 64 },
+        { name: "z", label: "Z", type: "number", value: p ? Math.round(p.z) : 0 },
+      ], "Teleport");
+      if (!v) break;
+      if (v.target) action({ action: "tp_to_player", player: name, target: v.target });
+      else action({ action: "tp_coords", player: name, x: v.x, y: v.y, z: v.z });
+      break;
+    }
+    case "kick": {
+      const v = await ask(`Kick ${name}?`, [{ name: "text", label: "Reason", value: "Kicked by an admin" }], "Kick", true);
+      if (v) action({ action: "kick", player: name, text: v.text || "Kicked by an admin" }); break;
+    }
+  }
+});
+
+/* ---------- modal + toast ---------- */
+function ask(title, fields, confirmLabel, danger) {
+  return new Promise(resolve => {
+    $("#modalTitle").textContent = title;
+    const f = $("#modalForm");
+    f.innerHTML = fields.map(fl => `<div class="field"><label>${esc(fl.label)}</label>${
+      fl.type === "color"
+        ? `<div class="swatches">${XAERO.map((c, i) => `<label style="background:${c}" title="${XAERO_NAMES[i]}"><input type="radio" name="${fl.name}" value="${i}"${i === fl.value ? " checked" : ""}><span></span></label>`).join("")}</div>`
+      : fl.type === "select"
+        ? `<select name="${fl.name}">${fl.options.map(([v,l]) => `<option value="${esc(v)}"${v === fl.value ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
+        : `<input name="${fl.name}" type="${fl.type === "number" ? "text" : (fl.type || "text")}" ${fl.type === "number" ? 'pattern="-?[0-9.]*"' : ""} value="${esc(fl.value ?? "")}" placeholder="${esc(fl.placeholder || "")}" maxlength="256">`
+    }</div>`).join("") + `<div class="actions"><button type="button" class="btn" data-x>Cancel</button><button class="btn ${danger ? "red" : "green"}" type="submit">${esc(confirmLabel)}</button></div>`;
+    $("#modal").classList.remove("hidden");
+    const first = f.querySelector("input"); if (first && first.type === "text") setTimeout(() => first.focus(), 50);
+    const done = v => { $("#modal").classList.add("hidden"); f.onsubmit = null; resolve(v); };
+    f.querySelector("[data-x]").onclick = () => done(null);
+    f.onsubmit = e => { e.preventDefault(); done(Object.fromEntries(new FormData(f).entries())); };
+  });
+}
+/** A small menu of buttons. Resolves to the chosen key, or null for Cancel. */
+function choose(title, subtitle, buttons) {
+  return new Promise(resolve => {
+    $("#modalTitle").textContent = title;
+    const f = $("#modalForm");
+    f.innerHTML = `<div class="choices">${subtitle ? `<div class="sub">${esc(subtitle).replace(/\n/g, "<br>")}</div>` : ""}${
+      buttons.map(b => `<button type="button" class="btn ${b.cls || ""}" data-k="${esc(b.key)}">${esc(b.label)}</button>`).join("")
+    }<button type="button" class="btn" data-k="">Cancel</button></div>`;
+    $("#modal").classList.remove("hidden");
+    f.onsubmit = e => e.preventDefault();
+    f.querySelectorAll("[data-k]").forEach(b => b.onclick = () => {
+      $("#modal").classList.add("hidden"); resolve(b.dataset.k || null);
+    });
+  });
+}
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.remove("off");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add("off"), 2600);
+}
+
+/* ---------- map ---------- */
+const TILE = 128;
+const canvas = $("#map"), ctx = canvas.getContext("2d");
+const view = { dim: "minecraft:overworld", cx: 0, cz: 0, scale: 1, centered: false };
+let follow = null;
+const tiles = new Map();
+let inflight = 0;
+const MAX_INFLIGHT = 4, TILE_REFRESH_MS = 90000;
+
+function resizeMap() {
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  if (!r.width) return;
+  canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
+  drawMap();
+}
+window.addEventListener("resize", resizeMap);
+
+function setDim(d) { if (view.dim !== d) { view.dim = d; $("#dimSel").value = d; } }
+function renderDims() {
+  const sel = $("#dimSel");
+  const ids = state.worlds.map(w => w.id).join(",");
+  if (sel.dataset.ids !== ids) {
+    sel.dataset.ids = ids;
+    sel.innerHTML = state.worlds.map(w => `<option value="${esc(w.id)}">${esc(dimName(w.id))}</option>`).join("");
+    sel.value = view.dim;
+  }
+  if (!view.centered && state.players.length) {
+    const p = state.players[0]; setDim(p.dim); view.cx = p.x; view.cz = p.z; view.centered = true;
+  }
+}
+$("#dimSel").addEventListener("change", e => { view.dim = e.target.value; follow = null; renderChips(); drawMap(); });
+
+function renderChips() {
+  if (!state) return;
+  $("#mapChips").innerHTML = state.players.map(p =>
+    `<button class="chip ${follow === p.name ? "on" : ""}" data-follow="${esc(p.name)}"><i style="background:${playerColor(p.name)}"></i>${esc(p.name)}${p.dim !== view.dim ? " · " + esc(dimName(p.dim)) : ""}</button>`).join("");
+}
+$("#mapChips").addEventListener("click", e => {
+  const b = e.target.closest("[data-follow]"); if (!b) return;
+  const n = b.dataset.follow;
+  if (follow === n) { follow = null; }
+  else { const p = findPlayer(n); if (p) { follow = n; setDim(p.dim); view.cx = p.x; view.cz = p.z; } }
+  renderChips(); drawMap();
+});
+
+function tileKey(tx, tz) { return view.dim + "|" + tx + "|" + tz; }
+function wantTile(tx, tz) {
+  const k = tileKey(tx, tz), now = Date.now();
+  let t = tiles.get(k);
+  if (!t) { t = { bmp: null, at: 0, retryAt: 0, loading: false }; tiles.set(k, t); }
+  if (!t.loading && now >= t.retryAt && (now - t.at > TILE_REFRESH_MS || (!t.bmp && t.at === 0)) && inflight < MAX_INFLIGHT) {
+    loadTile(k, view.dim, tx, tz, t);
+  }
+  return t;
+}
+async function loadTile(k, dim, tx, tz, t) {
+  t.loading = true; inflight++;
+  try {
+    const res = await api(`/api/tile?dim=${encodeURIComponent(dim)}&x=${tx}&z=${tz}`);
+    if (res.status === 200) {
+      const blob = await res.blob();
+      t.bmp = await createImageBitmap(blob); t.at = Date.now();
+    } else if (res.status === 204) {
+      t.at = Date.now(); t.retryAt = Date.now() + 30000;
+    } else {
+      t.retryAt = Date.now() + 1500;
+    }
+  } catch (e) { t.retryAt = Date.now() + 5000; }
+  finally { t.loading = false; inflight--; }
+  if (tiles.size > 500) { // drop the oldest tiles from other places
+    const keys = [...tiles.keys()].slice(0, tiles.size - 400);
+    keys.forEach(kk => tiles.delete(kk));
+  }
+  requestDraw();
+}
+
+let drawQueued = false;
+function requestDraw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawMap(); }); } }
+
+function drawMap() {
+  if (currentView !== "map" || !canvas.width) return;
+  const dpr = window.devicePixelRatio || 1, w = canvas.width / dpr, h = canvas.height / dpr, s = view.scale;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#0f1310"; ctx.fillRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = false;
+  const left = view.cx - w / 2 / s, top = view.cz - h / 2 / s;
+
+  // tiles: request the ones nearest the center first
+  const tx0 = Math.floor(left / TILE), tx1 = Math.floor((left + w / s) / TILE);
+  const tz0 = Math.floor(top / TILE), tz1 = Math.floor((top + h / s) / TILE);
+  const ctx_ = Math.floor(view.cx / TILE), ctz = Math.floor(view.cz / TILE);
+  const order = [];
+  for (let tx = tx0; tx <= tx1; tx++) for (let tz = tz0; tz <= tz1; tz++) order.push([tx, tz, Math.abs(tx - ctx_) + Math.abs(tz - ctz)]);
+  order.sort((a, b) => a[2] - b[2]);
+  for (const [tx, tz] of order) {
+    const t = wantTile(tx, tz);
+    if (t.bmp) {
+      const x = Math.floor((tx * TILE - left) * s), y = Math.floor((tz * TILE - top) * s);
+      const size = Math.ceil(TILE * s) + 1;
+      ctx.drawImage(t.bmp, x, y, size, size);
+    }
+  }
+
+  // chunk grid when zoomed in
+  if (s >= 3) {
+    ctx.strokeStyle = "rgba(255,255,255,.07)"; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = Math.floor(left / 16) * 16; x < left + w / s; x += 16) { const sx = Math.round((x - left) * s) + .5; ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
+    for (let z = Math.floor(top / 16) * 16; z < top + h / s; z += 16) { const sz = Math.round((z - top) * s) + .5; ctx.moveTo(0, sz); ctx.lineTo(w, sz); }
+    ctx.stroke();
+  }
+
+  // spawn-ish origin marker
+  const ox = (0 - left) * s, oz = (0 - top) * s;
+  if (ox > -10 && ox < w + 10 && oz > -10 && oz < h + 10) {
+    ctx.fillStyle = "rgba(232,179,58,.8)"; ctx.fillRect(ox - 3, oz - 3, 6, 6);
+  }
+
+  hitboxes = [];
+  ctx.font = "11px Silkscreen, monospace"; ctx.textBaseline = "middle"; ctx.textAlign = "center";
+  const onScreen = (x, y) => x > -40 && x < w + 40 && y > -40 && y < h + 40;
+
+  // last-death markers: a red pixel X
+  if (state && showMarkers) {
+    for (const d of state.deaths || []) {
+      if (d.dim !== view.dim) continue;
+      const x = Math.round((d.x + .5 - left) * s), y = Math.round((d.z + .5 - top) * s);
+      if (!onScreen(x, y)) continue;
+      ctx.fillStyle = "#0b0e0c"; ctx.fillRect(x - 8, y - 8, 16, 16);
+      ctx.fillStyle = "#d9564f";
+      for (let k = -5; k <= 4; k += 1) { ctx.fillRect(x + k, y + k, 2, 2); ctx.fillRect(x + k, y - k - 1, 2, 2); }
+      if (s >= 1) { ctx.fillStyle = "rgba(217,86,79,.95)"; ctx.fillText("✝ " + d.player, x, y + 16); }
+      hitboxes.push({ x, y, kind: "death", ref: d });
+    }
+
+    // waypoints: Xaero-style colored diamond with the first letter
+    for (const wp of state.waypoints || []) {
+      if (wp.dim !== view.dim) continue;
+      const x = Math.round((wp.x + .5 - left) * s), y = Math.round((wp.z + .5 - top) * s);
+      if (!onScreen(x, y)) continue;
+      const col = XAERO[wp.color] || XAERO[10];
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = "#0b0e0c"; ctx.fillRect(-10, -10, 20, 20);
+      ctx.fillStyle = col; ctx.fillRect(-8, -8, 16, 16);
+      ctx.restore();
+      const light = [7, 10, 11, 14, 15, 6, 13].includes(wp.color);
+      ctx.fillStyle = light ? "#0b0e0c" : "#fff";
+      ctx.fillText((wp.name.replace(/[^A-Za-z0-9]/g, "")[0] || "W").toUpperCase(), x, y + 1);
+      if (s >= 0.5) {
+        const tw = ctx.measureText(wp.name).width + 10;
+        ctx.fillStyle = "rgba(11,14,12,.8)"; ctx.fillRect(x - tw / 2, y + 15, tw, 16);
+        ctx.fillStyle = [0, 1, 2, 3, 4, 5, 8].includes(wp.color) ? "#e6ebe3" : col; ctx.fillText(wp.name, x, y + 23);
+      }
+      hitboxes.push({ x, y, kind: "waypoint", ref: wp });
+    }
+  }
+
+  // players
+  if (state) {
+    for (const p of state.players) {
+      if (p.dim !== view.dim) continue;
+      const x = (p.x - left) * s, y = (p.z - top) * s;
+      if (x < -40 || x > w + 40 || y < -40 || y > h + 40) continue;
+      const rad = (p.yaw || 0) * Math.PI / 180, dx = -Math.sin(rad), dz = Math.cos(rad);
+      // facing wedge
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+      ctx.beginPath();
+      ctx.moveTo(x + dx * 16, y + dz * 16);
+      ctx.lineTo(x - dz * 6, y + dx * 6);
+      ctx.lineTo(x + dz * 6, y - dx * 6);
+      ctx.closePath(); ctx.fill();
+      // body square
+      ctx.fillStyle = "#0b0e0c"; ctx.fillRect(x - 7, y - 7, 14, 14);
+      ctx.fillStyle = playerColor(p.name); ctx.fillRect(x - 5, y - 5, 10, 10);
+      // label
+      const label = p.name, tw = ctx.measureText(label).width + 10;
+      ctx.fillStyle = "rgba(11,14,12,.85)"; ctx.fillRect(x - tw / 2, y - 28, tw, 16);
+      ctx.fillStyle = follow === p.name ? "#5caa4a" : "#e6ebe3"; ctx.textAlign = "center"; ctx.fillText(label, x, y - 20);
+      hitboxes.push({ x, y, kind: "player", name: p.name });
+    }
+  }
+
+  const others = state ? state.players.filter(p => p.dim !== view.dim).length : 0;
+  $("#mapInfo").innerHTML = `<b>X</b> ${Math.round(view.cx)} <b>Z</b> ${Math.round(view.cz)}${follow ? ` · following ${esc(follow)}` : ""}${others ? ` · ${others} elsewhere` : ""}`;
+}
+let hitboxes = [];
+
+function zoomAt(factor, sx, sy) {
+  const dpr = window.devicePixelRatio || 1, w = canvas.width / dpr, h = canvas.height / dpr;
+  const s = view.scale, ns = Math.min(8, Math.max(0.25, s * factor));
+  const wx = view.cx - w / 2 / s + sx / s, wz = view.cz - h / 2 / s + sy / s;
+  view.scale = ns;
+  view.cx = wx - (sx - w / 2) / ns; view.cz = wz - (sy - h / 2) / ns;
+  requestDraw();
+}
+$("#zoomIn").addEventListener("click", () => { const r = canvas.getBoundingClientRect(); zoomAt(2, r.width / 2, r.height / 2); });
+$("#zoomOut").addEventListener("click", () => { const r = canvas.getBoundingClientRect(); zoomAt(0.5, r.width / 2, r.height / 2); });
+canvas.addEventListener("wheel", e => { e.preventDefault(); const r = canvas.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+
+const pointers = new Map();
+let gesture = null;
+canvas.addEventListener("pointerdown", e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (gesture?.lp) clearTimeout(gesture.lp);
+  if (pointers.size === 1) {
+    const g = gesture = { startX: e.clientX, startY: e.clientY, t: Date.now(), moved: 0 };
+    // Hold still for a moment to drop a waypoint there
+    g.lp = setTimeout(() => {
+      if (gesture !== g || pointers.size !== 1 || g.moved > 6) return;
+      g.longPressed = true;
+      try { navigator.vibrate && navigator.vibrate(20); } catch (err) {}
+      const r = canvas.getBoundingClientRect();
+      const wx = Math.floor(view.cx + (g.startX - r.left - r.width / 2) / view.scale);
+      const wz = Math.floor(view.cz + (g.startY - r.top - r.height / 2) / view.scale);
+      let y = 64, best = 1e9;
+      for (const p of state?.players || []) {
+        const dist = Math.hypot(p.x - wx, p.z - wz);
+        if (p.dim === view.dim && dist < 300 && dist < best) { best = dist; y = Math.floor(p.y); }
+      }
+      addWaypoint(view.dim, wx, y, wz, "");
+    }, 550);
+  } else gesture = { pinch: pinchInfo(), moved: 99 };
+});
+canvas.addEventListener("pointermove", e => {
+  if (!pointers.has(e.pointerId)) return;
+  const prev = pointers.get(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1 && gesture && !gesture.pinch) {
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    gesture.moved += Math.abs(dx) + Math.abs(dy);
+    if (gesture.moved > 6) {
+      if (follow) { follow = null; renderChips(); }
+      view.cx -= dx / view.scale; view.cz -= dy / view.scale; requestDraw();
+    }
+  } else if (pointers.size === 2 && gesture?.pinch) {
+    const now = pinchInfo(), r = canvas.getBoundingClientRect();
+    if (follow) { follow = null; renderChips(); }
+    view.cx -= (now.mx - gesture.pinch.mx) / view.scale; view.cz -= (now.my - gesture.pinch.my) / view.scale;
+    zoomAt(now.d / gesture.pinch.d, now.mx - r.left, now.my - r.top);
+    gesture.pinch = now;
+  }
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (gesture?.lp) clearTimeout(gesture.lp);
+  if (gesture && !gesture.pinch && !gesture.longPressed && gesture.moved <= 6 && Date.now() - gesture.t < 400 && e.type === "pointerup") {
+    const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const hits = hitboxes.filter(hb => Math.hypot(hb.x - x, hb.y - y) < 22);
+    const hit = hits.find(hb => hb.kind === "player") ||
+      hits.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+    if (hit?.kind === "player") openSheet(hit.name);
+    else if (hit?.kind === "waypoint") waypointMenu(hit.ref);
+    else if (hit?.kind === "death") deathMenu(hit.ref);
+  }
+  if (pointers.size === 1) { const [p] = pointers.values(); gesture = { startX: p.x, startY: p.y, t: 0, moved: 99 }; }
+  else if (pointers.size === 0) gesture = null;
+}
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", endPointer);
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+function pinchInfo() {
+  const [a, b] = [...pointers.values()];
+  return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+}
+
+/* ---------- boot ---------- */
+if (TOKEN) {
+  fetch("/api/ping", { headers: { "X-Watch-Token": TOKEN } })
+    .then(r => r.ok ? start() : logout(r.status === 401 ? "Saved token no longer works." : ""))
+    .catch(() => start());
+}
+</script>
+</body>
+</html>
