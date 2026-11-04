@@ -282,7 +282,8 @@ public final class Challenges {
                 mob.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 60 * 60, 0, false, false));
                 if (!targets.isEmpty()) mob.setTarget(targets.get(world.getRandom().nextInt(targets.size())));
                 w.mobs.add(mob.getUuid()); // before spawning, so the load check knows it's ours
-                if (!world.spawnEntityAndPassengers(mob)) w.mobs.remove(mob.getUuid());
+                world.spawnEntityAndPassengers(mob);
+                if (mob.isRemoved()) w.mobs.remove(mob.getUuid());
             }
         }
         w.waveTotal = w.mobs.size();
