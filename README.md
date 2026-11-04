@@ -9,7 +9,10 @@ A server-side Fabric 1.20.1 mod that runs a small web app you can open on your p
 - **Waypoints** – hold a spot on the map (or tap "Waypoint here" on a player) to save one. Tap it to send it to players: Xaero's Minimap shows a chat message with an **[Add]** button that puts it on their Xaero's map.
 - **Deaths** – each player's last death spot shows as a red X on the map and in their profile.
 
-Waypoints and deaths are saved in `config/everwyn-watch-markers.json`.
+- **Care packages** – tap a waypoint (or "Care package" on a player), pick items from every item in the pack, and a chest drops there with a lightning strike.
+- **Mob wave challenges** – tap a waypoint → "Mob wave challenge here". Pick up to 5 waves of hostile mobs (vanilla or modded), a time limit and the loot. It starts when a player walks within 16 blocks. Beat every wave → loot chest appears. A player dies, time runs out, or everyone leaves → "Challenge failed" and the mobs vanish.
+
+Waypoints and deaths are saved in `config/everwyn-watch-markers.json`; placed challenges in `config/everwyn-watch-challenges.json`. Saved map images live in your world folder under `everwyn-watch/tiles`.
 
 If a shared waypoint lands in the wrong world on players' Xaero's maps, set `"xaeroUnderscoreFormat": false` in the config and restart.
 

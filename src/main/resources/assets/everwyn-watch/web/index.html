@@ -92,7 +92,7 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 .ev .t{flex:1;word-break:break-word}
 .ev .who{font-weight:600}
 .k-chat{background:var(--text)} .k-join{background:var(--grass)} .k-leave{background:var(--muted)}
-.k-death{background:var(--red)} .k-advancement{background:var(--purple)} .k-admin{background:var(--gold)} .k-server{background:var(--teal)}
+.k-death{background:var(--red)} .k-advancement{background:var(--purple)} .k-admin{background:var(--gold)} .k-server{background:var(--teal)} .k-event{background:#ff7a3d}
 .say{display:flex;gap:8px}
 .say input,.field input,.field select{flex:1;min-width:0;background:#0f1310;border:0;box-shadow:inset 0 0 0 2px var(--line);padding:10px;border-radius:2px;min-height:42px}
 
@@ -147,6 +147,20 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 .swatches input{position:absolute;opacity:0}
 .swatches input:checked + span{position:absolute;inset:-4px;box-shadow:0 0 0 3px #fff}
 .banner{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+#builder{position:fixed;inset:0;z-index:30;background:var(--panel);display:flex;flex-direction:column;padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
+#builder .sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.bfoot{padding:10px 14px;border-top:2px solid #0b0e0c}
+.slot img{width:80%;height:80%;image-rendering:pixelated;object-fit:cover;object-position:top}
+.mobrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.mobrow .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mobrow .mct{font-family:var(--pix);min-width:30px;text-align:center}
+.mobrow .btn{width:38px;min-height:36px;padding:0;font-size:16px}
+.check{display:flex;gap:10px;align-items:center;padding:8px 0;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--grass);flex:none}
+.bfield{width:100%;background:#0f1310;border:0;box-shadow:inset 0 0 0 2px var(--line);padding:10px;border-radius:2px;min-height:42px}
+.results{max-height:none}
+.more{width:100%;margin-top:10px}
+.hint{color:var(--muted);font-size:13px;margin:4px 2px 8px}
 .banner b{color:var(--text)}
 </style>
 </head>
@@ -197,6 +211,8 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
         <div id="playerList"></div>
         <h2 class="sec">Waypoints</h2>
         <div id="waypointList"></div>
+        <h2 class="sec">Challenges</h2>
+        <div id="challengeList"></div>
         <h2 class="sec">Worlds</h2>
         <div id="worldList"></div>
       </div>
@@ -224,6 +240,15 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 <div id="sheet" class="closed" role="dialog" aria-modal="true">
   <div class="sheet-head" id="sheetHead"></div>
   <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<div id="builder" class="hidden" role="dialog" aria-modal="true">
+  <div class="sheet-head">
+    <div class="pmain"><div class="pname" id="bTitle"></div><div class="sub" id="bSub"></div></div>
+    <button class="btn small" id="bClose">Close</button>
+  </div>
+  <div class="sheet-body" id="bBody"></div>
+  <div class="bfoot"><button class="btn green" id="bGo" style="width:100%"></button></div>
 </div>
 
 <div id="modal" class="hidden"><div class="card"><h3 id="modalTitle"></h3><form id="modalForm"></form></div></div>
@@ -338,7 +363,7 @@ function onState() {
   const tps = state.tps ?? 20, col = tps >= 19 ? "var(--grass)" : tps >= 15 ? "var(--gold)" : "var(--red)";
   $("#tpsPill").innerHTML = `<span class="dot" style="background:${col}"></span>${tps.toFixed(1)} TPS`;
   $("#sayForm").classList.toggle("hidden", !state.adminActions);
-  renderDims(); renderChips(); renderPlayers();
+  renderDims(); renderChips(); renderPlayers(); renderChallenges();
   if (state.adminActions && !store.get("ew_hint")) {
     store.set("ew_hint", "1"); $("#mapHint").classList.remove("hidden");
     setTimeout(() => $("#mapHint").classList.add("hidden"), 6000);
@@ -412,10 +437,14 @@ async function waypointMenu(w) {
       buttons.push({ key: "all", label: "Send to everyone's Xaero's", cls: "green" });
       buttons.push({ key: "one", label: "Send to one player" });
     }
+    buttons.push({ key: "pkg", label: "Drop care package here" });
+    buttons.push({ key: "wave", label: "Mob wave challenge here" });
     buttons.push({ key: "del", label: "Delete", cls: "red" });
   }
   const k = await choose(w.name, `${dimName(w.dim)} · ${w.x}, ${w.y}, ${w.z}`, buttons);
   if (k === "map") goTo(w.dim, w.x + .5, w.z + .5);
+  else if (k === "pkg") openBuilder("package", { name: w.name, dim: w.dim, x: w.x, y: w.y, z: w.z });
+  else if (k === "wave") openBuilder("wave", { name: w.name, dim: w.dim, x: w.x, y: w.y, z: w.z });
   else if (k === "all") action({ action: "waypoint_share", id: w.id, to: "all" });
   else if (k === "one") {
     const v = await ask(`Send “${w.name}” to`, [{ name: "to", label: "Player", type: "select", options: state.players.map(p => [p.name, p.name]) }], "Send");
@@ -441,7 +470,7 @@ $("#layersBtn").addEventListener("click", () => {
 $("#layersBtn").style.opacity = showMarkers ? 1 : .5;
 
 /* ---------- feed ---------- */
-const FILTERS = [["all","All"],["chat","Chat"],["join","Joins"],["death","Deaths"],["advancement","Advancements"],["admin","Admin"]];
+const FILTERS = [["all","All"],["chat","Chat"],["event","Events"],["join","Joins"],["death","Deaths"],["advancement","Advancements"],["admin","Admin"]];
 $("#filters").innerHTML = FILTERS.map(([k,l]) => `<button class="chip ${k==="all"?"on":""}" data-f="${k}">${l}</button>`).join("");
 $("#filters").addEventListener("click", e => {
   const b = e.target.closest("[data-f]"); if (!b) return;
@@ -483,7 +512,7 @@ function slotHtml(it, idx, sel) {
   if (!it) return `<div class="slot${sel ? " sel" : ""}"></div>`;
   const durCol = it.dur > 50 ? "#55ff55" : it.dur > 20 ? "#ffff55" : "#ff5555";
   return `<div class="slot${it.ench ? " ench" : ""}${sel ? " sel" : ""}" data-item="${esc(it.name)}|${esc(it.id)}">
-    <div class="ab" style="background:hsl(${hashHue(it.id)} 45% 62%)">${esc(itemAbbr(it.id))}</div>
+    ${catalog ? itemFace(it.id) : `<div class="ab" style="background:hsl(${hashHue(it.id)} 45% 62%)">${esc(itemAbbr(it.id))}</div>`}
     ${it.count > 1 ? `<span class="ct">${it.count}</span>` : ""}
     ${it.dur != null && it.dur < 100 ? `<span class="du"><span style="width:${it.dur}%;background:${durCol}"></span></span>` : ""}
   </div>`;
@@ -527,7 +556,8 @@ function renderSheet() {
   html += `<h2 class="sec">Actions</h2><div class="actions">
     <button class="btn" data-a="map">Show on map</button>`;
   if (state.adminActions) {
-    html += `<button class="btn" data-a="wp">Waypoint here</button>
+    html += `<button class="btn gold" data-a="pkg">Care package</button>
+      <button class="btn" data-a="wp">Waypoint here</button>
       <button class="btn" data-a="msg">Message</button>
       <button class="btn green" data-a="heal">Heal</button>
       <button class="btn" data-a="tp">Teleport</button>
@@ -554,6 +584,7 @@ $("#sheet").addEventListener("click", async e => {
       if (v?.text) action({ action: "message", player: name, text: v.text }); break;
     }
     case "heal": action({ action: "heal", player: name }); break;
+    case "pkg": if (p) openBuilder("package", { name: `${name}'s care package`, dim: p.dim, x: Math.floor(p.x) + 1, y: Math.floor(p.y), z: Math.floor(p.z) }); break;
     case "wp": if (p) addWaypoint(p.dim, Math.floor(p.x), Math.floor(p.y), Math.floor(p.z), ""); break;
     case "death": { const d = (state.deaths || []).find(x => x.player === name); if (d) deathMenu(d); break; }
     case "gm": {
@@ -580,6 +611,203 @@ $("#sheet").addEventListener("click", async e => {
     }
   }
 });
+
+/* ---------- item catalog ---------- */
+let catalog = null;
+async function loadCatalog() {
+  if (catalog) return catalog;
+  toast("Loading every item in the pack…");
+  const res = await api("/api/catalog");
+  if (!res.ok) throw new Error("catalog");
+  const c = await res.json();
+  c.items.sort((a, b) => a.name.localeCompare(b.name));
+  c.mobs.sort((a, b) => a.name.localeCompare(b.name));
+  c.byId = new Map(c.items.map(i => [i.id, i]));
+  c.mobById = new Map(c.mobs.map(m => [m.id, m]));
+  catalog = c;
+  return c;
+}
+const hex = n => "#" + (n >>> 0 & 0xFFFFFF).toString(16).padStart(6, "0");
+/** The picture inside a slot: the real texture for modded items, a colored block otherwise. */
+function itemFace(id) {
+  const it = catalog?.byId.get(id);
+  if (it?.icon) return `<img src="/icon?id=${encodeURIComponent(id)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ab',textContent:'${esc(itemAbbr(id))}'}))">`;
+  const bg = it?.color ? hex(it.color) : `hsl(${hashHue(id)} 45% 62%)`;
+  return `<div class="ab" style="background:${bg}">${esc(itemAbbr(id))}</div>`;
+}
+const itemName = id => catalog?.byId.get(id)?.name || id;
+const mobName = id => catalog?.mobById.get(id)?.name || id;
+
+/* ---------- care package + wave builder ---------- */
+const B = {};
+async function openBuilder(kind, place) {
+  if (!state?.adminActions) { toast("Admin actions are turned off in the config"); return; }
+  try { await loadCatalog(); }
+  catch (e) { if (e.message !== "auth") toast("Couldn't load the item list"); return; }
+  Object.assign(B, {
+    kind, place, chest: [], waves: [[]], waveTab: 0, query: "", shown: 135,
+    name: kind === "wave" ? (place.name ? place.name + " Challenge" : "Mob wave") : (place.name || "Care package"),
+    timeLimit: 10, announce: true, share: true,
+  });
+  closeSheet();
+  $("#builder").classList.remove("hidden");
+  $("#bTitle").textContent = kind === "wave" ? "Mob wave challenge" : "Care package";
+  $("#bSub").textContent = `${dimName(place.dim)} · ${place.x}, ${place.y}, ${place.z}`;
+  $("#bGo").textContent = kind === "wave" ? "Place challenge" : "Drop care package";
+  renderBuilder();
+  $("#bBody").scrollTop = 0;
+}
+function closeBuilder() { $("#builder").classList.add("hidden"); }
+$("#bClose").addEventListener("click", closeBuilder);
+
+function renderBuilder() {
+  const wave = B.kind === "wave";
+  let h = `<div class="field"><label>${wave ? "Challenge name (shows on the boss bar)" : "Name"}</label>
+    <input class="bfield" id="bName" maxlength="32" value="${esc(B.name)}"></div>`;
+  if (wave) {
+    h += `<h2 class="sec">Waves</h2>
+      <p class="hint">Starts when a player walks within 16 blocks. Beat every wave to get the loot chest. If a player dies, time runs out or everyone leaves, it fails and the mobs vanish.</p>
+      <div class="filters" id="bWaveTabs"></div><div id="bWave"></div>
+      <div class="field" style="margin-top:12px"><label>Time limit</label>
+      <select class="bfield" id="bTime">${[3, 5, 10, 15, 20, 30].map(m => `<option value="${m}"${m === B.timeLimit ? " selected" : ""}>${m} minutes</option>`).join("")}</select></div>`;
+  }
+  h += `<h2 class="sec">${wave ? "Loot chest (the reward)" : "Chest contents"}</h2>
+    <p class="hint">Tap items below to add them. Tap an item in the chest to change the amount or remove it.</p>
+    <div class="inv" id="bChest"></div>
+    <h2 class="sec">Add items</h2>
+    <input class="bfield" id="bSearch" type="search" placeholder="Search ${catalog.items.length} items… (try “diamond” or a mod name like “create”)" value="${esc(B.query)}" autocomplete="off">
+    <div class="inv results" id="bResults" style="margin-top:10px"></div>
+    <div id="bMore"></div>
+    <h2 class="sec">Options</h2>
+    <label class="check"><input type="checkbox" id="bShare"${B.share ? " checked" : ""}> Send the waypoint to everyone's Xaero's map</label>
+    <label class="check"><input type="checkbox" id="bAnnounce"${B.announce ? " checked" : ""}> Announce it in chat</label>`;
+  $("#bBody").innerHTML = h;
+  $("#bName").oninput = e => B.name = e.target.value;
+  $("#bShare").onchange = e => B.share = e.target.checked;
+  $("#bAnnounce").onchange = e => B.announce = e.target.checked;
+  $("#bSearch").oninput = e => { B.query = e.target.value; B.shown = 135; renderResults(); };
+  if (wave) { $("#bTime").onchange = e => B.timeLimit = +e.target.value; renderWaves(); }
+  renderChest(); renderResults();
+}
+
+function renderChest() {
+  const slots = [];
+  for (let i = 0; i < 27; i++) {
+    const s = B.chest[i];
+    slots.push(s ? `<div class="slot" data-cslot="${i}" title="${esc(itemName(s.id))}">${itemFace(s.id)}${s.count > 1 ? `<span class="ct">${s.count}</span>` : ""}</div>` : `<div class="slot"></div>`);
+  }
+  $("#bChest").innerHTML = slots.join("");
+}
+
+function matches() {
+  const q = B.query.trim().toLowerCase();
+  if (!q) return catalog.items;
+  const words = q.split(/\s+/);
+  return catalog.items.filter(it => { const hay = (it.name + " " + it.id).toLowerCase(); return words.every(w => hay.includes(w)); });
+}
+function renderResults() {
+  const list = matches();
+  $("#bResults").innerHTML = list.slice(0, B.shown).map(it =>
+    `<div class="slot" data-add="${esc(it.id)}" title="${esc(it.name)}">${itemFace(it.id)}</div>`).join("") ||
+    `<div class="hint" style="grid-column:1/-1">No items match “${esc(B.query)}”</div>`;
+  const left = list.length - B.shown;
+  $("#bMore").innerHTML = left > 0 ? `<button class="btn more" data-more>Show more (${left} left)</button>` : "";
+}
+
+function renderWaves() {
+  $("#bWaveTabs").innerHTML = B.waves.map((w, i) => `<button class="chip ${i === B.waveTab ? "on" : ""}" data-wtab="${i}">Wave ${i + 1}</button>`).join("") +
+    (B.waves.length < 5 ? `<button class="chip" data-wadd>+ Add wave</button>` : "");
+  const wave = B.waves[B.waveTab], total = wave.reduce((n, s) => n + s.count, 0);
+  $("#bWave").innerHTML = (wave.length ? wave.map((s, i) => `
+    <div class="mobrow"><span class="n">${esc(mobName(s.mob))}</span>
+      <button class="btn" data-mdec="${i}">−</button><span class="mct">${s.count}</span><button class="btn" data-minc="${i}">+</button>
+      <button class="btn red" data-mdel="${i}" aria-label="Remove">×</button></div>`).join("")
+    : `<p class="hint">No mobs in this wave yet.</p>`) +
+    `<div class="field" style="margin-top:10px"><select class="bfield" id="bMobSel"><option value="">+ Add a mob to wave ${B.waveTab + 1}…</option>${
+      catalog.mobs.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("")}</select></div>
+    <div class="banner" style="justify-content:space-between"><span>${total} mob${total === 1 ? "" : "s"} (max 50)</span>${
+      B.waves.length > 1 ? `<button class="btn small red" data-wdel>Remove wave ${B.waveTab + 1}</button>` : ""}</div>`;
+  $("#bMobSel").onchange = e => {
+    const id = e.target.value; if (!id) return;
+    const ex = wave.find(s => s.mob === id);
+    if (ex) ex.count = Math.min(30, ex.count + 3); else wave.push({ mob: id, count: 3 });
+    renderWaves();
+  };
+}
+
+$("#bBody").addEventListener("click", async e => {
+  const t = e.target.closest("[data-add],[data-cslot],[data-more],[data-wtab],[data-wadd],[data-wdel],[data-minc],[data-mdec],[data-mdel]");
+  if (!t) return;
+  const d = t.dataset;
+  if (d.add) {
+    const it = catalog.byId.get(d.add);
+    const s = B.chest.find(c => c.id === d.add && c.count < it.max);
+    if (s) s.count++;
+    else { if (B.chest.length >= 27) { toast("The chest is full (27 stacks)"); return; } B.chest.push({ id: d.add, count: 1 }); }
+    const total = B.chest.filter(c => c.id === d.add).reduce((n, c) => n + c.count, 0);
+    renderChest(); toast(`${it.name} ×${total}`);
+  } else if (d.cslot != null) {
+    const s = B.chest[+d.cslot], it = catalog.byId.get(s.id), max = it?.max || 64;
+    const v = await ask(itemName(s.id), [{ name: "count", label: `Amount (max ${max} per stack, 0 removes it)`, type: "number", value: s.count }], "Save");
+    if (!v) return;
+    const n = Math.floor(+v.count);
+    if (!n || n < 0) B.chest.splice(+d.cslot, 1); else s.count = Math.min(max, n);
+    renderChest();
+  } else if (d.more != null) { B.shown += 135; renderResults(); }
+  else if (d.wtab != null) { B.waveTab = +d.wtab; renderWaves(); }
+  else if (d.wadd != null) { B.waves.push([]); B.waveTab = B.waves.length - 1; renderWaves(); }
+  else if (d.wdel != null) { B.waves.splice(B.waveTab, 1); B.waveTab = Math.max(0, B.waveTab - 1); renderWaves(); }
+  else {
+    const wave = B.waves[B.waveTab];
+    if (d.minc != null) wave[+d.minc].count = Math.min(30, wave[+d.minc].count + 1);
+    if (d.mdec != null) wave[+d.mdec].count = Math.max(1, wave[+d.mdec].count - 1);
+    if (d.mdel != null) wave.splice(+d.mdel, 1);
+    renderWaves();
+  }
+});
+
+$("#bGo").addEventListener("click", async () => {
+  const p = B.place;
+  if (!B.chest.length) { toast(B.kind === "wave" ? "Add at least one loot item" : "Add at least one item"); return; }
+  let ok;
+  if (B.kind === "wave") {
+    const empty = B.waves.findIndex(w => !w.length);
+    if (empty >= 0) { toast(`Wave ${empty + 1} has no mobs`); B.waveTab = empty; renderWaves(); return; }
+    ok = await action({ action: "wave_create", name: B.name, dim: p.dim, x: p.x, y: p.y, z: p.z,
+      waves: B.waves, loot: B.chest, timeLimit: B.timeLimit, announce: B.announce, share: B.share });
+  } else {
+    ok = await action({ action: "package", name: B.name, dim: p.dim, x: p.x, y: p.y, z: p.z,
+      items: B.chest, announce: B.announce, share: B.share });
+  }
+  if (ok) { closeBuilder(); setTimeout(pollStateOnce, 300); }
+});
+
+/* ---------- challenges on the map + list ---------- */
+function challengeStatus(c) {
+  if (c.state !== "active") return `Waiting for a player · ${c.waves} wave${c.waves === 1 ? "" : "s"} · ${c.timeLimit} min`;
+  const left = Math.max(0, Math.round((c.endsAt - Date.now()) / 1000));
+  return `Live · wave ${c.wave}/${c.waves} · ${c.alive} left · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+}
+async function challengeMenu(c) {
+  const buttons = [{ key: "map", label: "Show on map" }];
+  if (state.adminActions) buttons.push({ key: "cancel", label: c.state === "active" ? "Stop it now" : "Remove challenge", cls: "red" });
+  const k = await choose(c.name, `${dimName(c.dim)} · ${c.x}, ${c.y}, ${c.z}\n${challengeStatus(c)}`, buttons);
+  if (k === "map") goTo(c.dim, c.x + .5, c.z + .5, 1);
+  else if (k === "cancel") action({ action: "wave_cancel", id: c.id });
+}
+$("#challengeList").addEventListener("click", e => {
+  const el = e.target.closest("[data-chal]"); if (!el) return;
+  const c = (state.challenges || []).find(x => x.id === el.dataset.chal); if (c) challengeMenu(c);
+});
+function renderChallenges() {
+  const list = state.challenges || [];
+  $("#challengeList").innerHTML = list.length ? list.map(c => `
+    <div class="card prow" data-chal="${esc(c.id)}">
+      <span class="wpdot" style="background:${c.state === "active" ? "var(--red)" : "#7a2b27"}"></span>
+      <div class="pmain"><div class="pname">${esc(c.name)}${c.state === "active" ? ' <span class="tag" style="color:var(--red)">LIVE</span>' : ""}</div>
+        <div class="sub">${esc(challengeStatus(c))}</div></div>
+    </div>`).join("") : `<div class="card sub" style="white-space:normal">No challenges placed. Tap a waypoint and choose “Mob wave challenge here”.</div>`;
+}
 
 /* ---------- modal + toast ---------- */
 function ask(title, fields, confirmLabel, danger) {
@@ -769,6 +997,29 @@ function drawMap() {
       hitboxes.push({ x, y, kind: "death", ref: d });
     }
 
+    // challenges: arena ring + red square with a pixel sword
+    for (const c of state.challenges || []) {
+      if (c.dim !== view.dim) continue;
+      const x = Math.round((c.x + .5 - left) * s), y = Math.round((c.z + .5 - top) * s);
+      const r = c.radius * s, live = c.state === "active";
+      if (x < -r - 40 || x > w + r + 40 || y < -r - 40 || y > h + r + 40) continue;
+      if (r > 14) {
+        ctx.save(); ctx.setLineDash([6, 5]); ctx.lineWidth = 2;
+        ctx.strokeStyle = live ? "rgba(217,86,79,.9)" : "rgba(217,86,79,.45)";
+        ctx.fillStyle = live ? "rgba(217,86,79,.12)" : "rgba(217,86,79,.05)";
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      ctx.fillStyle = "#0b0e0c"; ctx.fillRect(x - 10, y - 10, 20, 20);
+      ctx.fillStyle = live ? "#d9564f" : "#7a2b27"; ctx.fillRect(x - 8, y - 8, 16, 16);
+      ctx.fillStyle = "#fff"; // little pixel sword
+      for (let k = 0; k < 5; k++) ctx.fillRect(x - 4 + k * 2, y + 2 - k * 2, 2, 2);
+      ctx.fillRect(x - 5, y + 1, 4, 2); ctx.fillRect(x - 3, y - 1, 2, 4);
+      const label = live ? `${c.name} · wave ${c.wave}/${c.waves}` : c.name, tw = ctx.measureText(label).width + 10;
+      ctx.fillStyle = "rgba(11,14,12,.85)"; ctx.fillRect(x - tw / 2, y - 30, tw, 16);
+      ctx.fillStyle = live ? "#ff8a80" : "#d9564f"; ctx.fillText(label, x, y - 22);
+      hitboxes.push({ x, y, kind: "challenge", ref: c });
+    }
+
     // waypoints: Xaero-style colored diamond with the first letter
     for (const wp of state.waypoints || []) {
       if (wp.dim !== view.dim) continue;
@@ -889,6 +1140,7 @@ function endPointer(e) {
     if (hit?.kind === "player") openSheet(hit.name);
     else if (hit?.kind === "waypoint") waypointMenu(hit.ref);
     else if (hit?.kind === "death") deathMenu(hit.ref);
+    else if (hit?.kind === "challenge") challengeMenu(hit.ref);
   }
   if (pointers.size === 1) { const [p] = pointers.values(); gesture = { startX: p.x, startY: p.y, t: 0, moved: 99 }; }
   else if (pointers.size === 0) gesture = null;
