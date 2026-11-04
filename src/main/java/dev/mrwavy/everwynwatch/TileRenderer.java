@@ -8,11 +8,16 @@ import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
+import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.chunk.WorldChunk;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +50,14 @@ public final class TileRenderer {
     public Result get(String dim, int tx, int tz) throws Exception {
         Key key = new Key(dim, tx, tz);
         Cached old = cache.get(key);
+        if (old == null) {
+            // Not in memory: use the copy saved on disk, if any (renderedAt 0 = check for updates).
+            old = loadFromDisk(key);
+            if (old != null) {
+                if (cache.size() > 3000) cache.clear();
+                cache.put(key, old);
+            }
+        }
         long now = System.currentTimeMillis();
         if (old != null && now - old.renderedAt < cfg.tileCacheSeconds * 1000L) {
             return new Result(old.png, false);
@@ -65,10 +78,50 @@ public final class TileRenderer {
         int[] pixels = server.submit(() -> render(target, tx, tz, base)).get(3, TimeUnit.SECONDS);
 
         if (pixels == null) return new Result(null, false);
+        if (old != null && java.util.Arrays.equals(pixels, old.pixels)) {
+            // Nothing changed (e.g. nobody nearby): keep the saved image, skip re-saving.
+            cache.put(key, new Cached(old.pixels, old.png, now));
+            return new Result(old.png, false);
+        }
         byte[] png = encode(pixels);
         if (cache.size() > 3000) cache.clear();
         cache.put(key, new Cached(pixels, png, now));
+        saveToDisk(key, png);
         return new Result(png, false);
+    }
+
+    /** Tiles are saved in <world>/everwyn-watch/tiles/<dimension>/<x>_<z>.png */
+    private Path tileFile(Key key) {
+        String dimFolder = key.dim().replaceAll("[^A-Za-z0-9_.-]", "_");
+        return server.getSavePath(WorldSavePath.ROOT).resolve("everwyn-watch").resolve("tiles")
+                .resolve(dimFolder).resolve(key.tx() + "_" + key.tz() + ".png");
+    }
+
+    private Cached loadFromDisk(Key key) {
+        Path file = tileFile(key);
+        if (!Files.isRegularFile(file)) return null;
+        try {
+            byte[] png = Files.readAllBytes(file);
+            BufferedImage img = ImageIO.read(new ByteArrayInputStream(png));
+            if (img == null || img.getWidth() != TILE || img.getHeight() != TILE) return null;
+            int[] pixels = img.getRGB(0, 0, TILE, TILE, null, 0, TILE);
+            return new Cached(pixels, png, 0L);
+        } catch (Exception e) {
+            EverwynWatch.LOG.debug("Could not read saved map tile {}", file, e);
+            return null;
+        }
+    }
+
+    private void saveToDisk(Key key, byte[] png) {
+        Path file = tileFile(key);
+        try {
+            Files.createDirectories(file.getParent());
+            Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+            Files.write(tmp, png);
+            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            EverwynWatch.LOG.debug("Could not save map tile {}", file, e);
+        }
     }
 
     private synchronized boolean allowRender() {

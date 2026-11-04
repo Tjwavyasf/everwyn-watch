@@ -648,18 +648,24 @@ function renderDims() {
     sel.innerHTML = state.worlds.map(w => `<option value="${esc(w.id)}">${esc(dimName(w.id))}</option>`).join("");
     sel.value = view.dim;
   }
-  if (!view.centered && state.players.length) {
-    const p = state.players[0]; setDim(p.dim); view.cx = p.x; view.cz = p.z; view.centered = true;
+  if (!view.centered) {
+    const p = state.players[0], sp = state.spawn;
+    if (p) { setDim(p.dim); view.cx = p.x; view.cz = p.z; view.centered = true; }
+    else if (sp) { setDim(sp.dim); view.cx = sp.x + .5; view.cz = sp.z + .5; view.centered = true; }
   }
 }
 $("#dimSel").addEventListener("change", e => { view.dim = e.target.value; follow = null; renderChips(); drawMap(); });
 
 function renderChips() {
   if (!state) return;
-  $("#mapChips").innerHTML = state.players.map(p =>
+  $("#mapChips").innerHTML = (state.spawn ? `<button class="chip" data-spawn="1"><i style="background:var(--gold)"></i>Spawn</button>` : "") + state.players.map(p =>
     `<button class="chip ${follow === p.name ? "on" : ""}" data-follow="${esc(p.name)}"><i style="background:${playerColor(p.name)}"></i>${esc(p.name)}${p.dim !== view.dim ? " · " + esc(dimName(p.dim)) : ""}</button>`).join("");
 }
 $("#mapChips").addEventListener("click", e => {
+  if (e.target.closest("[data-spawn]") && state.spawn) {
+    follow = null; setDim(state.spawn.dim); view.cx = state.spawn.x + .5; view.cz = state.spawn.z + .5;
+    renderChips(); drawMap(); return;
+  }
   const b = e.target.closest("[data-follow]"); if (!b) return;
   const n = b.dataset.follow;
   if (follow === n) { follow = null; }
@@ -733,10 +739,17 @@ function drawMap() {
     ctx.stroke();
   }
 
-  // spawn-ish origin marker
-  const ox = (0 - left) * s, oz = (0 - top) * s;
-  if (ox > -10 && ox < w + 10 && oz > -10 && oz < h + 10) {
-    ctx.fillStyle = "rgba(232,179,58,.8)"; ctx.fillRect(ox - 3, oz - 3, 6, 6);
+  // world spawn marker
+  const sp = state?.spawn;
+  if (sp && sp.dim === view.dim) {
+    const ox = Math.round((sp.x + .5 - left) * s), oz = Math.round((sp.z + .5 - top) * s);
+    if (ox > -40 && ox < w + 40 && oz > -40 && oz < h + 40) {
+      ctx.fillStyle = "#0b0e0c"; ctx.fillRect(ox - 6, oz - 6, 12, 12);
+      ctx.fillStyle = "#e8b33a"; ctx.fillRect(ox - 4, oz - 4, 8, 8);
+      ctx.font = "11px Silkscreen, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(11,14,12,.8)"; ctx.fillRect(ox - 26, oz + 9, 52, 16);
+      ctx.fillStyle = "#e8b33a"; ctx.fillText("Spawn", ox, oz + 17);
+    }
   }
 
   hitboxes = [];

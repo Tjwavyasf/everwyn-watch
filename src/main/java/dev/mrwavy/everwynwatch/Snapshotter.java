@@ -58,6 +58,18 @@ public final class Snapshotter {
         }
         root.add("worlds", worlds);
 
+        // World spawn, so the app can open there when nobody is online
+        ServerWorld overworld = server.getOverworld();
+        if (overworld != null) {
+            net.minecraft.util.math.BlockPos sp = overworld.getSpawnPos();
+            JsonObject spawn = new JsonObject();
+            spawn.addProperty("dim", overworld.getRegistryKey().getValue().toString());
+            spawn.addProperty("x", sp.getX());
+            spawn.addProperty("y", sp.getY());
+            spawn.addProperty("z", sp.getZ());
+            root.add("spawn", spawn);
+        }
+
         JsonArray players = new JsonArray();
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
             try {
