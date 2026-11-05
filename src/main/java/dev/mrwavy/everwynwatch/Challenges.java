@@ -118,6 +118,7 @@ public final class Challenges {
         }
         if (share) shareWaypoint(label, dim, spot, 6);
         log.add("event", null, "Care package dropped at " + label + " (" + where + ")");
+        if (announce) Discord.send("event", ":package: A care package dropped at **" + Discord.clean(label) + "** (" + where + ")", null, null);
         return "Care package dropped at " + where;
     }
 
@@ -152,6 +153,7 @@ public final class Challenges {
                     .append(Text.literal(" (" + w.x + " " + w.y + " " + w.z + "). Beat it for loot!").formatted(Formatting.WHITE)));
         }
         log.add("event", null, "Mob wave placed at " + w.name + " (" + w.x + " " + w.y + " " + w.z + ")");
+        if (w.announce) Discord.send("event", ":crossed_swords: A mob wave challenge appeared at **" + Discord.clean(w.name) + "** (" + w.x + " " + w.y + " " + w.z + ")", null, null);
         return "Challenge placed at " + w.name + ". It starts when someone walks within " + w.radius + " blocks.";
     }
 
@@ -331,6 +333,7 @@ public final class Challenges {
         else notifyParticipants(w, msg);
         log.add("event", null, "Challenge complete at " + w.name + ". Loot chest at " + where);
         Notifier.send("challenge", "Challenge beaten: " + w.name, "Loot chest at " + where, "trophy");
+        Discord.send("event", ":trophy: **" + Discord.clean(w.name) + "** was beaten! Loot chest at " + where, null, null);
         end(w, world);
     }
 
@@ -345,6 +348,7 @@ public final class Challenges {
         else notifyParticipants(w, msg);
         log.add("event", null, "Challenge failed at " + w.name + ": " + reason);
         Notifier.send("challenge", "Challenge failed: " + w.name, reason, "skull");
+        Discord.send("event", ":x: **" + Discord.clean(w.name) + "** failed: " + Discord.clean(reason), null, null);
         end(w, world);
     }
 

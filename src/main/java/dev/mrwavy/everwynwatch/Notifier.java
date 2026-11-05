@@ -28,6 +28,8 @@ final class Notifier {
                 case "leave" -> cfg.notifyLeave;
                 case "death" -> cfg.notifyDeath;
                 case "challenge" -> cfg.notifyChallenge;
+                case "lag" -> cfg.notifyLag;
+                case "server" -> cfg.notifyServer;
                 default -> false;
             };
             if (!on) return;

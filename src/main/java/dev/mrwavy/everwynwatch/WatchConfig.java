@@ -55,6 +55,32 @@ public class WatchConfig {
     /** How many deaths to keep in the death vault (all players combined). */
     public int deathHistoryLimit = 300;
 
+    /** Server health alerts */
+    public boolean notifyLag = true;
+    public boolean notifyServer = true;
+    public double lagTpsThreshold = 15.0;
+
+    /** Leaderboard page anyone can open at http://your-ip:port/board (off by default). */
+    public boolean publicLeaderboard = false;
+
+    /** Discord channel webhook (Channel settings, Integrations, Webhooks, Copy URL). Leave empty to turn off. */
+    public String discordWebhook = "";
+    public boolean discordChat = true;
+    public boolean discordJoins = true;
+    public boolean discordDeaths = true;
+    public boolean discordEvents = true;
+    public boolean discordServer = true;
+
+    /** Extra logins for helpers. Roles: admin, helper, viewer. Managed from the app. */
+    public java.util.List<AccountEntry> accounts = new java.util.ArrayList<>();
+
+    public static class AccountEntry {
+        public String name;
+        public String token;
+        public String role;
+        public long created;
+    }
+
     private transient Path path;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

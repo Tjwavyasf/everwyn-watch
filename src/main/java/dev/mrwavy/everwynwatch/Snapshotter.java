@@ -34,6 +34,16 @@ public final class Snapshotter {
         return json;
     }
 
+    double mspt() {
+        return avgMspt;
+    }
+
+    double tps() {
+        return Math.min(20.0, 1000.0 / Math.max(50.0, avgMspt));
+    }
+
+    Services services;
+
     /** Called every tick with that tick's length; keeps a smoothed average. */
     public void recordTick(double ms) {
         avgMspt = avgMspt == 0 ? ms : avgMspt * 0.95 + ms * 0.05;
@@ -115,7 +125,24 @@ public final class Snapshotter {
         n.addProperty("leave", cfg.notifyLeave);
         n.addProperty("death", cfg.notifyDeath);
         n.addProperty("challenge", cfg.notifyChallenge);
+        n.addProperty("lag", cfg.notifyLag);
+        n.addProperty("server", cfg.notifyServer);
         root.add("notify", n);
+
+        if (services != null) {
+            root.add("schedules", services.scheduler.toJson());
+            if (services.scheduler.restartAt() > 0) root.addProperty("restartAt", services.scheduler.restartAt());
+            root.addProperty("ledger", services.ledger.status());
+        }
+        root.addProperty("publicLeaderboard", cfg.publicLeaderboard);
+        JsonObject d = new JsonObject();
+        d.addProperty("set", cfg.discordWebhook != null && !cfg.discordWebhook.isEmpty());
+        d.addProperty("chat", cfg.discordChat);
+        d.addProperty("joins", cfg.discordJoins);
+        d.addProperty("deaths", cfg.discordDeaths);
+        d.addProperty("events", cfg.discordEvents);
+        d.addProperty("server", cfg.discordServer);
+        root.add("discord", d);
 
         json = root.toString();
     }

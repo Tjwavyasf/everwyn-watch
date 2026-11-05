@@ -24,9 +24,59 @@ final class AdminActions {
     private AdminActions() {}
 
     /** Returns a short result message; throws IllegalArgumentException for bad input. */
-    static String run(MinecraftServer server, EventLog events, Markers markers, Challenges challenges, DeathVault vault, JsonObject req) {
+    static String run(Services s, String actor, JsonObject req) {
+        MinecraftServer server = s.server;
+        EventLog events = s.events;
+        Markers markers = s.markers;
+        Challenges challenges = s.challenges;
+        DeathVault vault = s.vault;
         String action = str(req, "action");
         String result = switch (action) {
+            case "account_add" -> {
+                String token = s.accounts.add(str(req, "name"), str(req, "role"));
+                yield "TOKEN:" + token;
+            }
+            case "account_remove" -> s.accounts.remove(str(req, "name"));
+            case "clear_items" -> {
+                Integer cx = req.has("cx") ? (int) num(req, "cx") : null, cz = req.has("cz") ? (int) num(req, "cz") : null;
+                int n = PerfMonitor.clearItems(server, req.has("dim") ? str(req, "dim") : null, cx, cz);
+                yield "Removed " + n + " dropped item" + (n == 1 ? "" : "s");
+            }
+            case "clear_hostiles" -> {
+                int n = PerfMonitor.clearHostiles(server, str(req, "dim"), (int) num(req, "cx"), (int) num(req, "cz"));
+                yield "Removed " + n + " hostile mob" + (n == 1 ? "" : "s") + " (named and tamed ones are kept)";
+            }
+            case "ledger_rollback" -> s.ledger.rollback(str(req, "dim"), (int) num(req, "x"), (int) num(req, "y"), (int) num(req, "z"),
+                    (int) num(req, "radius"), (int) num(req, "hours"), req.has("player") ? str(req, "player") : null);
+            case "schedule_add" -> s.scheduler.add(req);
+            case "schedule_remove" -> s.scheduler.remove(str(req, "id"));
+            case "schedule_run" -> s.scheduler.runNow(str(req, "id"));
+            case "leaderboard_public" -> {
+                s.cfg.publicLeaderboard = req.get("on").getAsBoolean();
+                s.cfg.save();
+                yield s.cfg.publicLeaderboard ? "Public leaderboard is on" : "Public leaderboard is off";
+            }
+            case "discord_settings" -> {
+                WatchConfig cfg = s.cfg;
+                if (req.has("webhook")) {
+                    String url = str(req, "webhook").trim();
+                    if (!url.isEmpty() && !url.matches("https://(discord|discordapp|canary\\.discord|ptb\\.discord)\\.com/api/webhooks/.+"))
+                        throw new IllegalArgumentException("That doesn't look like a Discord webhook link");
+                    cfg.discordWebhook = url;
+                }
+                if (req.has("chat")) cfg.discordChat = req.get("chat").getAsBoolean();
+                if (req.has("joins")) cfg.discordJoins = req.get("joins").getAsBoolean();
+                if (req.has("deaths")) cfg.discordDeaths = req.get("deaths").getAsBoolean();
+                if (req.has("events")) cfg.discordEvents = req.get("events").getAsBoolean();
+                if (req.has("server")) cfg.discordServer = req.get("server").getAsBoolean();
+                cfg.save();
+                yield "Discord settings saved";
+            }
+            case "discord_test" -> {
+                if (s.cfg.discordWebhook == null || s.cfg.discordWebhook.isEmpty()) throw new IllegalArgumentException("Paste a webhook link first");
+                Discord.send("test", ":white_check_mark: Everwyn Watch is connected to this channel.", null, null);
+                yield "Test message sent to Discord";
+            }
             case "kill" -> {
                 ServerPlayerEntity p = player(server, req, "player");
                 p.kill();
@@ -128,6 +178,8 @@ final class AdminActions {
                 if (req.has("leave")) cfg.notifyLeave = req.get("leave").getAsBoolean();
                 if (req.has("death")) cfg.notifyDeath = req.get("death").getAsBoolean();
                 if (req.has("challenge")) cfg.notifyChallenge = req.get("challenge").getAsBoolean();
+                if (req.has("lag")) cfg.notifyLag = req.get("lag").getAsBoolean();
+                if (req.has("server")) cfg.notifyServer = req.get("server").getAsBoolean();
                 cfg.save();
                 yield "Notification settings saved";
             }
@@ -232,8 +284,8 @@ final class AdminActions {
             }
             default -> throw new IllegalArgumentException("Unknown action");
         };
-        EverwynWatch.LOG.info("[Everwyn Watch] dashboard action: {}", result);
-        events.add("admin", null, result);
+        EverwynWatch.LOG.info("[Everwyn Watch] {}: {}", actor, result.startsWith("TOKEN:") ? "created a login" : result);
+        if (!result.startsWith("TOKEN:")) events.add("admin", actor, result);
         return result;
     }
 
