@@ -3,14 +3,13 @@
   "id": "everwyn-watch",
   "version": "${version}",
   "name": "Everwyn Watch",
-  "description": "Live server dashboard for your phone: map, players, chat feed, admin tools and spectating. On the server it runs the dashboard; in players' games it only sends their screen while an admin is watching.",
+  "description": "Live server dashboard for your phone: map, players, chat feed, admin tools and voice listening.",
   "authors": ["Mr.Wavy"],
   "license": "MIT",
   "icon": "assets/everwyn-watch/web/icon-192.png",
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {
     "server": ["dev.mrwavy.everwynwatch.EverwynWatch"],
-    "client": ["dev.mrwavy.everwynwatch.client.EverwynWatchClient"],
     "voicechat": ["dev.mrwavy.everwynwatch.VoicePlugin"]
   },
   "depends": {

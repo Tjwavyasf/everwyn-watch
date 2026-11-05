@@ -140,6 +140,18 @@ public final class WebServer {
                 sendJson(ex, 200, onServer(() -> s.vault.detail(id).toString(), 5));
             }
             case "/api/catalog" -> sendJson(ex, 200, onServer(Catalog::json, 20));
+            case "/api/tile" -> {
+                String dim = q.getOrDefault("dim", "minecraft:overworld");
+                TileRenderer.Result r = s.tiles.get(dim, (int) parseLong(q.get("x"), 0), (int) parseLong(q.get("z"), 0));
+                if (r.busy()) {
+                    sendJson(ex, 503, error("busy"));
+                } else if (r.png() == null) {
+                    ex.getResponseHeaders().set("Cache-Control", "no-store");
+                    ex.sendResponseHeaders(204, -1);
+                } else {
+                    send(ex, 200, "image/png", r.png());
+                }
+            }
             case "/api/events" -> sendJson(ex, 200, s.events.since(parseLong(q.get("after"), 0)).toString());
             case "/api/trail" -> sendJson(ex, 200, s.trails.trail(q.getOrDefault("player", ""), (int) parseLong(q.get("hours"), 1)).toString());
             case "/api/perf" -> sendJson(ex, 200, s.perf.history((int) parseLong(q.get("hours"), 1)).toString());
@@ -172,29 +184,6 @@ public final class WebServer {
                         (int) parseLong(q.get("z"), 0), (int) parseLong(q.get("radius"), 8), (int) parseLong(q.get("hours"), 24),
                         q.get("player"), (int) parseLong(q.get("limit"), 200));
                 sendJson(ex, 200, o.toString());
-            }
-            case "/api/view" -> {
-                if (!admin) {
-                    sendJson(ex, 403, error("Only admins can watch screens"));
-                    return;
-                }
-                net.minecraft.server.network.ServerPlayerEntity p = s.server.getPlayerManager().getPlayer(q.getOrDefault("player", ""));
-                if (p == null) {
-                    sendJson(ex, 404, error("offline"));
-                    return;
-                }
-                if (!ScreenViewer.hasMod(p)) {
-                    sendJson(ex, 409, error("noclient"));
-                    return;
-                }
-                ScreenViewer.Frame f = ScreenViewer.poll(p.getUuid(), (int) parseLong(q.get("q"), 1));
-                if (f == null) {
-                    ex.getResponseHeaders().set("Cache-Control", "no-store");
-                    ex.sendResponseHeaders(204, -1);
-                } else {
-                    ex.getResponseHeaders().set("X-Frame-Age", Long.toString(System.currentTimeMillis() - f.at()));
-                    send(ex, 200, "image/jpeg", f.jpeg());
-                }
             }
             case "/api/audio" -> {
                 if (!admin) {

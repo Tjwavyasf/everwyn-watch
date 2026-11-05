@@ -26,7 +26,17 @@ final class VoiceBridge {
     private static volatile UUID target;
     private static volatile long lastPoll;
 
+    private static int ticks;
+
     private VoiceBridge() {}
+
+    /** Server thread: while you listen, the player sees a hint in their action bar. */
+    static void tick(MinecraftServer srv) {
+        if (++ticks % 40 != 0 || !active()) return;
+        ServerPlayerEntity p = srv.getPlayerManager().getPlayer(target);
+        if (p != null) p.sendMessage(net.minecraft.text.Text.literal("You feel like you're being watched...")
+                .formatted(net.minecraft.util.Formatting.GRAY, net.minecraft.util.Formatting.ITALIC), true);
+    }
 
     static boolean active() {
         return target != null && System.currentTimeMillis() - lastPoll < 6000;

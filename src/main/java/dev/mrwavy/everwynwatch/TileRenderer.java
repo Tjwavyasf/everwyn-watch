@@ -67,6 +67,41 @@ public final class TileRenderer {
     private long windowStart = 0;
     private int rendersInWindow = 0;
 
+    // What the map has been doing, shown in the app so problems are easy to spot
+    private static final java.util.concurrent.atomic.AtomicLong DRAWN = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong EMPTY = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong LIVE_CHUNKS = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong SAVED_CHUNKS = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong UNFINISHED = new java.util.concurrent.atomic.AtomicLong();
+    private static volatile String lastError = null, lastStatus = null;
+    private static volatile long lastErrorAt = 0, lastLog = 0;
+
+    static com.google.gson.JsonObject stats() {
+        com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+        o.addProperty("tilesDrawn", DRAWN.get());
+        o.addProperty("emptyTiles", EMPTY.get());
+        o.addProperty("liveChunks", LIVE_CHUNKS.get());
+        o.addProperty("savedChunks", SAVED_CHUNKS.get());
+        o.addProperty("unfinishedChunks", UNFINISHED.get());
+        if (lastStatus != null) o.addProperty("lastChunkStatus", lastStatus);
+        if (lastError != null) {
+            o.addProperty("lastError", lastError);
+            o.addProperty("lastErrorAt", lastErrorAt);
+        }
+        return o;
+    }
+
+    private static void problem(String what, Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+        lastError = what + ": " + root.getClass().getSimpleName() + (root.getMessage() != null ? " - " + root.getMessage() : "");
+        lastErrorAt = System.currentTimeMillis();
+        if (lastErrorAt - lastLog > 60_000) {
+            lastLog = lastErrorAt;
+            EverwynWatch.LOG.warn("Everwyn Watch map problem ({})", what, e);
+        }
+    }
+
     public TileRenderer(MinecraftServer server, WatchConfig cfg) {
         this.server = server;
         this.cfg = cfg;
@@ -102,13 +137,23 @@ public final class TileRenderer {
         if (world == null) return new Result(null, false);
 
         final ServerWorld target = world;
-        Raw raw = server.submit(() -> sampleLoaded(target, tx, tz)).get(3, TimeUnit.SECONDS);
+        Raw raw;
+        try {
+            raw = server.submit(() -> sampleLoaded(target, tx, tz)).get(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            problem("reading loaded chunks", e);
+            raw = new Raw();
+        }
         try {
             sampleSaved(target, tx, tz, raw);
         } catch (Exception e) {
-            EverwynWatch.LOG.debug("Couldn't read saved chunks for tile {},{}", tx, tz, e);
+            problem("reading saved chunks", e);
         }
-        if (!raw.anyLive && !raw.anyDisk && old == null) return new Result(null, false);
+        if (!raw.anyLive && !raw.anyDisk && old == null) {
+            EMPTY.incrementAndGet();
+            return new Result(null, false);
+        }
+        DRAWN.incrementAndGet();
 
         int[] pixels = shade(raw, old != null ? old.pixels : null);
         if (old != null && java.util.Arrays.equals(pixels, old.pixels)) {
@@ -140,6 +185,7 @@ public final class TileRenderer {
                 if (chunk == null) continue;
                 raw.anyLive = true;
                 raw.chunkDone[cz * 8 + cx] = true;
+                LIVE_CHUNKS.incrementAndGet();
                 for (int lx = 0; lx < 16; lx++) {
                     for (int lz = 0; lz < 16; lz++) {
                         int wx = (chunkX << 4) + lx, wz = (chunkZ << 4) + lz;
@@ -203,7 +249,11 @@ public final class TileRenderer {
                 if (opt.isEmpty()) continue;
                 NbtCompound nbt = opt.get();
                 String status = nbt.getString("Status");
-                if (!status.equals("minecraft:full") && !status.equals("full")) continue; // half-generated edge of the world
+                lastStatus = status;
+                if (!status.equals("minecraft:full") && !status.equals("full")) { // half-generated edge of the world
+                    UNFINISHED.incrementAndGet();
+                    continue;
+                }
                 if (!nbt.contains("sections", NbtElement.LIST_TYPE)) continue; // very old format
 
                 // Decode every section into palette indexes
@@ -219,6 +269,7 @@ public final class TileRenderer {
 
                 raw.anyDisk = true;
                 raw.chunkDone[cz * 8 + cx] = true;
+                SAVED_CHUNKS.incrementAndGet();
                 for (int lx = 0; lx < 16; lx++) {
                     for (int lz = 0; lz < 16; lz++) {
                         int i = ((chunkZ << 4) + lz - bz0) * TILE + ((chunkX << 4) + lx - bx0);

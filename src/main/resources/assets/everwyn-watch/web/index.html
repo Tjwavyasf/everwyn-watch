@@ -159,6 +159,11 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 .topic input{flex:1;min-width:0;font-family:var(--pix);font-size:12px}
 ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{margin:6px 0}
 .btn[disabled]{opacity:.45;pointer-events:none}
+#listenBar{position:fixed;left:10px;right:10px;bottom:calc(76px + var(--safe-b));z-index:15;background:#0b0e0c;box-shadow:0 0 0 2px var(--grass-d);border-radius:2px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+#listenBar .meter{flex:none;width:44px;height:10px;background:var(--panel2);position:relative}
+#listenBar .meter span{position:absolute;left:0;top:0;bottom:0;background:var(--grass);transition:width .15s}
+#listenBar .txt{flex:1;min-width:0;font-size:13px}
+.map-status{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);max-width:86%;background:rgba(20,25,21,.94);box-shadow:0 0 0 2px #0b0e0c;padding:12px 14px;border-radius:2px;font-size:13px;text-align:center;color:var(--muted);pointer-events:none}
 .slot.picked{box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff, 0 0 0 3px var(--grass)}
 .slot.picked::after{content:"";position:absolute;right:2px;top:2px;width:8px;height:8px;background:var(--grass);box-shadow:0 0 0 1px #0b0e0c}
 .slot.done{opacity:.4}
@@ -221,6 +226,7 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
         <div class="chips" id="mapChips"></div>
       </div>
       <div class="map-info" id="mapInfo"></div>
+      <div class="map-status hidden" id="mapStatus"></div>
       <div class="map-hint hidden" id="mapHint">Hold anywhere on the map to drop a waypoint</div>
       <div class="map-side">
         <button class="btn" id="layersBtn" aria-label="Markers" style="font-size:12px">◆</button>
@@ -265,6 +271,8 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">TPS (20 is perfect)</div><canvas class="chart" id="chartTps"></canvas></div>
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Memory used (MB)</div><canvas class="chart" id="chartMem"></canvas></div>
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Entities loaded</div><canvas class="chart" id="chartEnt"></canvas></div>
+        <h2 class="sec">Map</h2>
+        <div id="mapStats"></div>
         <h2 class="sec">Lag finder</h2>
         <div class="actions"><button class="btn gold" id="lagBtn" style="grid-column:1/-1">Find what's causing lag</button></div>
         <div id="lagOut"></div>
@@ -301,6 +309,7 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
   </nav>
 </div>
 
+<div id="listenBar" class="hidden"></div>
 <div id="scrim" class="hidden"></div>
 <div id="sheet" class="closed" role="dialog" aria-modal="true">
   <div class="sheet-head" id="sheetHead"></div>
@@ -662,7 +671,7 @@ function renderSheet() {
   const group = (title, buttons) => { const b = buttons.join(""); return b ? `<h2 class="sec">${title}</h2><div class="actions">${b}</div>` : ""; };
   html += group("Help them", [B_("heal", "heal", "Heal", "green"), B_("feed", "feed", "Feed", "green"), B_("give", "give", "Give items", "gold"),
       B_("package", "pkg", "Care package", "gold"), B_("clear_effects", "cleareff", "Clear effects")]);
-  html += group("Look", [B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
+  html += group("Look", [state.voice && canAll() ? B_("", "listen", "Listen to voice", "green") : "", B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
   html += `<div id="enderBox"></div>`;
   html += group("Move", [B_("", "map", "Show on map"), B_("tp_to_player", "tp", "Teleport"), B_("to_spawn", "spawn", "Send to spawn"), B_("waypoint_add", "wp", "Waypoint here")]);
   html += group("Manage", [B_("message", "msg", "Message"), B_("gamemode", "gm", "Gamemode"), B_("kick", "kick", "Kick", "red"), B_("ban", "ban", "Ban", "red"),
@@ -727,6 +736,7 @@ $("#sheet").addEventListener("click", async e => {
     case "dselall": document.querySelectorAll("#sheetBody [data-dslot]").forEach(el => { deathPick.add(+el.dataset.dslot); el.classList.add("picked"); }); updatePickButton(); break;
     case "dselnone": deathPick.clear(); document.querySelectorAll("#sheetBody [data-dslot].picked").forEach(el => el.classList.remove("picked")); updatePickButton(); break;
     case "ender": showEnder(name); break;
+    case "listen": closeSheet(); startListen(name); break;
     case "lrb": ledgerRollback(); break;
     case "pdeaths": closeSheet(); deathFilter = profileData.name; showView("deaths"); break;
     case "ptrail": pickTrail(profileData.name); break;
@@ -1566,6 +1576,13 @@ $("#adminBox").addEventListener("click", async e => {
 });
 function renderServerTab() {
   if (!state) return;
+  const m = state.map;
+  if (m) $("#mapStats").innerHTML = `<div class="stats">
+      <div class="stat"><div class="l">Map pieces drawn</div><div class="v">${m.tilesDrawn.toLocaleString()}</div></div>
+      <div class="stat"><div class="l">Empty pieces</div><div class="v">${m.emptyTiles.toLocaleString()}</div></div>
+      <div class="stat"><div class="l">From live chunks</div><div class="v">${m.liveChunks.toLocaleString()}</div></div>
+      <div class="stat"><div class="l">From saved world</div><div class="v">${m.savedChunks.toLocaleString()}</div></div>
+    </div>${m.lastError ? `<div class="note bad">Last map problem (${ago(m.lastErrorAt)}): ${esc(m.lastError)}</div>` : ""}`;
   renderSchedules();
   const rb = $("#restartBanner");
   if (state.restartAt) { rb.classList.remove("hidden"); rb.innerHTML = `<span>Restart countdown running: <b>${Math.max(0, Math.round((state.restartAt - Date.now()) / 1000))}s</b> left</span>`; }
@@ -1579,6 +1596,62 @@ function renderServerTab() {
     if (v?.name?.trim()) action({ action: "admin_name", name: v.name.trim() });
   };
   if (currentView === "server" && perfData) renderPerf();
+}
+
+/* ---------- voice listening (Simple Voice Chat) ---------- */
+let listen = null;
+async function startListen(name) {
+  stopListen();
+  let ctx;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+  } catch (e) { toast("Your phone blocked audio"); return; }
+  const gain = ctx.createGain(); gain.gain.value = 2.2; gain.connect(ctx.destination);
+  listen = { name, ctx, gain, pos: 0, nextTime: 0, timer: null, level: 0, heard: false };
+  renderListenBar(); pollAudio();
+}
+function stopListen() {
+  if (!listen) return;
+  clearTimeout(listen.timer);
+  try { listen.ctx.close(); } catch (e) {}
+  listen = null;
+  $("#listenBar").classList.add("hidden");
+}
+function renderListenBar() {
+  if (!listen) return;
+  const bar = $("#listenBar");
+  bar.innerHTML = `<div class="meter"><span id="lvl" style="width:0%"></span></div>
+    <div class="txt">Listening near <b>${esc(listen.name)}</b><div class="sub" id="lsub">Voices within 48 blocks of them. Turn off silent mode to hear it.</div></div>
+    <button class="btn small red" id="lstop">Stop</button>`;
+  bar.classList.remove("hidden");
+  $("#lstop").onclick = stopListen;
+}
+async function pollAudio() {
+  const L2 = listen; if (!L2) return;
+  try {
+    const res = await api(`/api/audio?player=${encodeURIComponent(L2.name)}&after=${L2.pos}`);
+    if (listen !== L2) return;
+    if (res.status === 409) { toast("Simple Voice Chat isn't running on the server"); stopListen(); return; }
+    if (res.status === 404) { toast(`${L2.name} went offline`); stopListen(); return; }
+    if (res.ok) {
+      const buf = await res.arrayBuffer();
+      const dv = new DataView(buf);
+      L2.pos = Number(dv.getBigInt64(0, true));
+      const n = (buf.byteLength - 8) >> 1;
+      if (n > 0) {
+        const ab = L2.ctx.createBuffer(1, n, 16000), ch = ab.getChannelData(0);
+        let peak = 0;
+        for (let i = 0; i < n; i++) { const v = dv.getInt16(8 + i * 2, true) / 32768; ch[i] = v; if (Math.abs(v) > peak) peak = Math.abs(v); }
+        const src = L2.ctx.createBufferSource(); src.buffer = ab; src.connect(L2.gain);
+        if (L2.nextTime - L2.ctx.currentTime > 1.5 || L2.nextTime < L2.ctx.currentTime) L2.nextTime = L2.ctx.currentTime + 0.15;
+        src.start(L2.nextTime); L2.nextTime += ab.duration;
+        const lvl = $("#lvl"); if (lvl) lvl.style.width = Math.min(100, peak * 250) + "%";
+        if (peak > 0.02 && !L2.heard) { L2.heard = true; const sub = $("#lsub"); if (sub) sub.textContent = "Someone's talking"; }
+      }
+    }
+  } catch (e) {}
+  if (listen === L2) L2.timer = setTimeout(pollAudio, 250);
 }
 
 /* ---------- modal + toast ---------- */
@@ -1723,9 +1796,12 @@ function drawMap() {
   const order = [];
   for (let tx = tx0; tx <= tx1; tx++) for (let tz = tz0; tz <= tz1; tz++) order.push([tx, tz, Math.abs(tx - ctx_) + Math.abs(tz - ctz)]);
   order.sort((a, b) => a[2] - b[2]);
+  let drawnTiles = 0, waiting = 0;
   for (const [tx, tz] of order) {
     const t = wantTile(tx, tz);
+    if (!t.bmp && (t.loading || t.at === 0)) waiting++;
     if (t.bmp) {
+      drawnTiles++;
       const x = Math.floor((tx * TILE - left) * s), y = Math.floor((tz * TILE - top) * s);
       const size = Math.ceil(TILE * s) + 1;
       ctx.drawImage(t.bmp, x, y, size, size);
@@ -1844,6 +1920,13 @@ function drawMap() {
     }
   }
 
+  const ms = $("#mapStatus");
+  if (drawnTiles === 0 && state) {
+    const m = state.map || {};
+    ms.textContent = m.lastError && Date.now() - m.lastErrorAt < 120000 ? `Map problem: ${m.lastError}`
+      : waiting ? "Loading the map…" : "Nothing explored here. Tap Spawn above, or zoom out to find explored land.";
+    ms.classList.remove("hidden");
+  } else ms.classList.add("hidden");
   const others = state ? state.players.filter(p => p.dim !== view.dim).length : 0;
   $("#mapInfo").innerHTML = `<b>X</b> ${Math.round(view.cx)} <b>Z</b> ${Math.round(view.cz)}${follow ? ` · following ${esc(follow)}` : ""}${others ? ` · ${others} elsewhere` : ""}`;
 }
