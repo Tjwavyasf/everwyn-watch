@@ -18,6 +18,15 @@ A server-side Fabric 1.20.1 mod that runs a small web app you can open on your p
 - **Death vault** – every death's full inventory is backed up the moment it happens, before YIGD makes a grave. Open the Deaths tab, pick a death, and give everything back into the same slots, even if the grave is long gone. If a YIGD grave is still there, the app warns you so players don't get double items.
 - **Push notifications** – tap the bell, install the free ntfy app, paste your topic, and get alerts when people join (plus optional leave, death and challenge alerts).
 
+- **Grief investigation (Ledger)** – with the Ledger mod installed, hold a spot on the map → "Who changed this area?" to see who broke, placed or took what, filter by player and time, and undo it.
+- **Movement trails** – see where any player has been over the last 1, 6 or 24 hours as a line on the map.
+- **Helper logins** – give helpers their own password (helper, admin or viewer). Every action is written to the activity log with who did it.
+- **Lag monitor** – TPS, memory and entity charts, a lag finder that shows the busiest chunks (with buttons to clear dropped items or hostile mobs), and alerts when the server lags, starts, stops or crashes.
+- **Leaderboards** – playtime, kills, deaths, blocks mined, distance, plus every scoreboard (RPG levels), all time or this week. Optional public page at `/board` to share.
+- **Scheduled events** – automatic mob waves, care package drops, chat announcements and restart warnings on set days and times. (For the actual restart, add a matching Restart schedule in Bisect's Schedules tab.)
+- **Offline players** – look up anyone who's ever joined: their inventory, ender chest, stats and where they logged out.
+- **Discord** – paste a channel webhook in the bell menu to post chat, joins, deaths, challenges and server status to Discord.
+
 Waypoints and deaths are saved in `config/everwyn-watch-markers.json`; placed challenges in `config/everwyn-watch-challenges.json`. Saved map images live in your world folder under `everwyn-watch/tiles`.
 
 If a shared waypoint lands in the wrong world on players' Xaero's maps, set `"xaeroUnderscoreFormat": false` in the config and restart.

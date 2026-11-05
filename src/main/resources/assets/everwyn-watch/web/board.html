@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#141915">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
+<title>Leaderboard</title>
+<style>
+:root{--bg:#141915;--panel:#1c231e;--panel2:#232c26;--line:#2f3b33;--text:#e6ebe3;--muted:#8e9b91;--grass:#5caa4a;--grass-d:#3f7d33;--pix:'Silkscreen',ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:24px 16px 40px}
+h1{font-family:var(--pix);font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+h1 img{width:40px;height:40px;image-rendering:pixelated;box-shadow:0 0 0 2px #0b0e0c}
+.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tab{font-family:var(--pix);font-size:11px;padding:8px 10px;background:var(--panel);border:0;color:var(--text);box-shadow:0 0 0 2px #0b0e0c;border-radius:2px;cursor:pointer}
+.tab.on{background:var(--grass-d)}
+.card{background:var(--panel);box-shadow:0 0 0 2px #0b0e0c;border-radius:2px;padding:6px 14px;margin-top:12px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.rank{font-family:var(--pix);width:28px;text-align:center;color:var(--muted)}
+.r1{color:#ffd54a}.r2{color:#cfd8dc}.r3{color:#d7955b}
+.face{width:36px;height:36px;position:relative;flex:none;display:grid;place-items:center;font-family:var(--pix);color:#0b0e0c;box-shadow:0 0 0 2px #0b0e0c}
+.face img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.val{font-family:var(--pix);font-size:13px}
+.empty{color:var(--muted);text-align:center;padding:30px;font-family:var(--pix);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><img src="/icon-192.png" alt=""><span id="title">Leaderboard</span></h1>
+  <div class="sub" id="sub">Loading…</div>
+  <div class="tabs" id="cats"></div>
+  <div class="tabs" id="period"></div>
+  <div class="card" id="list"></div>
+</div>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let data = null, cat = "playtime", period = "all";
+function hue(s){ let h=0; for (const c of String(s)) h=(h*31+c.charCodeAt(0))|0; return Math.abs(h)%360; }
+function fmt(key, v) {
+  if (key === "playtime") { const m = Math.floor(v / 20 / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; }
+  if (key === "distance") return v >= 100000 ? (v / 100000).toFixed(1) + " km" : Math.round(v / 100) + " m";
+  return Number(v).toLocaleString();
+}
+function render() {
+  const cats = data.categories.filter(c => data.players.some(p => (p.all[c.key] || 0) !== 0));
+  if (!cats.find(c => c.key === cat) && cats.length) cat = cats[0].key;
+  $("#cats").innerHTML = cats.map(c => `<button class="tab ${c.key === cat ? "on" : ""}" data-c="${esc(c.key)}">${esc(c.name)}</button>`).join("");
+  $("#period").innerHTML = [["all", "All time"], ["week", "This week"]].map(([k, l]) => `<button class="tab ${period === k ? "on" : ""}" data-p="${k}">${l}</button>`).join("");
+  const rows = data.players.map(p => ({ p, v: p[period][cat] || 0 })).filter(r => r.v > 0).sort((a, b) => b.v - a.v).slice(0, 25);
+  $("#list").innerHTML = rows.length ? rows.map((r, i) => `<div class="row"><span class="rank r${i + 1}">${i + 1}</span>
+    <div class="face" style="background:hsl(${hue(r.p.name)} 70% 62%)">${esc(r.p.name[0].toUpperCase())}<img src="/face?u=${encodeURIComponent(r.p.uuid)}" alt="" onerror="this.remove()"></div>
+    <span class="name">${esc(r.p.name)}</span><span class="val">${fmt(cat, r.v)}</span></div>`).join("") : `<div class="empty">Nothing here yet</div>`;
+}
+document.addEventListener("click", e => {
+  const c = e.target.closest("[data-c]"), p = e.target.closest("[data-p]");
+  if (c) { cat = c.dataset.c; render(); }
+  if (p) { period = p.dataset.p; render(); }
+});
+fetch("/board.json").then(r => r.json()).then(d => {
+  data = d;
+  $("#title").textContent = (d.serverName || "Server") + " leaderboard";
+  document.title = (d.serverName || "Server") + " leaderboard";
+  $("#sub").textContent = `${d.players.length} players · updates every minute`;
+  render();
+}).catch(() => { $("#sub").textContent = "Couldn't load the leaderboard."; });
+</script>
+</body>
+</html>

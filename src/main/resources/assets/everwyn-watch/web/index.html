@@ -159,6 +159,17 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 .topic input{flex:1;min-width:0;font-family:var(--pix);font-size:12px}
 ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{margin:6px 0}
 .btn[disabled]{opacity:.45;pointer-events:none}
+.i-server{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h1V3h1v3h1V1h1v5h1V2h1v4h1V0h1v8H0z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h1V3h1v3h1V1h1v5h1V2h1v4h1V0h1v8H0z'/%3E%3C/svg%3E")}
+nav button{font-size:10px}
+canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
+.rank{font-family:var(--pix);font-size:13px;width:26px;text-align:center;color:var(--muted);flex:none}
+.rank.r1{color:#ffd54a} .rank.r2{color:#cfd8dc} .rank.r3{color:#d7955b}
+.val{font-family:var(--pix);font-size:12px;text-align:right;flex:none}
+.lrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.lrow .slot{width:36px;flex:none}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.days label{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--pix);font-size:10px;background:var(--panel2);padding:6px 0;border-radius:2px}
+.tokenbox{font-family:var(--pix);font-size:13px;word-break:break-all;background:#0f1310;padding:10px;border-radius:2px;box-shadow:inset 0 0 0 2px var(--gold)}
 #builder{position:fixed;inset:0;z-index:30;background:var(--panel);display:flex;flex-direction:column;padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
 #builder .sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .bfoot{padding:10px 14px;border-top:2px solid #0b0e0c}
@@ -226,10 +237,11 @@ ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{marg
         <div id="waypointList"></div>
         <h2 class="sec">Challenges</h2>
         <div id="challengeList"></div>
-        <h2 class="sec">Worlds</h2>
-        <div id="worldList"></div>
-        <h2 class="sec">Banned players</h2>
-        <div id="banList"></div>
+        <h2 class="sec">Leaderboard</h2>
+        <div id="boardBox"><div class="card sub">Loading…</div></div>
+        <h2 class="sec">Look up any player</h2>
+        <input class="bfield" id="playerSearch" type="search" placeholder="Type a name (online or offline)…" autocomplete="off">
+        <div id="playerResults" style="margin-top:8px"></div>
       </div>
     </section>
 
@@ -239,6 +251,30 @@ ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{marg
         <input class="bfield" id="deathSearch" type="search" placeholder="Search by player or what killed them…" autocomplete="off">
         <div class="filters" id="deathFilters" style="margin-top:8px"></div>
         <div id="deathList" style="margin-top:6px"></div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-server">
+      <div class="wrap">
+        <div class="card banner hidden" id="restartBanner"></div>
+        <div class="stats" id="perfNow"></div>
+        <div class="filters" id="perfRange" style="margin-top:10px"></div>
+        <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">TPS (20 is perfect)</div><canvas class="chart" id="chartTps"></canvas></div>
+        <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Memory used (MB)</div><canvas class="chart" id="chartMem"></canvas></div>
+        <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Entities loaded</div><canvas class="chart" id="chartEnt"></canvas></div>
+        <h2 class="sec">Lag finder</h2>
+        <div class="actions"><button class="btn gold" id="lagBtn" style="grid-column:1/-1">Find what's causing lag</button></div>
+        <div id="lagOut"></div>
+        <h2 class="sec">Scheduled events</h2>
+        <div id="schedList"></div>
+        <div class="actions" id="schedAdd"></div>
+        <h2 class="sec">Worlds</h2>
+        <div id="worldList"></div>
+        <h2 class="sec">Banned players</h2>
+        <div id="banList"></div>
+        <div id="adminBox"></div>
+        <h2 class="sec">This login</h2>
+        <div class="card banner" id="meCard"></div>
       </div>
     </section>
 
@@ -257,6 +293,7 @@ ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{marg
     <button data-view="map" class="on"><span class="ico i-map"></span>Map</button>
     <button data-view="players"><span class="ico i-ppl"></span>Players</button>
     <button data-view="deaths"><span class="ico i-skull"></span>Deaths</button>
+    <button data-view="server"><span class="ico i-server"></span>Server</button>
     <button data-view="feed"><span class="ico i-feed"></span>Feed</button>
   </nav>
 </div>
@@ -288,6 +325,10 @@ const store = {
   del(k){ try { localStorage.removeItem(k); } catch(e){} }
 };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/** What this login is allowed to do (owner/admin: everything; helper: a few things; viewer: nothing). */
+const canDo = a => !!(state?.adminActions && state?.me && (state.me.can.includes("*") || state.me.can.includes(a)));
+const canAll = () => canDo("*") && state.me.can.includes("*");
+const isStaff = () => !!(state?.me && state.me.role !== "viewer");
 const DIM_NAMES = {"minecraft:overworld":"Overworld","minecraft:the_nether":"Nether","minecraft:the_end":"The End"};
 const dimName = id => DIM_NAMES[id] || (id.split(":")[1] || id).replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
 function hashHue(s){ let h=0; for (const c of String(s)) h = (h*31 + c.charCodeAt(0)) | 0; return Math.abs(h) % 360; }
@@ -311,7 +352,7 @@ let TOKEN = store.get("ew_token") || "";
 let state = null, online = true;
 let lastEvent = 0, events = [], feedFilter = "all";
 let currentView = "map";
-let sheetPlayer = null;
+let sheetPlayer = null, sheetMode = null;
 
 /* ---------- api ---------- */
 async function api(path, opts = {}) {
@@ -327,7 +368,7 @@ async function action(body) {
     const data = await res.json();
     toast(data.ok ? data.message : (data.error || "Something went wrong"));
     if (data.ok) setTimeout(pollEventsOnce, 300);
-    return data.ok;
+    return data.ok ? data : false;
   } catch (e) { if (e.message !== "auth") toast("Couldn't reach the server"); return false; }
 }
 
@@ -387,9 +428,10 @@ function onState() {
   $("#onlinePill").textContent = `${state.players.length}/${state.maxPlayers} online`;
   const tps = state.tps ?? 20, col = tps >= 19 ? "var(--grass)" : tps >= 15 ? "var(--gold)" : "var(--red)";
   $("#tpsPill").innerHTML = `<span class="dot" style="background:${col}"></span>${tps.toFixed(1)} TPS`;
-  $("#sayForm").classList.toggle("hidden", !state.adminActions);
-  renderDims(); renderChips(); renderPlayers(); renderChallenges();
-  if (state.adminActions && !store.get("ew_hint")) {
+  $("#sayForm").classList.toggle("hidden", !canDo("broadcast"));
+  renderDims(); renderChips(); renderPlayers(); renderChallenges(); renderServerTab();
+  if (currentView === "server" && lastPub !== state.publicLeaderboard) { lastPub = state.publicLeaderboard; renderAdminBox(); }
+  if (isStaff() && !store.get("ew_hint")) {
     store.set("ew_hint", "1"); $("#mapHint").classList.remove("hidden");
     setTimeout(() => $("#mapHint").classList.add("hidden"), 6000);
   }
@@ -407,6 +449,8 @@ function showView(v) {
   document.querySelectorAll("section.view").forEach(s => s.classList.toggle("hidden", s.id !== "view-" + v));
   if (v === "map") resizeMap();
   if (v === "deaths") loadDeaths();
+  if (v === "players") loadBoard();
+  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); }
 }
 $("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
 
@@ -443,7 +487,7 @@ function renderPlayers() {
     const t = w.timeOfDay, night = t > 13000 && t < 23000;
     const wx = w.thundering ? "Storm" : w.raining ? "Rain" : "Clear";
     return `<div class="card prow" data-world="${esc(w.id)}"><div class="pmain"><div class="pname">${esc(dimName(w.id))}</div>
-      <div class="sub">${w.players} player${w.players === 1 ? "" : "s"} · ${night ? "Night" : "Day"} · ${wx}</div></div>${state.adminActions ? '<span class="tag">Change</span>' : ""}</div>`;
+      <div class="sub">${w.players} player${w.players === 1 ? "" : "s"} · ${night ? "Night" : "Day"} · ${wx}</div></div>${canAll() ? '<span class="tag">Change</span>' : ""}</div>`;
   }).join("");
   const bans = state.bans || [];
   $("#banList").innerHTML = bans.length ? bans.map(b => `
@@ -451,7 +495,7 @@ function renderPlayers() {
       ${avatar(b.name, 40)}
       <div class="pmain"><div class="pname">${esc(b.name)}</div>
         <div class="sub">${esc(b.reason || "No reason")} · ${b.expires ? "until " + new Date(b.expires).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "forever"}</div></div>
-      ${state.adminActions ? `<button class="btn small" data-unban="${esc(b.name)}">Unban</button>` : ""}
+      ${canAll() ? `<button class="btn small" data-unban="${esc(b.name)}">Unban</button>` : ""}
     </div>`).join("") : `<div class="card sub">Nobody is banned.</div>`;
 }
 $("#playerList").addEventListener("click", e => { const c = e.target.closest("[data-player]"); if (c) openSheet(c.dataset.player); });
@@ -461,7 +505,7 @@ $("#banList").addEventListener("click", async e => {
     action({ action: "unban", player: b.dataset.unban });
 });
 $("#worldList").addEventListener("click", async e => {
-  const c = e.target.closest("[data-world]"); if (!c || !state.adminActions) return;
+  const c = e.target.closest("[data-world]"); if (!c || !canAll()) return;
   const k = await choose("Time & weather", "Changes the whole server.", [
     { key: "t:day", label: "Morning" }, { key: "t:noon", label: "Noon" }, { key: "t:night", label: "Night" },
     { key: "w:clear", label: "Clear weather", cls: "green" }, { key: "w:rain", label: "Rain" }, { key: "w:thunder", label: "Thunderstorm" }]);
@@ -476,7 +520,7 @@ $("#waypointList").addEventListener("click", e => {
 
 /* ---------- waypoints + deaths ---------- */
 async function addWaypoint(dim, x, y, z, suggested) {
-  if (!state?.adminActions) { toast("Admin actions are turned off in the config"); return; }
+  if (!canDo("waypoint_add")) { toast("Your login can't add waypoints"); return; }
   const v = await ask(`New waypoint · ${dimName(dim)} ${x}, ${z}`, [
     { name: "name", label: "Name", value: suggested || "", placeholder: "Base, Portal, Village…" },
     { name: "y", label: "Y (height)", type: "number", value: y },
@@ -487,17 +531,19 @@ async function addWaypoint(dim, x, y, z, suggested) {
 }
 async function waypointMenu(w) {
   const buttons = [{ key: "map", label: "Show on map" }];
-  if (state.adminActions) {
-    if (state.players.length) {
-      buttons.push({ key: "all", label: "Send to everyone's Xaero's", cls: "green" });
-      buttons.push({ key: "one", label: "Send to one player" });
-    }
+  if (canDo("waypoint_share") && state.players.length) {
+    buttons.push({ key: "all", label: "Send to everyone's Xaero's", cls: "green" });
+    buttons.push({ key: "one", label: "Send to one player" });
+  }
+  if (isStaff()) buttons.push({ key: "ledger", label: "Who changed this area? (Ledger)" });
+  if (canAll()) {
     buttons.push({ key: "pkg", label: "Drop care package here" });
     buttons.push({ key: "wave", label: "Mob wave challenge here" });
     buttons.push({ key: "del", label: "Delete", cls: "red" });
   }
   const k = await choose(w.name, `${dimName(w.dim)} · ${w.x}, ${w.y}, ${w.z}`, buttons);
   if (k === "map") goTo(w.dim, w.x + .5, w.z + .5);
+  else if (k === "ledger") openLedger(w.dim, w.x, w.y, w.z);
   else if (k === "pkg") openBuilder("package", { name: w.name, dim: w.dim, x: w.x, y: w.y, z: w.z });
   else if (k === "wave") openBuilder("wave", { name: w.name, dim: w.dim, x: w.x, y: w.y, z: w.z });
   else if (k === "all") action({ action: "waypoint_share", id: w.id, to: "all" });
@@ -511,7 +557,7 @@ async function waypointMenu(w) {
 }
 async function deathMenu(d) {
   const buttons = [{ key: "map", label: "Show on map" }];
-  if (state.adminActions) buttons.push({ key: "save", label: "Save as waypoint", cls: "green" });
+  if (canDo("waypoint_add")) buttons.push({ key: "save", label: "Save as waypoint", cls: "green" });
   const k = await choose(`${d.player}'s last death`, `${d.message}\n${dimName(d.dim)} · ${d.x}, ${d.y}, ${d.z} · ${ago(d.time)}`, buttons);
   if (k === "map") goTo(d.dim, d.x + .5, d.z + .5);
   else if (k === "save") addWaypoint(d.dim, d.x, d.y, d.z, `${d.player} death`);
@@ -550,11 +596,11 @@ $("#sayForm").addEventListener("submit", async e => {
 
 /* ---------- player sheet ---------- */
 function openSheet(name) {
-  sheetPlayer = name; renderSheet();
+  sheetPlayer = name; sheetMode = "player"; enderFor = null; renderSheet();
   $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
 }
 function closeSheet() {
-  sheetPlayer = null;
+  sheetPlayer = null; sheetMode = null;
   $("#scrim").classList.add("hidden"); $("#sheet").classList.add("closed");
 }
 $("#scrim").addEventListener("click", closeSheet);
@@ -608,40 +654,33 @@ function renderSheet() {
     html += `<h2 class="sec">Inventory</h2><div class="inv">${inv.main.slice(9, 36).map(it => slotHtml(it)).join("")}</div>`;
     html += `<div class="inv" style="margin-top:8px">${inv.main.slice(0, 9).map((it, i) => slotHtml(it, i, i === inv.selected)).join("")}</div>`;
   }
-  if (state.adminActions) {
-    html += `<h2 class="sec">Help them</h2><div class="actions">
-        <button class="btn green" data-a="heal">Heal</button>
-        <button class="btn green" data-a="feed">Feed</button>
-        <button class="btn gold" data-a="give">Give items</button>
-        <button class="btn gold" data-a="pkg">Care package</button>
-        <button class="btn" data-a="cleareff">Clear effects</button>
-        <button class="btn" data-a="deaths">Their deaths</button>
-      </div>
-      <h2 class="sec">Move</h2><div class="actions">
-        <button class="btn" data-a="map">Show on map</button>
-        <button class="btn" data-a="tp">Teleport</button>
-        <button class="btn" data-a="spawn">Send to spawn</button>
-        <button class="btn" data-a="wp">Waypoint here</button>
-      </div>
-      <h2 class="sec">Manage</h2><div class="actions">
-        <button class="btn" data-a="msg">Message</button>
-        <button class="btn" data-a="gm">Gamemode</button>
-        <button class="btn red" data-a="kick">Kick</button>
-        <button class="btn red" data-a="ban">Ban</button>
-        <button class="btn red" data-a="kill">Kill</button>
-        <button class="btn red" data-a="smite">Smite</button>
-        <button class="btn red" data-a="clearinv" style="grid-column:1/-1">Clear inventory</button>
-      </div>`;
-  } else {
-    html += `<h2 class="sec">Actions</h2><div class="actions"><button class="btn" data-a="map">Show on map</button><button class="btn" data-a="deaths">Their deaths</button></div>`;
-  }
+  // only the buttons this login is allowed to use
+  const B_ = (perm, a, label, cls = "") => perm === "" || canDo(perm) ? `<button class="btn ${cls}" data-a="${a}">${label}</button>` : "";
+  const group = (title, buttons) => { const b = buttons.join(""); return b ? `<h2 class="sec">${title}</h2><div class="actions">${b}</div>` : ""; };
+  html += group("Help them", [B_("heal", "heal", "Heal", "green"), B_("feed", "feed", "Feed", "green"), B_("give", "give", "Give items", "gold"),
+      B_("package", "pkg", "Care package", "gold"), B_("clear_effects", "cleareff", "Clear effects")]);
+  html += group("Look", [B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
+  html += `<div id="enderBox"></div>`;
+  html += group("Move", [B_("", "map", "Show on map"), B_("tp_to_player", "tp", "Teleport"), B_("to_spawn", "spawn", "Send to spawn"), B_("waypoint_add", "wp", "Waypoint here")]);
+  html += group("Manage", [B_("message", "msg", "Message"), B_("gamemode", "gm", "Gamemode"), B_("kick", "kick", "Kick", "red"), B_("ban", "ban", "Ban", "red"),
+      B_("kill", "kill", "Kill", "red"), B_("smite", "smite", "Smite", "red")]);
+  if (canDo("clear_inventory")) html += `<div class="actions" style="margin-top:10px"><button class="btn red" data-a="clearinv" style="grid-column:1/-1">Clear inventory</button></div>`;
+  const keepEnder = $("#enderBox")?.innerHTML || "";
   $("#sheetBody").innerHTML = html;
+  if (keepEnder && enderFor === sheetPlayer) $("#enderBox").innerHTML = keepEnder;
   $("#sheetBody").scrollTop = keepScroll;
 }
 
 $("#sheet").addEventListener("change", e => {
-  const t = e.target.closest("[data-nkey]"); if (!t) return;
-  action({ action: "notify_settings", [t.dataset.nkey]: t.checked });
+  const t = e.target.closest("[data-nkey]"), d = e.target.closest("[data-dkey]");
+  if (t) action({ action: "notify_settings", [t.dataset.nkey]: t.checked });
+  if (d) action({ action: "discord_settings", [d.dataset.dkey]: d.checked });
+});
+$("#sheet").addEventListener("click", e => {
+  const lr = e.target.closest("[data-lr]"), lh = e.target.closest("[data-lh]"), lp = e.target.closest("[data-lp]");
+  if (lr && L) { L.radius = +lr.dataset.lr; loadLedger(); }
+  if (lh && L) { L.hours = +lh.dataset.lh; loadLedger(); }
+  if (lp && L) { L.player = lp.dataset.lp || null; loadLedger(); }
 });
 $("#sheet").addEventListener("click", async e => {
   const slot = e.target.closest("[data-item]");
@@ -673,6 +712,29 @@ $("#sheet").addEventListener("click", async e => {
       break;
     }
     case "drestore": restoreDeath(); break;
+    case "ender": showEnder(name); break;
+    case "lrb": ledgerRollback(); break;
+    case "pdeaths": closeSheet(); deathFilter = profileData.name; showView("deaths"); break;
+    case "ptrail": pickTrail(profileData.name); break;
+    case "pmap": { const d = profileData.d; goTo(d.dim, d.x + .5, d.z + .5); break; }
+    case "pledger": { const d = profileData.d; openLedger(d?.dim || "minecraft:overworld", d?.x || 0, d?.y || 64, d?.z || 0, profileData.name); break; }
+    case "punban": action({ action: "unban", player: profileData.name }); closeSheet(); break;
+    case "pban": {
+      const v = await ask(`Ban ${profileData.name}`, [
+        { name: "text", label: "Reason (they'll see this)", value: "Breaking the rules" },
+        { name: "hours", label: "How long", type: "select", value: "0", options: [["1", "1 hour"], ["24", "1 day"], ["168", "1 week"], ["720", "30 days"], ["0", "Forever"]] },
+      ], "Ban", true);
+      if (v) { action({ action: "ban", player: profileData.name, text: v.text, hours: +v.hours }); closeSheet(); }
+      break;
+    }
+    case "dsave": {
+      const url = $("#hookIn").value.trim();
+      if (await action({ action: "discord_settings", webhook: url })) $("#hookIn").value = "";
+      break;
+    }
+    case "dtest": action({ action: "discord_test" }); break;
+    case "trail": pickTrail(name); break;
+    case "ledgerp": if (p) openLedger(p.dim, Math.floor(p.x), Math.floor(p.y), Math.floor(p.z), name); break;
     case "dmap": if (openDeathData) { const d = openDeathData; goTo(d.dim, d.x + .5, d.z + .5); } break;
     case "dwp": if (openDeathData) { const d = openDeathData; closeSheet(); addWaypoint(d.dim, d.x, d.y, d.z, `${d.player} death`); } break;
     case "ntest": action({ action: "notify_test" }); break;
@@ -752,12 +814,12 @@ const mobName = id => catalog?.mobById.get(id)?.name || id;
 
 /* ---------- care package + wave builder ---------- */
 const B = {};
-async function openBuilder(kind, place) {
-  if (!state?.adminActions) { toast("Admin actions are turned off in the config"); return; }
+async function openBuilder(kind, place, scheduleMode = false) {
+  if (!canAll()) { toast("Your login can't do that"); return; }
   try { await loadCatalog(); }
   catch (e) { if (e.message !== "auth") toast("Couldn't load the item list"); return; }
   Object.assign(B, {
-    kind, place, chest: [], waves: [[]], waveTab: 0, query: "", shown: 135, maxStacks: kind === "give" ? 36 : 27,
+    kind, place, scheduleMode, chest: [], waves: [[]], waveTab: 0, query: "", shown: 135, maxStacks: kind === "give" ? 36 : 27,
     name: kind === "wave" ? (place.name ? place.name + " Challenge" : "Mob wave") : (place.name || "Care package"),
     timeLimit: 10, announce: true, share: true,
   });
@@ -765,7 +827,7 @@ async function openBuilder(kind, place) {
   $("#builder").classList.remove("hidden");
   $("#bTitle").textContent = kind === "wave" ? "Mob wave challenge" : kind === "give" ? `Give items to ${place.player}` : "Care package";
   $("#bSub").textContent = kind === "give" ? "Goes straight into their inventory. Extras drop at their feet." : `${dimName(place.dim)} · ${place.x}, ${place.y}, ${place.z}`;
-  $("#bGo").textContent = kind === "wave" ? "Place challenge" : kind === "give" ? "Give items" : "Drop care package";
+  $("#bGo").textContent = scheduleMode ? "Choose days & time…" : kind === "wave" ? "Place challenge" : kind === "give" ? "Give items" : "Drop care package";
   renderBuilder();
   $("#bBody").scrollTop = 0;
 }
@@ -885,7 +947,15 @@ $("#bGo").addEventListener("click", async () => {
   const p = B.place;
   if (!B.chest.length) { toast(B.kind === "wave" ? "Add at least one loot item" : "Add at least one item"); return; }
   let ok;
-  if (B.kind === "give") {
+  if (B.scheduleMode) {
+    if (B.kind === "wave") { const empty = B.waves.findIndex(w => !w.length); if (empty >= 0) { toast(`Wave ${empty + 1} has no mobs`); return; } }
+    const v = await askSchedule(B.kind === "wave" ? "When should the wave appear?" : "When should it drop?", { name: B.name });
+    if (!v) return;
+    const payload = B.kind === "wave"
+      ? { name: B.name, dim: p.dim, x: p.x, y: p.y, z: p.z, waves: B.waves, loot: B.chest, timeLimit: B.timeLimit, announce: B.announce, share: B.share }
+      : { name: B.name, dim: p.dim, x: p.x, y: p.y, z: p.z, items: B.chest, announce: B.announce, share: B.share };
+    ok = await action({ action: "schedule_add", type: B.kind, ...v, name: v.name || B.name, payload });
+  } else if (B.kind === "give") {
     ok = await action({ action: "give", player: p.player, items: B.chest });
   } else if (B.kind === "wave") {
     const empty = B.waves.findIndex(w => !w.length);
@@ -907,7 +977,7 @@ function challengeStatus(c) {
 }
 async function challengeMenu(c) {
   const buttons = [{ key: "map", label: "Show on map" }];
-  if (state.adminActions) buttons.push({ key: "cancel", label: c.state === "active" ? "Stop it now" : "Remove challenge", cls: "red" });
+  if (canAll()) buttons.push({ key: "cancel", label: c.state === "active" ? "Stop it now" : "Remove challenge", cls: "red" });
   const k = await choose(c.name, `${dimName(c.dim)} · ${c.x}, ${c.y}, ${c.z}\n${challengeStatus(c)}`, buttons);
   if (k === "map") goTo(c.dim, c.x + .5, c.z + .5, 1);
   else if (k === "cancel") action({ action: "wave_cancel", id: c.id });
@@ -967,7 +1037,7 @@ async function openDeath(id) {
     d = await res.json();
     if (!res.ok) { toast(d.error || "Couldn't load that death"); return; }
   } catch (e) { if (e.message !== "auth") toast("Couldn't reach the server"); return; }
-  openDeathData = d; sheetPlayer = null;
+  openDeathData = d; sheetPlayer = null; sheetMode = "death";
   const when = new Date(d.time);
   $("#sheetHead").innerHTML = `${avatar(d.player, 44, d.uuid)}
     <div class="pmain"><div class="pname">${esc(d.player)}'s death</div><div class="sub">${ago(d.time)} · ${when.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div></div>
@@ -992,13 +1062,13 @@ async function openDeath(id) {
   const extra = d.itemList.filter(it => it.slot > 40);
   if (extra.length) h += `<div class="inv" style="margin-top:8px">${extra.map(it => slotHtml(it)).join("")}</div>`;
   h += `<h2 class="sec">Give it back</h2>`;
-  if (state.adminActions) {
+  if (canAll()) {
     h += d.online ? `<label class="check"><input type="checkbox" id="dXp" checked> Also give back their XP (level ${d.xp})</label>
         <p class="hint">Items go back into the same slots. Anything they're holding in those slots now gets moved aside, not deleted.</p>`
       : `<div class="note">${esc(d.player)} is offline. They need to be online to get their items back.</div>`;
     h += `<div class="actions"><button class="btn green" data-a="drestore" style="grid-column:1/-1"${d.online && d.items ? "" : " disabled"}>Give items back to ${esc(d.player)}</button>`;
   } else h += `<div class="actions">`;
-  h += `<button class="btn" data-a="dmap">Show on map</button>${state.adminActions ? `<button class="btn" data-a="dwp">Save as waypoint</button>` : ""}</div>`;
+  h += `<button class="btn" data-a="dmap">Show on map</button>${canDo("waypoint_add") ? `<button class="btn" data-a="dwp">Save as waypoint</button>` : ""}</div>`;
   $("#sheetBody").innerHTML = h; $("#sheetBody").scrollTop = 0;
   $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
 }
@@ -1014,10 +1084,11 @@ async function restoreDeath() {
 $("#bellBtn").addEventListener("click", openSettings);
 function openSettings() {
   const n = state?.notify; if (!n) return;
-  sheetPlayer = null; openDeathData = null;
+  sheetPlayer = null; openDeathData = null; sheetMode = "settings";
   $("#sheetHead").innerHTML = `<div class="pmain"><div class="pname">Notifications</div><div class="sub">Get a phone alert when things happen</div></div>
     <button class="btn small" data-a="close">Close</button>`;
-  const t = (key, label, val) => `<label class="check"><input type="checkbox" data-nkey="${key}"${val ? " checked" : ""}${state.adminActions ? "" : " disabled"}> ${label}</label>`;
+  const dt = (key, label, val) => `<label class="check"><input type="checkbox" data-dkey="${key}"${val ? " checked" : ""}${canAll() ? "" : " disabled"}> ${label}</label>`;
+  const t = (key, label, val) => `<label class="check"><input type="checkbox" data-nkey="${key}"${val ? " checked" : ""}${canAll() ? "" : " disabled"}> ${label}</label>`;
   $("#sheetBody").innerHTML = `
     <h2 class="sec" style="margin-top:4px">Set up (one time)</h2>
     <ol class="steps">
@@ -1034,9 +1105,430 @@ function openSettings() {
     ${t("firstJoin", "A brand-new player joins for the first time", n.firstJoin)}
     ${t("leave", "Someone leaves", n.leave)}
     ${t("death", "Someone dies", n.death)}
-    ${t("challenge", "A mob wave challenge is beaten or failed", n.challenge)}`;
+    ${t("challenge", "A mob wave challenge is beaten or failed", n.challenge)}
+    ${t("lag", "The server is lagging (TPS low for a minute)", n.lag)}
+    ${t("server", "The server starts, stops or crashes", n.server)}
+    <h2 class="sec">Discord</h2>
+    <p class="hint">Post chat and events to a Discord channel. In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL, then paste it here.</p>
+    <div class="topic"><input class="bfield" id="hookIn" placeholder="${state.discord?.set ? "Connected ✓ (paste a new link to change)" : "https://discord.com/api/webhooks/…"}"${canAll() ? "" : " disabled"}><button class="btn" data-a="dsave"${canAll() ? "" : " disabled"}>Save</button></div>
+    ${state.discord?.set ? `${dt("chat", "Chat messages", state.discord.chat)}${dt("joins", "Joins and leaves", state.discord.joins)}${dt("deaths", "Deaths", state.discord.deaths)}
+      ${dt("events", "Challenges and care packages", state.discord.events)}${dt("server", "Server online / offline / lag", state.discord.server)}
+      <div class="actions"><button class="btn" data-a="dtest" style="grid-column:1/-1">Send test message</button></div>` : ""}`;
   $("#sheetBody").scrollTop = 0;
   $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
+}
+
+/* ---------- shared bits ---------- */
+const prettyId = id => (String(id).split(":")[1] || String(id)).split(/[_/]/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+const nameOf = id => catalog?.byId.get(id)?.name || prettyId(id);
+const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return "UTC"; } };
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const time12 = t => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+function openPanel(head, body) {
+  $("#sheetHead").innerHTML = head + `<button class="btn small" data-a="close">Close</button>`;
+  $("#sheetBody").innerHTML = body; $("#sheetBody").scrollTop = 0;
+  $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
+}
+function invGrids(items, withGear = true) {
+  const slots = {};
+  for (const it of items || []) slots[it.slot] = it;
+  let h = withGear ? `<div class="equip">${[39, 38, 37, 36].map(i => slotHtml(slots[i])).join("")}<div style="width:12px"></div>${slotHtml(slots[40])}</div>` : "";
+  h += `<div class="inv">${Array.from({ length: 27 }, (_, i) => slotHtml(slots[i + 9])).join("")}</div>
+    <div class="inv" style="margin-top:8px">${Array.from({ length: 9 }, (_, i) => slotHtml(slots[i])).join("")}</div>`;
+  return h;
+}
+const enderGrid = items => { const slots = {}; for (const it of items || []) slots[it.slot] = it; return `<div class="inv">${Array.from({ length: 27 }, (_, i) => slotHtml(slots[i])).join("")}</div>`; };
+
+/* ---------- long-press on the map ---------- */
+async function mapSpotMenu(dim, x, y, z) {
+  const buttons = [];
+  if (canDo("waypoint_add")) buttons.push({ key: "wp", label: "Drop a waypoint here", cls: "green" });
+  if (isStaff()) buttons.push({ key: "ledger", label: "Who changed this area? (Ledger)" });
+  if (canAll()) { buttons.push({ key: "pkg", label: "Care package here" }); buttons.push({ key: "wave", label: "Mob wave challenge here" }); }
+  if (!buttons.length) return;
+  const k = await choose(`${dimName(dim)} · ${x}, ${z}`, "", buttons);
+  if (k === "wp") addWaypoint(dim, x, y, z, "");
+  else if (k === "ledger") openLedger(dim, x, y, z);
+  else if (k === "pkg") openBuilder("package", { name: "Care package", dim, x, y, z });
+  else if (k === "wave") openBuilder("wave", { name: "", dim, x, y, z });
+}
+
+/* ---------- Ledger: who changed this area ---------- */
+const LEDGER_VERBS = { "block-break": "broke", "block-place": "placed", "block-change": "changed", "item-insert": "put in", "item-remove": "took out",
+  "item-pick-up": "picked up", "item-drop": "dropped", "entity-kill": "killed", "entity-change": "changed", "entity-mount": "rode", "entity-dismount": "got off" };
+let L = null;
+function openLedger(dim, x, y, z, player = null) {
+  sheetPlayer = null; openDeathData = null;
+  sheetMode = "ledger";
+  L = { dim, x, y, z, radius: player ? 32 : 8, hours: 24, player, data: null };
+  renderLedger(); loadLedger();
+}
+async function loadLedger() {
+  if (state.ledger !== "ready") { L.data = { error: state.ledger || "missing" }; renderLedger(); return; }
+  L.data = null; renderLedger();
+  try {
+    const qs = new URLSearchParams({ dim: L.dim, x: L.x, z: L.z, radius: L.radius, hours: L.hours, limit: 200 });
+    if (L.player) qs.set("player", L.player);
+    const res = await api("/api/ledger?" + qs);
+    const d = await res.json();
+    L.data = res.ok ? d : { error: d.error || "Couldn't search Ledger" };
+  } catch (e) { L.data = { error: "Couldn't reach the server" }; }
+  renderLedger();
+}
+function renderLedger() {
+  if (sheetMode !== "ledger" || !L) return; // panel was closed
+  const d = L.data;
+  let b = `<div class="filters">${[5, 8, 16, 32].map(r => `<button class="chip ${L.radius === r ? "on" : ""}" data-lr="${r}">${r} blocks</button>`).join("")}</div>
+    <div class="filters" style="margin-top:6px">${[[1, "1 hour"], [6, "6 hours"], [24, "1 day"], [168, "1 week"], [0, "All time"]].map(([h, l]) =>
+      `<button class="chip ${L.hours === h ? "on" : ""}" data-lh="${h}">${l}</button>`).join("")}</div>`;
+  if (!d) b += `<div class="empty">Searching…</div>`;
+  else if (d.error === "missing") b += `<div class="note warn">Ledger isn't installed on the server. Add the <b>Ledger</b> mod (Fabric, 1.20.1) to the mods folder and it starts recording who breaks, places and takes what. Then this screen shows it.</div>`;
+  else if (d.error === "nodb") b += `<div class="note">Ledger is installed but hasn't recorded anything yet.</div>`;
+  else if (d.error) b += `<div class="note bad">${esc(d.error)}</div>`;
+  else {
+    const names = Object.entries(d.byPlayer || {}).sort((a, c) => c[1] - a[1]);
+    b += `<div class="filters" style="margin-top:6px"><button class="chip ${!L.player ? "on" : ""}" data-lp="">Everyone</button>${
+      (L.player && !names.find(n => n[0] === L.player) ? [[L.player, 0]] : []).concat(names).map(([n, c]) => `<button class="chip ${L.player === n ? "on" : ""}" data-lp="${esc(n)}">${esc(n)}${c ? " · " + c : ""}</button>`).join("")}</div>`;
+    if (!d.actions.length) b += `<div class="empty">No changes recorded here for that time</div>`;
+    else {
+      if (canAll()) b += `<div class="actions" style="margin:10px 0"><button class="btn red" data-a="lrb" style="grid-column:1/-1">Undo ${L.player ? esc(L.player) + "'s" : "these"} changes</button></div>`;
+      b += d.actions.map(a => {
+        const obj = a.object && !/:air$/.test(a.object) ? a.object : a.oldObject;
+        return `<div class="lrow"><div class="slot">${itemFace(obj)}</div><div class="pmain">
+          <div><b>${esc(a.who)}</b> ${esc(LEDGER_VERBS[a.action] || a.action)} ${esc(nameOf(obj))}${a.rolledBack ? ' <span class="tag">undone</span>' : ""}</div>
+          <div class="sub">${a.time ? ago(a.time) : ""} · ${a.x}, ${a.y}, ${a.z}</div></div></div>`;
+      }).join("");
+    }
+  }
+  openPanel(`<div class="pmain"><div class="pname">${L.player ? esc(L.player) + "'s changes" : "Who changed this?"}</div><div class="sub">${esc(dimName(L.dim))} · around ${L.x}, ${L.z}</div></div>`, b);
+}
+async function ledgerRollback() {
+  const hours = L.hours || 720;
+  const who = L.player ? `${L.player}'s` : "everyone's";
+  if (await choose("Undo changes?", `Puts back ${who} changes within ${L.radius} blocks from the last ${L.hours ? (L.hours >= 24 ? L.hours / 24 + " day(s)" : L.hours + " hour(s)") : "30 days"}. Broken blocks come back, placed blocks disappear, and stolen items go back in chests.`,
+    [{ key: "yes", label: "Undo", cls: "red" }]) !== "yes") return;
+  if (await action({ action: "ledger_rollback", dim: L.dim, x: L.x, y: L.y, z: L.z, radius: L.radius, hours, player: L.player || "" })) setTimeout(loadLedger, 4000);
+}
+
+/* ---------- movement trails ---------- */
+let trail = null;
+async function pickTrail(name) {
+  const k = await choose(`${name}'s trail`, "Where they've been. Trails are kept for 24 hours.", [{ key: "1", label: "Last hour" }, { key: "6", label: "Last 6 hours" }, { key: "24", label: "Last 24 hours" }]);
+  if (!k) return;
+  try {
+    const res = await api(`/api/trail?player=${encodeURIComponent(name)}&hours=${k}`);
+    const d = await res.json();
+    if (!d.points.length) { toast("No movement recorded for that time"); return; }
+    trail = { name, hours: +k, dims: d.dims, points: d.points };
+    const last = d.points[d.points.length - 1];
+    closeSheet(); follow = null; setDim(d.dims[last[1]]); view.cx = last[2]; view.cz = last[3];
+    showView("map"); renderChips(); drawMap();
+  } catch (e) {}
+}
+function drawTrail(left, top, s) {
+  if (!trail) return;
+  ctx.save();
+  ctx.strokeStyle = playerColor(trail.name); ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.globalAlpha = .9;
+  ctx.beginPath();
+  let prev = null, first = null, last = null;
+  for (const p of trail.points) {
+    const inDim = trail.dims[p[1]] === view.dim;
+    const x = (p[2] + .5 - left) * s, y = (p[3] + .5 - top) * s;
+    const jump = !prev || !inDim || trail.dims[prev[1]] !== view.dim || p[0] - prev[0] > 600 || Math.abs(p[2] - prev[2]) + Math.abs(p[3] - prev[3]) > 300;
+    if (inDim) { if (jump) ctx.moveTo(x, y); else ctx.lineTo(x, y); if (!first) first = [x, y]; last = [x, y]; }
+    prev = p;
+  }
+  ctx.stroke(); ctx.globalAlpha = 1;
+  if (first) { ctx.fillStyle = "#0b0e0c"; ctx.fillRect(first[0] - 6, first[1] - 6, 12, 12); ctx.fillStyle = "#5caa4a"; ctx.fillRect(first[0] - 4, first[1] - 4, 8, 8); }
+  if (last) { ctx.fillStyle = "#0b0e0c"; ctx.fillRect(last[0] - 6, last[1] - 6, 12, 12); ctx.fillStyle = "#d9564f"; ctx.fillRect(last[0] - 4, last[1] - 4, 8, 8); }
+  ctx.restore();
+}
+
+/* ---------- ender chest + offline profiles ---------- */
+let enderFor = null, profileData = null;
+async function showEnder(name) {
+  try {
+    const res = await api("/api/inventory?player=" + encodeURIComponent(name));
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || "Couldn't open it"); return; }
+    enderFor = name;
+    const box = $("#enderBox"); if (box) { box.innerHTML = `<h2 class="sec">Ender chest</h2>${enderGrid(d.ender)}`; box.scrollIntoView({ block: "nearest" }); }
+  } catch (e) {}
+}
+async function openProfile(name) {
+  if (findPlayer(name)) { openSheet(name); return; }
+  sheetPlayer = null; openDeathData = null; sheetMode = "profile";
+  const stats = (board?.players || []).find(p => p.name.toLowerCase() === name.toLowerCase());
+  let d = null;
+  if (isStaff()) {
+    try {
+      const res = await api("/api/inventory?player=" + encodeURIComponent(name));
+      const j = await res.json();
+      if (res.ok) d = j; else toast(j.error || "No save file for that player");
+    } catch (e) {}
+  }
+  profileData = { name: d?.name || stats?.name || name, uuid: d?.uuid || stats?.uuid, d };
+  const p = profileData;
+  const banned = (state.bans || []).find(b => b.name.toLowerCase() === p.name.toLowerCase());
+  let b = `<div class="stats">`;
+  if (stats) b += `<div class="stat"><div class="l">Playtime</div><div class="v">${fmtStat("playtime", stats.all.playtime || 0)}</div></div>
+    <div class="stat"><div class="l">Deaths</div><div class="v">${(stats.all.deaths || 0).toLocaleString()}</div></div>
+    <div class="stat"><div class="l">Mob kills</div><div class="v">${(stats.all.mobKills || 0).toLocaleString()}</div></div>
+    <div class="stat"><div class="l">Blocks mined</div><div class="v">${(stats.all.mined || 0).toLocaleString()}</div></div>`;
+  if (d?.x != null) b += `<div class="stat wide"><div class="l">Logged out at</div><div class="v">${esc(dimName(d.dim))} · ${d.x}, ${d.y}, ${d.z}</div></div>`;
+  b += `</div>`;
+  if (banned) b += `<div class="note bad">Banned: ${esc(banned.reason || "no reason")}</div>`;
+  if (d) b += `<h2 class="sec">Inventory (from their last save)</h2>${invGrids(d.items)}<h2 class="sec">Ender chest</h2>${enderGrid(d.ender)}`;
+  b += `<h2 class="sec">Actions</h2><div class="actions"><button class="btn" data-a="pdeaths">Their deaths</button><button class="btn" data-a="ptrail">Movement trail</button>
+    ${d?.x != null ? `<button class="btn" data-a="pmap">Show where they logged out</button>` : ""}
+    ${isStaff() ? `<button class="btn" data-a="pledger">What they changed</button>` : ""}
+    ${canDo("ban") ? (banned ? `<button class="btn green" data-a="punban">Unban</button>` : `<button class="btn red" data-a="pban">Ban</button>`) : ""}</div>`;
+  openPanel(`${avatar(p.name, 44, p.uuid)}<div class="pmain"><div class="pname">${esc(p.name)}</div><div class="sub">Offline${d?.lastSeen ? " · last seen " + ago(d.lastSeen) : ""}</div></div>`, b);
+}
+
+/* ---------- leaderboard ---------- */
+let board = null, boardCat = store.get("ew_bcat") || "playtime", boardPeriod = "all", knownPlayers = null;
+async function loadBoard() {
+  try { const res = await api("/api/leaderboard"); if (res.ok) { board = await res.json(); renderBoard(); } } catch (e) {}
+}
+function fmtStat(key, v) {
+  if (key === "playtime") { const m = Math.floor(v / 20 / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; }
+  if (key === "distance") return v >= 100000 ? (v / 100000).toFixed(1) + " km" : Math.round(v / 100) + " m";
+  return Number(v).toLocaleString();
+}
+function renderBoard() {
+  if (!board) return;
+  const cats = board.categories.filter(c => board.players.some(p => (p.all[c.key] || 0) !== 0));
+  if (!cats.find(c => c.key === boardCat) && cats.length) boardCat = cats[0].key;
+  const rows = board.players.map(p => ({ p, v: p[boardPeriod][boardCat] || 0 })).filter(r => r.v > 0).sort((a, b) => b.v - a.v).slice(0, 10);
+  let h = `<div class="card"><div class="field" style="margin-bottom:8px"><select class="bfield" id="boardCat">${cats.map(c => `<option value="${esc(c.key)}"${c.key === boardCat ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
+    <div class="filters">${[["all", "All time"], ["week", "This week"]].map(([k, l]) => `<button class="chip ${boardPeriod === k ? "on" : ""}" data-bp="${k}">${l}</button>`).join("")}</div>`;
+  h += rows.length ? rows.map((r, i) => `<div class="lrow" data-prof="${esc(r.p.name)}" style="cursor:pointer"><span class="rank r${i + 1}">${i + 1}</span>${avatar(r.p.name, 32, r.p.uuid)}
+      <div class="pmain"><div class="pname">${esc(r.p.name)}${r.p.online ? ' <span class="tag" style="color:var(--grass)">online</span>' : ""}</div></div>
+      <span class="val">${fmtStat(boardCat, r.v)}</span></div>`).join("")
+    : `<div class="empty">${boardPeriod === "week" ? "Nothing yet this week" : "No data yet"}</div>`;
+  if (boardPeriod === "week") h += `<p class="hint">Weekly numbers count from ${esc(board.trackingSince)} if the mod was added less than a week ago.</p>`;
+  h += `</div>`;
+  $("#boardBox").innerHTML = h;
+  $("#boardCat").onchange = e => { boardCat = e.target.value; store.set("ew_bcat", boardCat); renderBoard(); };
+}
+$("#boardBox").addEventListener("click", e => {
+  const bp = e.target.closest("[data-bp]"); if (bp) { boardPeriod = bp.dataset.bp; renderBoard(); return; }
+  const pr = e.target.closest("[data-prof]"); if (pr) openProfile(pr.dataset.prof);
+});
+$("#playerSearch").addEventListener("input", async e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) { $("#playerResults").innerHTML = ""; return; }
+  if (!knownPlayers) { try { const res = await api("/api/players"); knownPlayers = await res.json(); } catch (err) { knownPlayers = []; } }
+  const list = knownPlayers.filter(p => p.name.toLowerCase().includes(q)).slice(0, 12);
+  $("#playerResults").innerHTML = list.length ? list.map(p => `<div class="card prow" data-prof="${esc(p.name)}">${avatar(p.name, 36, p.uuid)}<div class="pmain"><div class="pname">${esc(p.name)}</div>
+    <div class="sub">${findPlayer(p.name) ? "Online now" : "Offline"}</div></div></div>`).join("") : `<div class="card sub">No player called that</div>`;
+});
+$("#playerResults").addEventListener("click", e => { const c = e.target.closest("[data-prof]"); if (c) openProfile(c.dataset.prof); });
+
+/* ---------- server tab: performance ---------- */
+let perfRange = 1, perfData = null;
+async function loadPerf() {
+  try { const res = await api("/api/perf?hours=" + perfRange); if (res.ok) { perfData = await res.json(); renderPerf(); } } catch (e) {}
+}
+function drawChart(canvas, pts, { min = 0, max = null, color = "#5caa4a", unit = "" } = {}) {
+  const dpr = window.devicePixelRatio || 1, r = canvas.getBoundingClientRect();
+  if (!r.width) return;
+  canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+  const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = r.width, h = r.height, padR = 44, padB = 16;
+  g.clearRect(0, 0, w, h);
+  if (pts.length < 2) { g.fillStyle = "#8e9b91"; g.font = "12px system-ui"; g.fillText("Collecting data (a point every 10 seconds)…", 4, h / 2); return; }
+  const hi = max ?? (Math.max(...pts.map(p => p[1])) * 1.15 || 1), t0 = pts[0][0], t1 = pts[pts.length - 1][0];
+  const X = t => (t - t0) / Math.max(1, t1 - t0) * (w - padR), Y = v => (h - padB) - (v - min) / Math.max(1e-9, hi - min) * (h - padB - 4);
+  g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 1;
+  for (let i = 0; i <= 2; i++) { const yy = Math.round(4 + i * (h - padB - 4) / 2) + .5; g.beginPath(); g.moveTo(0, yy); g.lineTo(w - padR, yy); g.stroke(); }
+  g.fillStyle = "#8e9b91"; g.font = "10px Silkscreen, monospace"; g.textAlign = "left";
+  g.fillText(Math.round(hi) + unit, w - padR + 4, 10); g.fillText(Math.round(min) + unit, w - padR + 4, h - padB);
+  const tf = t => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  g.fillText(tf(t0), 0, h - 2); g.textAlign = "right"; g.fillText(tf(t1), w - padR, h - 2);
+  g.beginPath(); pts.forEach((p, i) => { const x = X(p[0]), y = Y(p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+  g.strokeStyle = color; g.lineWidth = 2; g.stroke();
+  g.lineTo(X(t1), h - padB); g.lineTo(0, h - padB); g.closePath(); g.globalAlpha = .12; g.fillStyle = color; g.fill(); g.globalAlpha = 1;
+}
+function renderPerf() {
+  $("#perfRange").innerHTML = [[1, "1 hour"], [6, "6 hours"], [24, "24 hours"]].map(([h, l]) => `<button class="chip ${perfRange === h ? "on" : ""}" data-pr="${h}">${l}</button>`).join("");
+  const rows = perfData?.rows || [], last = rows[rows.length - 1];
+  const tps = state?.tps ?? (last ? last[1] : 20), col = tps >= 19 ? "var(--grass)" : tps >= 15 ? "var(--gold)" : "var(--red)";
+  $("#perfNow").innerHTML = `<div class="stat"><div class="l">TPS</div><div class="v" style="color:${col}">${Number(tps).toFixed(1)}</div></div>
+    <div class="stat"><div class="l">Tick time</div><div class="v">${state?.mspt ?? "—"} ms</div></div>
+    <div class="stat"><div class="l">Memory</div><div class="v">${last ? `${(last[3] / 1024).toFixed(1)} / ${(last[4] / 1024).toFixed(1)} GB` : "—"}</div></div>
+    <div class="stat"><div class="l">Entities · chunks</div><div class="v">${last ? `${last[6].toLocaleString()} · ${last[7].toLocaleString()}` : "—"}</div></div>`;
+  drawChart($("#chartTps"), rows.map(r => [r[0], r[1]]), { min: 0, max: 20, color: "#5caa4a" });
+  drawChart($("#chartMem"), rows.map(r => [r[0], r[3]]), { min: 0, max: last ? last[4] : null, color: "#40baaa" });
+  drawChart($("#chartEnt"), rows.map(r => [r[0], r[6]]), { min: 0, color: "#e8b33a" });
+}
+$("#perfRange").addEventListener("click", e => { const c = e.target.closest("[data-pr]"); if (c) { perfRange = +c.dataset.pr; loadPerf(); } });
+setInterval(() => { if (running && currentView === "server" && !document.hidden) loadPerf(); }, 15000);
+setInterval(() => { if (running && currentView === "players" && !document.hidden) loadBoard(); }, 60000);
+
+/* ---------- lag finder ---------- */
+let lagData = null;
+$("#lagBtn").addEventListener("click", async () => {
+  $("#lagOut").innerHTML = `<div class="empty">Looking…</div>`;
+  try {
+    const res = await api("/api/lag"); lagData = await res.json(); renderLag();
+  } catch (e) { $("#lagOut").innerHTML = ""; }
+});
+function renderLag() {
+  const d = lagData; if (!d) return;
+  let h = `<div class="note">${d.entities.toLocaleString()} entities in ${d.loadedChunks.toLocaleString()} loaded chunks. ${d.items.toLocaleString()} are dropped items.
+    Most common: ${d.types.slice(0, 5).map(t => `${esc(prettyId(t.type))} ${t.count}`).join(", ")}.</div>`;
+  if (canAll() && d.items > 0) h += `<div class="actions" style="margin-bottom:10px"><button class="btn gold" data-ci="all" style="grid-column:1/-1">Remove all ${d.items.toLocaleString()} dropped items</button></div>`;
+  h += d.chunks.map((c, i) => `<div class="card">
+      <div class="pname">${esc(dimName(c.dim))} near ${c.x}, ${c.z} <span class="tag">${c.count} entities</span></div>
+      <div class="sub" style="white-space:normal;margin:4px 0 8px">${c.types.map(t => `${esc(prettyId(t.type))} ${t.count}`).join(" · ")}</div>
+      <div class="actions"><button class="btn small" data-lgo="${i}">Show on map</button>
+      ${canAll() ? `<button class="btn small" data-ci="${i}">Clear items here</button><button class="btn small red" data-chs="${i}" style="grid-column:1/-1">Remove hostile mobs here</button>` : ""}</div></div>`).join("");
+  $("#lagOut").innerHTML = h;
+}
+$("#lagOut").addEventListener("click", async e => {
+  const t = e.target.closest("[data-lgo],[data-ci],[data-chs]"); if (!t) return;
+  const c = lagData.chunks[+(t.dataset.lgo ?? t.dataset.ci ?? t.dataset.chs)];
+  if (t.dataset.lgo != null) { goTo(c.dim, c.x, c.z, 2); return; }
+  if (t.dataset.ci === "all") { if (await action({ action: "clear_items" })) $("#lagBtn").click(); return; }
+  if (t.dataset.ci != null) { if (await action({ action: "clear_items", dim: c.dim, cx: c.cx, cz: c.cz })) $("#lagBtn").click(); return; }
+  if (await choose("Remove hostile mobs here?", "Named mobs, tamed animals and challenge mobs are kept.", [{ key: "yes", label: "Remove", cls: "red" }]) === "yes")
+    if (await action({ action: "clear_hostiles", dim: c.dim, cx: c.cx, cz: c.cz })) $("#lagBtn").click();
+});
+
+/* ---------- scheduled events ---------- */
+function scheduleWhen(j) {
+  if (j.every) return `Every ${j.every >= 60 ? (j.every / 60) + " hour" + (j.every >= 120 ? "s" : "") : j.every + " minutes"}`;
+  const days = (j.days || []).length === 7 ? "Every day" : (j.days || []).map(d => DAY_NAMES[d]).join(", ");
+  return `${days} at ${time12(j.time)}${j.tz && j.tz !== tz() ? " (" + j.tz + ")" : ""}`;
+}
+const SCHED_LABEL = { announce: "Announcement", restart: "Restart warning", wave: "Mob wave", package: "Care package" };
+function renderSchedules() {
+  const list = state.schedules || [];
+  $("#schedList").innerHTML = list.length ? list.map(j => `<div class="card">
+      <div class="pname">${esc(j.name)} <span class="tag">${SCHED_LABEL[j.type] || j.type}</span></div>
+      <div class="sub" style="white-space:normal">${esc(scheduleWhen(j))}${j.text ? " · “" + esc(j.text) + "”" : ""}${j.target ? " · at " + esc(j.target) : ""}${j.lastRun ? " · last ran " + ago(j.lastRun) : ""}</div>
+      ${canAll() ? `<div class="actions" style="margin-top:8px"><button class="btn small" data-srun="${esc(j.id)}">Run now</button><button class="btn small red" data-sdel="${esc(j.id)}">Delete</button></div>` : ""}
+    </div>`).join("") : `<div class="card sub" style="white-space:normal">Nothing scheduled. Set up automatic mob waves, care package drops, chat announcements or restart warnings.</div>`;
+  $("#schedAdd").innerHTML = canAll() ? `<button class="btn" data-sadd="announce">+ Announcement</button><button class="btn" data-sadd="restart">+ Restart warning</button>
+    <button class="btn" data-sadd="wave">+ Mob wave</button><button class="btn" data-sadd="package">+ Care package</button>` : "";
+}
+$("#schedList").addEventListener("click", async e => {
+  const r = e.target.closest("[data-srun]"), d = e.target.closest("[data-sdel]");
+  if (r) action({ action: "schedule_run", id: r.dataset.srun });
+  if (d && await choose("Delete this schedule?", "", [{ key: "yes", label: "Delete", cls: "red" }]) === "yes") action({ action: "schedule_remove", id: d.dataset.sdel });
+});
+$("#schedAdd").addEventListener("click", async e => {
+  const b = e.target.closest("[data-sadd]"); if (!b) return;
+  const type = b.dataset.sadd;
+  if (type === "announce") {
+    const v = await askSchedule("Scheduled announcement", { text: true, every: true });
+    if (v) action({ action: "schedule_add", type, ...v });
+  } else if (type === "restart") {
+    const v = await askSchedule("Restart warning", { note: "Players get countdown warnings for 5 minutes, then the world is saved. In Bisect, add a Schedule that restarts the server at the same time so it actually restarts." });
+    if (v) action({ action: "schedule_add", type, ...v });
+  } else {
+    const wps = state.waypoints || [];
+    if (!wps.length) { toast("Make a waypoint first (hold a spot on the map). Scheduled drops happen at a waypoint."); return; }
+    const v = await ask(type === "wave" ? "Where should the wave happen?" : "Where should it drop?", [{ name: "wp", label: "Waypoint", type: "select", options: wps.map(w => [w.id, `${w.name} (${dimName(w.dim)})`]) }], "Next");
+    if (!v) return;
+    const w = wps.find(x => x.id === v.wp);
+    openBuilder(type, { name: w.name, dim: w.dim, x: w.x, y: w.y, z: w.z }, true);
+  }
+});
+/** Pick days + time (or "every N minutes") for a schedule. */
+function askSchedule(title, { text = false, every = false, note = "", name = "" } = {}) {
+  return new Promise(resolve => {
+    $("#modalTitle").textContent = title;
+    const f = $("#modalForm");
+    f.innerHTML = `${note ? `<p class="hint">${esc(note)}</p>` : ""}
+      <div class="field"><label>Name</label><input name="name" maxlength="40" value="${esc(name)}" placeholder="Saturday night wave"></div>
+      ${text ? `<div class="field"><label>Message</label><input name="text" maxlength="256" placeholder="Vote for the server!"></div>` : ""}
+      ${every ? `<div class="field"><label>When</label><select name="mode"><option value="days">On certain days at a time</option><option value="every">Repeat every…</option></select></div>
+        <div class="field" data-every style="display:none"><label>Repeat every</label><select name="every"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60" selected>1 hour</option><option value="120">2 hours</option><option value="240">4 hours</option></select></div>` : ""}
+      <div data-dayspick><div class="field"><label>Days</label><div class="days">${DAY_NAMES.map((d, i) => `<label><input type="checkbox" name="d${i}" checked>${d}</label>`).join("")}</div></div>
+      <div class="field"><label>Time (your phone's time zone)</label><input name="time" type="time" value="20:00"></div></div>
+      <div class="actions"><button type="button" class="btn" data-x>Cancel</button><button class="btn green" type="submit">Save</button></div>`;
+    $("#modal").classList.remove("hidden");
+    const mode = f.querySelector("[name=mode]");
+    if (mode) mode.onchange = () => { const ev = mode.value === "every"; f.querySelector("[data-every]").style.display = ev ? "" : "none"; f.querySelector("[data-dayspick]").style.display = ev ? "none" : ""; };
+    const done = v => { $("#modal").classList.add("hidden"); f.onsubmit = null; resolve(v); };
+    f.querySelector("[data-x]").onclick = () => done(null);
+    f.onsubmit = e => {
+      e.preventDefault();
+      const fd = new FormData(f), v = { name: (fd.get("name") || "").trim(), tz: tz() };
+      if (text) { v.text = (fd.get("text") || "").trim(); if (!v.text) { toast("Write the message"); return; } }
+      if (mode && mode.value === "every") v.every = +fd.get("every");
+      else {
+        v.days = DAY_NAMES.map((_, i) => fd.get("d" + i) ? i : -1).filter(i => i >= 0);
+        v.time = fd.get("time");
+        if (!v.days.length || !v.time) { toast("Pick days and a time"); return; }
+      }
+      done(v);
+    };
+  });
+}
+
+/* ---------- server tab: logins, activity, public page, this login ---------- */
+let accountsData = null, lastPub = null;
+async function loadAccounts() {
+  if (!canAll()) { accountsData = null; renderAdminBox(); return; }
+  try { const res = await api("/api/accounts"); if (res.ok) accountsData = await res.json(); } catch (e) {}
+  renderAdminBox();
+}
+function renderAdminBox() {
+  let h = "";
+  if (canAll()) {
+    h += `<h2 class="sec">Public leaderboard</h2><label class="check"><input type="checkbox" id="pubBoard"${state.publicLeaderboard ? " checked" : ""}> Let anyone see the leaderboard (no login)</label>
+      ${state.publicLeaderboard ? `<div class="topic"><input class="bfield" id="boardLink" readonly value="${esc(location.origin)}/board"><button class="btn" data-copy="boardLink">Copy</button></div><p class="hint">Share this link in Discord or on stream.</p>` : ""}`;
+  }
+  if (state.me?.role === "owner") {
+    const acc = accountsData?.accounts || [];
+    h += `<h2 class="sec">Helper logins</h2><p class="hint">Give helpers their own password. <b>Helpers</b> can heal, feed, teleport, message, kick and add waypoints. <b>Admins</b> can do everything except manage logins. <b>Viewers</b> can only look.</p>
+      ${acc.map(a => `<div class="card prow" style="cursor:default"><div class="pmain"><div class="pname">${esc(a.name)} <span class="tag">${esc(a.role)}</span></div><div class="sub">Added ${ago(a.created)}</div></div>
+        <button class="btn small red" data-delacc="${esc(a.name)}">Remove</button></div>`).join("")}
+      <div class="actions"><button class="btn green" id="addAcc" style="grid-column:1/-1">+ Add a login</button></div>`;
+  }
+  if (accountsData?.audit?.length) {
+    h += `<h2 class="sec">Activity log</h2><div class="card" style="padding:4px 12px">${accountsData.audit.slice(-40).reverse().map(a =>
+      `<div class="ev"><time>${new Date(a.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time><div class="t"><b>${esc(a.who)}</b> ${esc(a.result)}<div class="sub">${ago(a.time)}</div></div></div>`).join("")}</div>`;
+  }
+  $("#adminBox").innerHTML = h;
+  const pb = $("#pubBoard"); if (pb) pb.onchange = e => action({ action: "leaderboard_public", on: e.target.checked });
+  const add = $("#addAcc"); if (add) add.onclick = addLogin;
+}
+async function addLogin() {
+  const v = await ask("Add a login", [{ name: "name", label: "Who is it for?", placeholder: "Their name" },
+    { name: "role", label: "What can they do?", type: "select", value: "helper", options: [["helper", "Helper (heal, teleport, kick…)"], ["admin", "Admin (everything but logins)"], ["viewer", "Viewer (look only)"]] }], "Create");
+  if (!v) return;
+  const r = await action({ action: "account_add", name: v.name, role: v.role });
+  if (!r?.token) return;
+  $("#modalTitle").textContent = `Password for ${v.name}`;
+  $("#modalForm").innerHTML = `<p class="hint">Send this to them. They use it to log in at the same address. It's only shown once.</p>
+    <div class="tokenbox" id="newTok">${esc(r.token)}</div>
+    <div class="actions" style="margin-top:12px"><button type="button" class="btn" id="copyTok">Copy</button><button type="button" class="btn green" id="doneTok">Done</button></div>`;
+  $("#modal").classList.remove("hidden");
+  $("#copyTok").onclick = async () => { try { await navigator.clipboard.writeText(r.token); toast("Copied"); } catch (e) { toast("Press and hold the password to copy it"); } };
+  $("#doneTok").onclick = () => { $("#modal").classList.add("hidden"); loadAccounts(); };
+}
+$("#adminBox").addEventListener("click", async e => {
+  const d = e.target.closest("[data-delacc]");
+  if (d && await choose(`Remove ${d.dataset.delacc}'s login?`, "Their password stops working right away.", [{ key: "yes", label: "Remove", cls: "red" }]) === "yes") {
+    if (await action({ action: "account_remove", name: d.dataset.delacc })) loadAccounts();
+  }
+  const c = e.target.closest("[data-copy]");
+  if (c) { const inp = $("#" + c.dataset.copy); inp.select(); try { await navigator.clipboard.writeText(inp.value); toast("Copied"); } catch (err) { toast("Press and hold the link to copy it"); } }
+});
+function renderServerTab() {
+  if (!state) return;
+  renderSchedules();
+  const rb = $("#restartBanner");
+  if (state.restartAt) { rb.classList.remove("hidden"); rb.innerHTML = `<span>Restart countdown running: <b>${Math.max(0, Math.round((state.restartAt - Date.now()) / 1000))}s</b> left</span>`; }
+  else rb.classList.add("hidden");
+  $("#meCard").innerHTML = `<span>Signed in as <b>${esc(state.me?.name || "?")}</b> (${esc(state.me?.role || "")})</span><button class="btn small" id="logoutBtn">Log out</button>`;
+  $("#logoutBtn").onclick = () => logout("");
+  if (currentView === "server" && perfData) renderPerf();
 }
 
 /* ---------- modal + toast ---------- */
@@ -1116,10 +1608,11 @@ $("#dimSel").addEventListener("change", e => { view.dim = e.target.value; follow
 
 function renderChips() {
   if (!state) return;
-  $("#mapChips").innerHTML = (state.spawn ? `<button class="chip" data-spawn="1"><i style="background:var(--gold)"></i>Spawn</button>` : "") + state.players.map(p =>
+  $("#mapChips").innerHTML = (trail ? `<button class="chip on" data-trailx="1"><i style="background:${playerColor(trail.name)}"></i>${esc(trail.name)}'s trail ✕</button>` : "") + (state.spawn ? `<button class="chip" data-spawn="1"><i style="background:var(--gold)"></i>Spawn</button>` : "") + state.players.map(p =>
     `<button class="chip ${follow === p.name ? "on" : ""}" data-follow="${esc(p.name)}"><i style="background:${playerColor(p.name)}"></i>${esc(p.name)}${p.dim !== view.dim ? " · " + esc(dimName(p.dim)) : ""}</button>`).join("");
 }
 $("#mapChips").addEventListener("click", e => {
+  if (e.target.closest("[data-trailx]")) { trail = null; renderChips(); drawMap(); return; }
   if (e.target.closest("[data-spawn]") && state.spawn) {
     follow = null; setDim(state.spawn.dim); view.cx = state.spawn.x + .5; view.cz = state.spawn.z + .5;
     renderChips(); drawMap(); return;
@@ -1272,6 +1765,8 @@ function drawMap() {
     }
   }
 
+  drawTrail(left, top, s);
+
   // players
   if (state) {
     for (const p of state.players) {
@@ -1337,7 +1832,7 @@ canvas.addEventListener("pointerdown", e => {
         const dist = Math.hypot(p.x - wx, p.z - wz);
         if (p.dim === view.dim && dist < 300 && dist < best) { best = dist; y = Math.floor(p.y); }
       }
-      addWaypoint(view.dim, wx, y, wz, "");
+      mapSpotMenu(view.dim, wx, y, wz);
     }, 550);
   } else gesture = { pinch: pinchInfo(), moved: 99 };
 });
