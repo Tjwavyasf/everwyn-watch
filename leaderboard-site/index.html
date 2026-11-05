@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#141915">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
+<title>Everwyn SMP Leaderboard</title>
+<style>
+:root{--bg:#141915;--panel:#1c231e;--line:#2f3b33;--text:#e6ebe3;--muted:#8e9b91;--on:#3f7d33;--edge:#0b0e0c;--pix:'Silkscreen',ui-monospace,monospace}
+html.light{--bg:#f3f1ea;--panel:#ffffff;--line:#e2ded2;--text:#1d221e;--muted:#6b726c;--on:#5caa4a;--edge:#cfcabb}
+html.clear{--bg:transparent}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px}
+h1{font-family:var(--pix);font-size:20px;margin:0 0 2px;display:flex;align-items:center;gap:10px}
+h1 img{width:34px;height:34px;image-rendering:pixelated;box-shadow:0 0 0 2px var(--edge)}
+.sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tab{font-family:var(--pix);font-size:11px;padding:7px 9px;background:var(--panel);border:0;color:var(--text);box-shadow:0 0 0 2px var(--edge);border-radius:2px;cursor:pointer}
+.tab.on{background:var(--on);color:#fff}
+.card{background:var(--panel);box-shadow:0 0 0 2px var(--edge);border-radius:2px;padding:4px 14px;margin-top:10px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.rank{font-family:var(--pix);width:26px;text-align:center;color:var(--muted)}
+.r1{color:#e0b423}.r2{color:#9fb0b8}.r3{color:#c27a3c}
+.face{width:34px;height:34px;flex:none;image-rendering:pixelated;box-shadow:0 0 0 2px var(--edge);background:var(--line)}
+.name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{display:inline-block;width:8px;height:8px;background:#5caa4a;margin-left:6px;vertical-align:1px}
+.val{font-family:var(--pix);font-size:12px}
+.empty{color:var(--muted);text-align:center;padding:26px;font-family:var(--pix);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><img src="icon.png" alt=""><span id="title">Everwyn SMP</span></h1>
+  <div class="sub" id="sub">Loading the leaderboard…</div>
+  <div class="tabs" id="cats"></div>
+  <div class="tabs" id="period"></div>
+  <div class="card" id="list"></div>
+</div>
+<script>
+"use strict";
+// ?light for a light theme, ?clear for a see-through background, ?top=10 to show fewer players
+const params = new URLSearchParams(location.search);
+if (params.has("light")) document.documentElement.classList.add("light");
+if (params.has("clear")) document.documentElement.classList.add("clear");
+const TOP = Math.max(3, Math.min(50, parseInt(params.get("top") || "15", 10) || 15));
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let data = null, cat = params.get("cat") || "playtime", period = "all";
+function fmt(key, v) {
+  if (key === "playtime") { const m = Math.floor(v / 20 / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; }
+  if (key === "distance") return v >= 100000 ? (v / 100000).toFixed(1) + " km" : Math.round(v / 100) + " m";
+  return Number(v).toLocaleString();
+}
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
+}
+function render() {
+  const cats = data.categories.filter(c => data.players.some(p => (p.all[c.key] || 0) !== 0));
+  if (!cats.find(c => c.key === cat) && cats.length) cat = cats[0].key;
+  $("#cats").innerHTML = cats.map(c => `<button class="tab ${c.key === cat ? "on" : ""}" data-c="${esc(c.key)}">${esc(c.name)}</button>`).join("");
+  $("#period").innerHTML = [["all", "All time"], ["week", "This week"]].map(([k, l]) => `<button class="tab ${period === k ? "on" : ""}" data-p="${k}">${l}</button>`).join("");
+  const rows = data.players.map(p => ({ p, v: p[period][cat] || 0 })).filter(r => r.v > 0).sort((a, b) => b.v - a.v).slice(0, TOP);
+  $("#list").innerHTML = rows.length ? rows.map((r, i) => `<div class="row"><span class="rank r${i + 1}">${i + 1}</span>
+    <img class="face" src="https://mc-heads.net/avatar/${encodeURIComponent(r.p.uuid)}/34" alt="" loading="lazy">
+    <span class="name">${esc(r.p.name)}${r.p.online ? '<span class="dot" title="Online"></span>' : ""}</span><span class="val">${fmt(cat, r.v)}</span></div>`).join("")
+    : `<div class="empty">Nothing here yet</div>`;
+}
+document.addEventListener("click", e => {
+  const c = e.target.closest("[data-c]"), p = e.target.closest("[data-p]");
+  if (c) { cat = c.dataset.c; render(); }
+  if (p) { period = p.dataset.p; render(); }
+});
+fetch("board.json", { cache: "no-store" }).then(r => r.json()).then(d => {
+  data = d;
+  $("#title").textContent = (d.serverName || "Everwyn SMP") + " Leaderboard";
+  $("#sub").textContent = `${d.players.length} players · updated ${d.updatedAt ? ago(d.updatedAt) : "recently"}`;
+  render();
+}).catch(() => { $("#sub").textContent = "The leaderboard isn't available right now."; });
+</script>
+</body>
+</html>

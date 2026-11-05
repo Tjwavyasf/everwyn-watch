@@ -1,0 +1,53 @@
+name: Update public leaderboard
+
+# Copies the leaderboard from the server every 15 minutes and publishes it on a
+# free, secure GitHub Pages site that any website can embed.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["leaderboard-site/**", ".github/workflows/leaderboard.yml"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: leaderboard
+  cancel-in-progress: true
+
+env:
+  # The public leaderboard on the server (turn it on in the app: Server tab, Public leaderboard)
+  BOARD_URL: http://66.248.198.125:9063/board.json
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get the latest leaderboard
+        id: fetch
+        run: |
+          if curl -fsS --max-time 20 "$BOARD_URL" -o raw.json && jq -e '.players' raw.json > /dev/null; then
+            jq --argjson t "$(date +%s000)" '. + {updatedAt: $t}' raw.json > leaderboard-site/board.json
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Server offline or public leaderboard turned off; keeping the last published copy."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.fetch.outputs.ok == 'true'
+        with:
+          path: leaderboard-site
+
+      - uses: actions/deploy-pages@v4
+        if: steps.fetch.outputs.ok == 'true'
+        id: deploy

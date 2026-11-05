@@ -2,6 +2,7 @@ name: Build mod jar
 
 on:
   push:
+    paths-ignore: ["leaderboard-site/**", ".github/workflows/leaderboard.yml"]
   workflow_dispatch:
 
 permissions:
