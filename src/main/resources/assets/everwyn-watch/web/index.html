@@ -147,6 +147,18 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 .swatches input{position:absolute;opacity:0}
 .swatches input:checked + span{position:absolute;inset:-4px;box-shadow:0 0 0 3px #fff}
 .banner{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.avatar{position:relative;overflow:hidden}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.i-bell{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M3 0h2v1h1v1h1v3h1v1H0V5h1V2h1V1h1zM3 7h2v1H3z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M3 0h2v1h1v1h1v3h1v1H0V5h1V2h1V1h1zM3 7h2v1H3z'/%3E%3C/svg%3E")}
+.i-skull{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill-rule='evenodd' d='M1 0h6v1h1v4H7v1H6v2H2V6H1V5H0V1h1zM2 2v2h1V2zM5 2v2h1V2z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill-rule='evenodd' d='M1 0h6v1h1v4H7v1H6v2H2V6H1V5H0V1h1zM2 2v2h1V2zM5 2v2h1V2z'/%3E%3C/svg%3E")}
+.iconbtn{background:var(--panel2);border:0;width:38px;height:32px;display:grid;place-items:center;cursor:pointer;border-radius:2px;box-shadow:0 0 0 2px #0b0e0c}
+.iconbtn .ico{width:18px;height:18px;background:var(--text);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.note{padding:10px 12px;border-radius:2px;font-size:14px;margin:10px 0;background:var(--panel2)}
+.note.warn{box-shadow:inset 3px 0 0 var(--gold)} .note.ok{box-shadow:inset 3px 0 0 var(--grass)} .note.bad{box-shadow:inset 3px 0 0 var(--red)}
+.topic{display:flex;gap:8px}
+.topic input{flex:1;min-width:0;font-family:var(--pix);font-size:12px}
+ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{margin:6px 0}
+.btn[disabled]{opacity:.45;pointer-events:none}
 #builder{position:fixed;inset:0;z-index:30;background:var(--panel);display:flex;flex-direction:column;padding-top:var(--safe-t);padding-bottom:var(--safe-b)}
 #builder .sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .bfoot{padding:10px 14px;border-top:2px solid #0b0e0c}
@@ -185,6 +197,7 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
     <h1 id="title">Everwyn</h1>
     <span class="pill" id="onlinePill">0 online</span>
     <span class="pill" id="tpsPill"><span class="dot"></span>-- TPS</span>
+    <button class="iconbtn" id="bellBtn" aria-label="Notifications"><span class="ico i-bell"></span></button>
   </header>
   <main>
     <section class="view" id="view-map">
@@ -215,6 +228,17 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
         <div id="challengeList"></div>
         <h2 class="sec">Worlds</h2>
         <div id="worldList"></div>
+        <h2 class="sec">Banned players</h2>
+        <div id="banList"></div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-deaths">
+      <div class="wrap">
+        <div class="note" id="vaultNote">Every death is backed up the moment it happens, before the grave is made. You can give the items back even if the grave is gone.</div>
+        <input class="bfield" id="deathSearch" type="search" placeholder="Search by player or what killed them…" autocomplete="off">
+        <div class="filters" id="deathFilters" style="margin-top:8px"></div>
+        <div id="deathList" style="margin-top:6px"></div>
       </div>
     </section>
 
@@ -232,6 +256,7 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
   <nav>
     <button data-view="map" class="on"><span class="ico i-map"></span>Map</button>
     <button data-view="players"><span class="ico i-ppl"></span>Players</button>
+    <button data-view="deaths"><span class="ico i-skull"></span>Deaths</button>
     <button data-view="feed"><span class="ico i-feed"></span>Feed</button>
   </nav>
 </div>
@@ -381,18 +406,26 @@ function showView(v) {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
   document.querySelectorAll("section.view").forEach(s => s.classList.toggle("hidden", s.id !== "view-" + v));
   if (v === "map") resizeMap();
+  if (v === "deaths") loadDeaths();
 }
 $("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
 
 /* ---------- players ---------- */
-function avatar(name, size = 40) {
-  return `<div class="avatar" style="background:${playerColor(name)};width:${size}px;height:${size}px">${esc(name[0]?.toUpperCase() || "?")}</div>`;
+function avatar(name, size = 40, uuid = null) {
+  return `<div class="avatar" style="background:${playerColor(name)};width:${size}px;height:${size}px">${esc(name[0]?.toUpperCase() || "?")}${
+    uuid ? `<img src="/face?u=${encodeURIComponent(uuid)}" alt="" onerror="this.remove()">` : ""}</div>`;
+}
+const faceCache = new Map();
+function faceImg(uuid) {
+  let img = faceCache.get(uuid);
+  if (!img) { img = new Image(); img.onload = () => requestDraw(); img.src = "/face?u=" + encodeURIComponent(uuid); faceCache.set(uuid, img); }
+  return img;
 }
 function renderPlayers() {
   const list = [...state.players].sort((a,b) => a.name.localeCompare(b.name));
   $("#playerList").innerHTML = list.length ? list.map(p => `
     <div class="card prow" data-player="${esc(p.name)}">
-      ${avatar(p.name)}
+      ${avatar(p.name, 40, p.uuid)}
       <div class="pmain">
         <div class="pname">${esc(p.name)} <span class="tag">${esc(dimName(p.dim))}</span>${p.origin ? `<span class="tag">${esc(p.origin)}</span>` : ""}${p.gamemode !== "survival" ? `<span class="tag">${esc(p.gamemode)}</span>` : ""}</div>
         <div class="sub">${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)} · Lv ${p.level} · ${p.ping}ms</div>
@@ -409,11 +442,33 @@ function renderPlayers() {
   $("#worldList").innerHTML = state.worlds.map(w => {
     const t = w.timeOfDay, night = t > 13000 && t < 23000;
     const wx = w.thundering ? "Storm" : w.raining ? "Rain" : "Clear";
-    return `<div class="card prow" style="cursor:default"><div class="pmain"><div class="pname">${esc(dimName(w.id))}</div>
-      <div class="sub">${w.players} player${w.players === 1 ? "" : "s"} · ${night ? "Night" : "Day"} · ${wx}</div></div></div>`;
+    return `<div class="card prow" data-world="${esc(w.id)}"><div class="pmain"><div class="pname">${esc(dimName(w.id))}</div>
+      <div class="sub">${w.players} player${w.players === 1 ? "" : "s"} · ${night ? "Night" : "Day"} · ${wx}</div></div>${state.adminActions ? '<span class="tag">Change</span>' : ""}</div>`;
   }).join("");
+  const bans = state.bans || [];
+  $("#banList").innerHTML = bans.length ? bans.map(b => `
+    <div class="card prow" style="cursor:default">
+      ${avatar(b.name, 40)}
+      <div class="pmain"><div class="pname">${esc(b.name)}</div>
+        <div class="sub">${esc(b.reason || "No reason")} · ${b.expires ? "until " + new Date(b.expires).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "forever"}</div></div>
+      ${state.adminActions ? `<button class="btn small" data-unban="${esc(b.name)}">Unban</button>` : ""}
+    </div>`).join("") : `<div class="card sub">Nobody is banned.</div>`;
 }
 $("#playerList").addEventListener("click", e => { const c = e.target.closest("[data-player]"); if (c) openSheet(c.dataset.player); });
+$("#banList").addEventListener("click", async e => {
+  const b = e.target.closest("[data-unban]"); if (!b) return;
+  if (await choose(`Unban ${b.dataset.unban}?`, "They'll be able to join again right away.", [{ key: "yes", label: "Unban", cls: "green" }]) === "yes")
+    action({ action: "unban", player: b.dataset.unban });
+});
+$("#worldList").addEventListener("click", async e => {
+  const c = e.target.closest("[data-world]"); if (!c || !state.adminActions) return;
+  const k = await choose("Time & weather", "Changes the whole server.", [
+    { key: "t:day", label: "Morning" }, { key: "t:noon", label: "Noon" }, { key: "t:night", label: "Night" },
+    { key: "w:clear", label: "Clear weather", cls: "green" }, { key: "w:rain", label: "Rain" }, { key: "w:thunder", label: "Thunderstorm" }]);
+  if (!k) return;
+  const [kind, value] = k.split(":");
+  action({ action: kind === "t" ? "time" : "weather", dim: c.dataset.world, value });
+});
 $("#waypointList").addEventListener("click", e => {
   const c = e.target.closest("[data-wp]"); if (!c) return;
   const w = (state.waypoints || []).find(x => x.id === c.dataset.wp); if (w) waypointMenu(w);
@@ -512,7 +567,7 @@ function slotHtml(it, idx, sel) {
   if (!it) return `<div class="slot${sel ? " sel" : ""}"></div>`;
   const durCol = it.dur > 50 ? "#55ff55" : it.dur > 20 ? "#ffff55" : "#ff5555";
   return `<div class="slot${it.ench ? " ench" : ""}${sel ? " sel" : ""}" data-item="${esc(it.name)}|${esc(it.id)}">
-    ${catalog ? itemFace(it.id) : `<div class="ab" style="background:hsl(${hashHue(it.id)} 45% 62%)">${esc(itemAbbr(it.id))}</div>`}
+    ${itemFace(it.id)}
     ${it.count > 1 ? `<span class="ct">${it.count}</span>` : ""}
     ${it.dur != null && it.dur < 100 ? `<span class="du"><span style="width:${it.dur}%;background:${durCol}"></span></span>` : ""}
   </div>`;
@@ -525,7 +580,7 @@ function renderSheet() {
     return;
   }
   const keepScroll = $("#sheetBody").scrollTop;
-  $("#sheetHead").innerHTML = `${avatar(p.name, 44)}
+  $("#sheetHead").innerHTML = `${avatar(p.name, 44, p.uuid)}
     <div class="pmain"><div class="pname">${esc(p.name)}</div><div class="sub">${esc(p.gamemode)} · ${p.ping}ms${p.sleeping ? " · sleeping" : ""}</div></div>
     <button class="btn small" data-a="close">Close</button>`;
 
@@ -553,22 +608,41 @@ function renderSheet() {
     html += `<h2 class="sec">Inventory</h2><div class="inv">${inv.main.slice(9, 36).map(it => slotHtml(it)).join("")}</div>`;
     html += `<div class="inv" style="margin-top:8px">${inv.main.slice(0, 9).map((it, i) => slotHtml(it, i, i === inv.selected)).join("")}</div>`;
   }
-  html += `<h2 class="sec">Actions</h2><div class="actions">
-    <button class="btn" data-a="map">Show on map</button>`;
   if (state.adminActions) {
-    html += `<button class="btn gold" data-a="pkg">Care package</button>
-      <button class="btn" data-a="wp">Waypoint here</button>
-      <button class="btn" data-a="msg">Message</button>
-      <button class="btn green" data-a="heal">Heal</button>
-      <button class="btn" data-a="tp">Teleport</button>
-      <button class="btn" data-a="gm">Gamemode</button>
-      <button class="btn red" data-a="kick">Kick</button>`;
+    html += `<h2 class="sec">Help them</h2><div class="actions">
+        <button class="btn green" data-a="heal">Heal</button>
+        <button class="btn green" data-a="feed">Feed</button>
+        <button class="btn gold" data-a="give">Give items</button>
+        <button class="btn gold" data-a="pkg">Care package</button>
+        <button class="btn" data-a="cleareff">Clear effects</button>
+        <button class="btn" data-a="deaths">Their deaths</button>
+      </div>
+      <h2 class="sec">Move</h2><div class="actions">
+        <button class="btn" data-a="map">Show on map</button>
+        <button class="btn" data-a="tp">Teleport</button>
+        <button class="btn" data-a="spawn">Send to spawn</button>
+        <button class="btn" data-a="wp">Waypoint here</button>
+      </div>
+      <h2 class="sec">Manage</h2><div class="actions">
+        <button class="btn" data-a="msg">Message</button>
+        <button class="btn" data-a="gm">Gamemode</button>
+        <button class="btn red" data-a="kick">Kick</button>
+        <button class="btn red" data-a="ban">Ban</button>
+        <button class="btn red" data-a="kill">Kill</button>
+        <button class="btn red" data-a="smite">Smite</button>
+        <button class="btn red" data-a="clearinv" style="grid-column:1/-1">Clear inventory</button>
+      </div>`;
+  } else {
+    html += `<h2 class="sec">Actions</h2><div class="actions"><button class="btn" data-a="map">Show on map</button><button class="btn" data-a="deaths">Their deaths</button></div>`;
   }
-  html += `</div>`;
   $("#sheetBody").innerHTML = html;
   $("#sheetBody").scrollTop = keepScroll;
 }
 
+$("#sheet").addEventListener("change", e => {
+  const t = e.target.closest("[data-nkey]"); if (!t) return;
+  action({ action: "notify_settings", [t.dataset.nkey]: t.checked });
+});
 $("#sheet").addEventListener("click", async e => {
   const slot = e.target.closest("[data-item]");
   if (slot) { const [n, id] = slot.dataset.item.split("|"); toast(`${n}  (${id})`); return; }
@@ -576,6 +650,39 @@ $("#sheet").addEventListener("click", async e => {
   const name = sheetPlayer, p = findPlayer(name);
   switch (b.dataset.a) {
     case "close": closeSheet(); break;
+    case "feed": action({ action: "feed", player: name }); break;
+    case "cleareff": action({ action: "clear_effects", player: name }); break;
+    case "spawn": action({ action: "to_spawn", player: name }); break;
+    case "give": openBuilder("give", { player: name, name }); break;
+    case "deaths": closeSheet(); deathFilter = name; showView("deaths"); break;
+    case "smite": action({ action: "smite", player: name }); break;
+    case "kill":
+      if (await choose(`Kill ${name}?`, "They'll drop their items (or get a grave) like a normal death. The death vault keeps a copy.", [{ key: "yes", label: "Kill", cls: "red" }]) === "yes")
+        action({ action: "kill", player: name });
+      break;
+    case "clearinv":
+      if (await choose(`Clear ${name}'s inventory?`, "Everything they're carrying is deleted. This can't be undone.", [{ key: "yes", label: "Delete everything", cls: "red" }]) === "yes")
+        action({ action: "clear_inventory", player: name });
+      break;
+    case "ban": {
+      const v = await ask(`Ban ${name}`, [
+        { name: "text", label: "Reason (they'll see this)", value: "Breaking the rules" },
+        { name: "hours", label: "How long", type: "select", value: "0", options: [["1", "1 hour"], ["24", "1 day"], ["168", "1 week"], ["720", "30 days"], ["0", "Forever"]] },
+      ], "Ban", true);
+      if (v) action({ action: "ban", player: name, text: v.text, hours: +v.hours });
+      break;
+    }
+    case "drestore": restoreDeath(); break;
+    case "dmap": if (openDeathData) { const d = openDeathData; goTo(d.dim, d.x + .5, d.z + .5); } break;
+    case "dwp": if (openDeathData) { const d = openDeathData; closeSheet(); addWaypoint(d.dim, d.x, d.y, d.z, `${d.player} death`); } break;
+    case "ntest": action({ action: "notify_test" }); break;
+    case "ncopy": {
+      const inp = $("#topicIn"); inp.select(); inp.setSelectionRange(0, 999);
+      let ok = false;
+      try { await navigator.clipboard.writeText(inp.value); ok = true; } catch (err) { try { ok = document.execCommand("copy"); } catch (err2) {} }
+      toast(ok ? "Copied" : "Press and hold the text to copy it");
+      break;
+    }
     case "map":
       if (p) { follow = name; setDim(p.dim); view.cx = p.x; view.cz = p.z; view.scale = Math.max(view.scale, 2); }
       closeSheet(); showView("map"); renderChips(); drawMap(); break;
@@ -631,10 +738,15 @@ const hex = n => "#" + (n >>> 0 & 0xFFFFFF).toString(16).padStart(6, "0");
 /** The picture inside a slot: the real texture for modded items, a colored block otherwise. */
 function itemFace(id) {
   const it = catalog?.byId.get(id);
-  if (it?.icon) return `<img src="/icon?id=${encodeURIComponent(id)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ab',textContent:'${esc(itemAbbr(id))}'}))">`;
   const bg = it?.color ? hex(it.color) : `hsl(${hashHue(id)} 45% 62%)`;
-  return `<div class="ab" style="background:${bg}">${esc(itemAbbr(id))}</div>`;
+  return `<img src="/icon?id=${encodeURIComponent(id)}" alt="" loading="lazy" data-bg="${esc(bg)}" data-ab="${esc(itemAbbr(id))}" onerror="iconFail(this)">`;
 }
+/** No picture for this item: show a colored block with its initials instead. */
+window.iconFail = img => {
+  const d = document.createElement("div");
+  d.className = "ab"; d.style.background = img.dataset.bg; d.textContent = img.dataset.ab;
+  img.replaceWith(d);
+};
 const itemName = id => catalog?.byId.get(id)?.name || id;
 const mobName = id => catalog?.mobById.get(id)?.name || id;
 
@@ -645,15 +757,15 @@ async function openBuilder(kind, place) {
   try { await loadCatalog(); }
   catch (e) { if (e.message !== "auth") toast("Couldn't load the item list"); return; }
   Object.assign(B, {
-    kind, place, chest: [], waves: [[]], waveTab: 0, query: "", shown: 135,
+    kind, place, chest: [], waves: [[]], waveTab: 0, query: "", shown: 135, maxStacks: kind === "give" ? 36 : 27,
     name: kind === "wave" ? (place.name ? place.name + " Challenge" : "Mob wave") : (place.name || "Care package"),
     timeLimit: 10, announce: true, share: true,
   });
   closeSheet();
   $("#builder").classList.remove("hidden");
-  $("#bTitle").textContent = kind === "wave" ? "Mob wave challenge" : "Care package";
-  $("#bSub").textContent = `${dimName(place.dim)} · ${place.x}, ${place.y}, ${place.z}`;
-  $("#bGo").textContent = kind === "wave" ? "Place challenge" : "Drop care package";
+  $("#bTitle").textContent = kind === "wave" ? "Mob wave challenge" : kind === "give" ? `Give items to ${place.player}` : "Care package";
+  $("#bSub").textContent = kind === "give" ? "Goes straight into their inventory. Extras drop at their feet." : `${dimName(place.dim)} · ${place.x}, ${place.y}, ${place.z}`;
+  $("#bGo").textContent = kind === "wave" ? "Place challenge" : kind === "give" ? "Give items" : "Drop care package";
   renderBuilder();
   $("#bBody").scrollTop = 0;
 }
@@ -661,9 +773,10 @@ function closeBuilder() { $("#builder").classList.add("hidden"); }
 $("#bClose").addEventListener("click", closeBuilder);
 
 function renderBuilder() {
-  const wave = B.kind === "wave";
-  let h = `<div class="field"><label>${wave ? "Challenge name (shows on the boss bar)" : "Name"}</label>
+  const wave = B.kind === "wave", give = B.kind === "give";
+  let h = give ? "" : `<div class="field"><label>${wave ? "Challenge name (shows on the boss bar)" : "Name"}</label>
     <input class="bfield" id="bName" maxlength="32" value="${esc(B.name)}"></div>`;
+  if (state.icons === "downloading") h += `<div class="note warn">Item pictures are still downloading on the server (first start only). Letters show until they're ready.</div>`;
   if (wave) {
     h += `<h2 class="sec">Waves</h2>
       <p class="hint">Starts when a player walks within 16 blocks. Beat every wave to get the loot chest. If a player dies, time runs out or everyone leaves, it fails and the mobs vanish.</p>
@@ -671,20 +784,22 @@ function renderBuilder() {
       <div class="field" style="margin-top:12px"><label>Time limit</label>
       <select class="bfield" id="bTime">${[3, 5, 10, 15, 20, 30].map(m => `<option value="${m}"${m === B.timeLimit ? " selected" : ""}>${m} minutes</option>`).join("")}</select></div>`;
   }
-  h += `<h2 class="sec">${wave ? "Loot chest (the reward)" : "Chest contents"}</h2>
-    <p class="hint">Tap items below to add them. Tap an item in the chest to change the amount or remove it.</p>
+  h += `<h2 class="sec">${wave ? "Loot chest (the reward)" : give ? "Items to give" : "Chest contents"}</h2>
+    <p class="hint">Tap items below to add them. Tap an item ${give ? "here" : "in the chest"} to change the amount or remove it.</p>
     <div class="inv" id="bChest"></div>
     <h2 class="sec">Add items</h2>
     <input class="bfield" id="bSearch" type="search" placeholder="Search ${catalog.items.length} items… (try “diamond” or a mod name like “create”)" value="${esc(B.query)}" autocomplete="off">
     <div class="inv results" id="bResults" style="margin-top:10px"></div>
-    <div id="bMore"></div>
-    <h2 class="sec">Options</h2>
+    <div id="bMore"></div>`;
+  if (!give) h += `<h2 class="sec">Options</h2>
     <label class="check"><input type="checkbox" id="bShare"${B.share ? " checked" : ""}> Send the waypoint to everyone's Xaero's map</label>
     <label class="check"><input type="checkbox" id="bAnnounce"${B.announce ? " checked" : ""}> Announce it in chat</label>`;
   $("#bBody").innerHTML = h;
-  $("#bName").oninput = e => B.name = e.target.value;
-  $("#bShare").onchange = e => B.share = e.target.checked;
-  $("#bAnnounce").onchange = e => B.announce = e.target.checked;
+  if (!give) {
+    $("#bName").oninput = e => B.name = e.target.value;
+    $("#bShare").onchange = e => B.share = e.target.checked;
+    $("#bAnnounce").onchange = e => B.announce = e.target.checked;
+  }
   $("#bSearch").oninput = e => { B.query = e.target.value; B.shown = 135; renderResults(); };
   if (wave) { $("#bTime").onchange = e => B.timeLimit = +e.target.value; renderWaves(); }
   renderChest(); renderResults();
@@ -692,7 +807,7 @@ function renderBuilder() {
 
 function renderChest() {
   const slots = [];
-  for (let i = 0; i < 27; i++) {
+  for (let i = 0; i < B.maxStacks; i++) {
     const s = B.chest[i];
     slots.push(s ? `<div class="slot" data-cslot="${i}" title="${esc(itemName(s.id))}">${itemFace(s.id)}${s.count > 1 ? `<span class="ct">${s.count}</span>` : ""}</div>` : `<div class="slot"></div>`);
   }
@@ -743,7 +858,7 @@ $("#bBody").addEventListener("click", async e => {
     const it = catalog.byId.get(d.add);
     const s = B.chest.find(c => c.id === d.add && c.count < it.max);
     if (s) s.count++;
-    else { if (B.chest.length >= 27) { toast("The chest is full (27 stacks)"); return; } B.chest.push({ id: d.add, count: 1 }); }
+    else { if (B.chest.length >= B.maxStacks) { toast(`That's full (${B.maxStacks} stacks)`); return; } B.chest.push({ id: d.add, count: 1 }); }
     const total = B.chest.filter(c => c.id === d.add).reduce((n, c) => n + c.count, 0);
     renderChest(); toast(`${it.name} ×${total}`);
   } else if (d.cslot != null) {
@@ -770,7 +885,9 @@ $("#bGo").addEventListener("click", async () => {
   const p = B.place;
   if (!B.chest.length) { toast(B.kind === "wave" ? "Add at least one loot item" : "Add at least one item"); return; }
   let ok;
-  if (B.kind === "wave") {
+  if (B.kind === "give") {
+    ok = await action({ action: "give", player: p.player, items: B.chest });
+  } else if (B.kind === "wave") {
     const empty = B.waves.findIndex(w => !w.length);
     if (empty >= 0) { toast(`Wave ${empty + 1} has no mobs`); B.waveTab = empty; renderWaves(); return; }
     ok = await action({ action: "wave_create", name: B.name, dim: p.dim, x: p.x, y: p.y, z: p.z,
@@ -807,6 +924,119 @@ function renderChallenges() {
       <div class="pmain"><div class="pname">${esc(c.name)}${c.state === "active" ? ' <span class="tag" style="color:var(--red)">LIVE</span>' : ""}</div>
         <div class="sub">${esc(challengeStatus(c))}</div></div>
     </div>`).join("") : `<div class="card sub" style="white-space:normal">No challenges placed. Tap a waypoint and choose “Mob wave challenge here”.</div>`;
+}
+
+/* ---------- death vault ---------- */
+let deathsData = [], deathFilter = "all", openDeathData = null;
+async function loadDeaths() {
+  try {
+    const res = await api("/api/deaths");
+    if (res.ok) { deathsData = await res.json(); renderDeaths(); }
+  } catch (e) {}
+}
+setInterval(() => { if (running && currentView === "deaths" && !document.hidden) loadDeaths(); }, 10000);
+$("#deathSearch").addEventListener("input", renderDeaths);
+$("#deathFilters").addEventListener("click", e => {
+  const b = e.target.closest("[data-df]"); if (!b) return;
+  deathFilter = b.dataset.df; renderDeaths();
+});
+function renderDeaths() {
+  const names = [...new Set(deathsData.map(d => d.player))].slice(0, 15);
+  if (deathFilter !== "all" && !names.includes(deathFilter)) names.unshift(deathFilter);
+  $("#deathFilters").innerHTML = [["all", "Everyone"], ...names.map(n => [n, n])].map(([k, l]) =>
+    `<button class="chip ${deathFilter === k ? "on" : ""}" data-df="${esc(k)}">${esc(l)}</button>`).join("");
+  const q = $("#deathSearch").value.trim().toLowerCase();
+  const list = deathsData.filter(d => (deathFilter === "all" || d.player === deathFilter) &&
+    (!q || (d.player + " " + d.message).toLowerCase().includes(q)));
+  $("#deathList").innerHTML = list.length ? list.slice(0, 150).map(d => `
+    <div class="card prow" data-death="${esc(d.id)}">
+      ${avatar(d.player, 40, d.uuid)}
+      <div class="pmain">
+        <div class="pname">${esc(d.player)} ${d.restored ? `<span class="tag" style="color:var(--grass)">Restored${d.restored > 1 ? " ×" + d.restored : ""}</span>` : ""}</div>
+        <div class="sub" style="white-space:normal">${esc(d.message)}</div>
+        <div class="sub">${ago(d.time)} · ${d.items} stack${d.items === 1 ? "" : "s"} · Lv ${d.xp} · ${esc(dimName(d.dim))} ${d.x}, ${d.y}, ${d.z}</div>
+      </div>
+    </div>`).join("") : `<div class="empty">${deathsData.length ? "No deaths match" : "No deaths recorded yet"}</div>`;
+}
+$("#deathList").addEventListener("click", e => { const c = e.target.closest("[data-death]"); if (c) openDeath(c.dataset.death); });
+
+async function openDeath(id) {
+  let d;
+  try {
+    const res = await api("/api/death?id=" + encodeURIComponent(id));
+    d = await res.json();
+    if (!res.ok) { toast(d.error || "Couldn't load that death"); return; }
+  } catch (e) { if (e.message !== "auth") toast("Couldn't reach the server"); return; }
+  openDeathData = d; sheetPlayer = null;
+  const when = new Date(d.time);
+  $("#sheetHead").innerHTML = `${avatar(d.player, 44, d.uuid)}
+    <div class="pmain"><div class="pname">${esc(d.player)}'s death</div><div class="sub">${ago(d.time)} · ${when.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div></div>
+    <button class="btn small" data-a="close">Close</button>`;
+  const slots = {};
+  for (const it of d.itemList) slots[it.slot] = it;
+  let h = `<div class="stats">
+      <div class="stat wide"><div class="l">What happened</div><div class="v">${esc(d.message)}</div></div>
+      <div class="stat"><div class="l">Where</div><div class="v">${esc(dimName(d.dim))}<br>${d.x}, ${d.y}, ${d.z}</div></div>
+      <div class="stat"><div class="l">Carrying</div><div class="v">${d.items} stack${d.items === 1 ? "" : "s"}<br>Lv ${d.xp}</div></div>
+    </div>`;
+  if (d.restored) h += `<div class="note warn">Already given back ${d.restored === 1 ? "once" : d.restored + " times"} (${ago(d.restoredAt)}). Doing it again gives them another copy.</div>`;
+  if (d.keepInventory) h += `<div class="note warn">Keep Inventory was on when they died, so they probably kept these items.</div>`;
+  if (d.yigd) {
+    h += d.grave === "present" ? `<div class="note bad">Their YIGD grave is still near the death spot. If you give items back now, they could also loot the grave and get double.</div>`
+      : d.grave === "gone" ? `<div class="note ok">No grave left near the death spot. Safe to give everything back.</div>`
+      : `<div class="note">Couldn't check for a grave because nobody is near that spot right now.</div>`;
+  }
+  h += `<h2 class="sec">Gear</h2><div class="equip">${[39, 38, 37, 36].map(i => slotHtml(slots[i])).join("")}<div style="width:12px"></div>${slotHtml(slots[40])}</div>
+    <h2 class="sec">Inventory</h2><div class="inv">${Array.from({ length: 27 }, (_, i) => slotHtml(slots[i + 9])).join("")}</div>
+    <div class="inv" style="margin-top:8px">${Array.from({ length: 9 }, (_, i) => slotHtml(slots[i])).join("")}</div>`;
+  const extra = d.itemList.filter(it => it.slot > 40);
+  if (extra.length) h += `<div class="inv" style="margin-top:8px">${extra.map(it => slotHtml(it)).join("")}</div>`;
+  h += `<h2 class="sec">Give it back</h2>`;
+  if (state.adminActions) {
+    h += d.online ? `<label class="check"><input type="checkbox" id="dXp" checked> Also give back their XP (level ${d.xp})</label>
+        <p class="hint">Items go back into the same slots. Anything they're holding in those slots now gets moved aside, not deleted.</p>`
+      : `<div class="note">${esc(d.player)} is offline. They need to be online to get their items back.</div>`;
+    h += `<div class="actions"><button class="btn green" data-a="drestore" style="grid-column:1/-1"${d.online && d.items ? "" : " disabled"}>Give items back to ${esc(d.player)}</button>`;
+  } else h += `<div class="actions">`;
+  h += `<button class="btn" data-a="dmap">Show on map</button>${state.adminActions ? `<button class="btn" data-a="dwp">Save as waypoint</button>` : ""}</div>`;
+  $("#sheetBody").innerHTML = h; $("#sheetBody").scrollTop = 0;
+  $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
+}
+async function restoreDeath() {
+  const d = openDeathData; if (!d) return;
+  const warn = d.grave === "present" ? "Their grave is still there, so they could end up with double items. " : d.restored ? "This was already given back before. " : "";
+  if (await choose(`Give ${d.player} their items back?`, warn + `${d.items} stacks go back into their inventory.`, [{ key: "yes", label: "Give back", cls: "green" }]) !== "yes") return;
+  const xp = $("#dXp") ? $("#dXp").checked : false;
+  if (await action({ action: "restore_death", id: d.id, xp })) { await loadDeaths(); openDeath(d.id); }
+}
+
+/* ---------- notification settings ---------- */
+$("#bellBtn").addEventListener("click", openSettings);
+function openSettings() {
+  const n = state?.notify; if (!n) return;
+  sheetPlayer = null; openDeathData = null;
+  $("#sheetHead").innerHTML = `<div class="pmain"><div class="pname">Notifications</div><div class="sub">Get a phone alert when things happen</div></div>
+    <button class="btn small" data-a="close">Close</button>`;
+  const t = (key, label, val) => `<label class="check"><input type="checkbox" data-nkey="${key}"${val ? " checked" : ""}${state.adminActions ? "" : " disabled"}> ${label}</label>`;
+  $("#sheetBody").innerHTML = `
+    <h2 class="sec" style="margin-top:4px">Set up (one time)</h2>
+    <ol class="steps">
+      <li>Install the free <b>ntfy</b> app from the App Store or Google Play.</li>
+      <li>In ntfy, tap <b>+</b> and paste this topic name (leave the server as ntfy.sh):</li>
+    </ol>
+    <div class="topic"><input class="bfield" id="topicIn" readonly value="${esc(n.topic)}"><button class="btn" data-a="ncopy">Copy</button></div>
+    <ol class="steps" start="3"><li>Allow notifications when your phone asks, then tap <b>Send test</b> below.</li></ol>
+    <p class="hint">Keep the topic name private: anyone who has it can read these alerts.</p>
+    <div class="actions"><button class="btn gold" data-a="ntest" style="grid-column:1/-1">Send test notification</button></div>
+    <h2 class="sec">Tell me when…</h2>
+    ${t("enabled", "<b>Notifications on</b>", n.enabled)}
+    ${t("join", "Someone joins", n.join)}
+    ${t("firstJoin", "A brand-new player joins for the first time", n.firstJoin)}
+    ${t("leave", "Someone leaves", n.leave)}
+    ${t("death", "Someone dies", n.death)}
+    ${t("challenge", "A mob wave challenge is beaten or failed", n.challenge)}`;
+  $("#sheetBody").scrollTop = 0;
+  $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
 }
 
 /* ---------- modal + toast ---------- */
@@ -1052,17 +1282,19 @@ function drawMap() {
       // facing wedge
       ctx.fillStyle = "rgba(255,255,255,.85)";
       ctx.beginPath();
-      ctx.moveTo(x + dx * 16, y + dz * 16);
+      ctx.moveTo(x + dx * 19, y + dz * 19);
       ctx.lineTo(x - dz * 6, y + dx * 6);
       ctx.lineTo(x + dz * 6, y - dx * 6);
       ctx.closePath(); ctx.fill();
-      // body square
-      ctx.fillStyle = "#0b0e0c"; ctx.fillRect(x - 7, y - 7, 14, 14);
-      ctx.fillStyle = playerColor(p.name); ctx.fillRect(x - 5, y - 5, 10, 10);
+      // head (real skin face when we have it)
+      const face = p.face ? faceImg(p.uuid) : null;
+      ctx.fillStyle = follow === p.name ? "#5caa4a" : "#0b0e0c"; ctx.fillRect(x - 10, y - 10, 20, 20);
+      if (face && face.complete && face.naturalWidth) { ctx.imageSmoothingEnabled = false; ctx.drawImage(face, x - 8, y - 8, 16, 16); }
+      else { ctx.fillStyle = playerColor(p.name); ctx.fillRect(x - 8, y - 8, 16, 16); }
       // label
       const label = p.name, tw = ctx.measureText(label).width + 10;
-      ctx.fillStyle = "rgba(11,14,12,.85)"; ctx.fillRect(x - tw / 2, y - 28, tw, 16);
-      ctx.fillStyle = follow === p.name ? "#5caa4a" : "#e6ebe3"; ctx.textAlign = "center"; ctx.fillText(label, x, y - 20);
+      ctx.fillStyle = "rgba(11,14,12,.85)"; ctx.fillRect(x - tw / 2, y - 31, tw, 16);
+      ctx.fillStyle = follow === p.name ? "#5caa4a" : "#e6ebe3"; ctx.textAlign = "center"; ctx.fillText(label, x, y - 23);
       hitboxes.push({ x, y, kind: "player", name: p.name });
     }
   }

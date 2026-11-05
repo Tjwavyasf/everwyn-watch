@@ -12,6 +12,12 @@ A server-side Fabric 1.20.1 mod that runs a small web app you can open on your p
 - **Care packages** – tap a waypoint (or "Care package" on a player), pick items from every item in the pack, and a chest drops there with a lightning strike.
 - **Mob wave challenges** – tap a waypoint → "Mob wave challenge here". Pick up to 5 waves of hostile mobs (vanilla or modded), a time limit and the loot. It starts when a player walks within 16 blocks. Beat every wave → loot chest appears. A player dies, time runs out, or everyone leaves → "Challenge failed" and the mobs vanish.
 
+- **Real item icons** – the server downloads Minecraft's own textures from Mojang once (about 25 MB) and draws every item and block icon, modded ones included.
+- **Player skins** – everyone shows up as their own face on the map and in lists.
+- **More admin tools** – feed, give items, clear effects, send to spawn, ban (timed or forever) and unban, kill, smite, clear inventory, and time/weather from the Worlds list.
+- **Death vault** – every death's full inventory is backed up the moment it happens, before YIGD makes a grave. Open the Deaths tab, pick a death, and give everything back into the same slots, even if the grave is long gone. If a YIGD grave is still there, the app warns you so players don't get double items.
+- **Push notifications** – tap the bell, install the free ntfy app, paste your topic, and get alerts when people join (plus optional leave, death and challenge alerts).
+
 Waypoints and deaths are saved in `config/everwyn-watch-markers.json`; placed challenges in `config/everwyn-watch-challenges.json`. Saved map images live in your world folder under `everwyn-watch/tiles`.
 
 If a shared waypoint lands in the wrong world on players' Xaero's maps, set `"xaeroUnderscoreFormat": false` in the config and restart.
