@@ -207,6 +207,18 @@ public final class WebServer {
                 }
                 send(ex, 200, "application/octet-stream", VoiceBridge.read(p.getUuid(), parseLong(q.get("after"), 0)));
             }
+            case "/api/pack" -> {
+                if (me.role() != Accounts.Role.OWNER) {
+                    sendJson(ex, 403, error("Only the owner can install modpacks"));
+                    return;
+                }
+                if ("POST".equals(ex.getRequestMethod())) {
+                    PackInstaller.start(ex.getRequestBody(), 300L * 1024 * 1024);
+                    s.accounts.record(me, "pack_install", "Started installing a modpack");
+                    s.events.add("admin", me.name(), "Started installing a modpack");
+                }
+                sendJson(ex, 200, PackInstaller.status().toString());
+            }
             case "/api/accounts" -> {
                 if (!admin) {
                     sendJson(ex, 403, error("Only admins can see this"));

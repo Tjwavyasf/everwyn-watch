@@ -78,6 +78,13 @@ final class AdminActions {
                 yield "Test message sent to Discord";
             }
             case "remove_entity" -> Mobs.remove(server, str(req, "id"));
+            case "pack_undo" -> {
+                try {
+                    yield PackInstaller.undo();
+                } catch (java.io.IOException e) {
+                    throw new IllegalArgumentException("Couldn't undo: " + e.getMessage());
+                }
+            }
             case "kill" -> {
                 ServerPlayerEntity p = player(server, req, "player");
                 p.kill();

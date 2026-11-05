@@ -31,7 +31,7 @@ final class Accounts {
     static final Set<String> HELPER_ACTIONS = Set.of(
             "message", "broadcast", "heal", "feed", "clear_effects", "tp_to_player", "tp_coords",
             "to_spawn", "kick", "waypoint_add", "waypoint_share");
-    static final Set<String> OWNER_ONLY = Set.of("account_add", "account_remove", "admin_name");
+    static final Set<String> OWNER_ONLY = Set.of("account_add", "account_remove", "admin_name", "pack_undo");
 
     private final WatchConfig cfg;
     private final Path auditFile;
