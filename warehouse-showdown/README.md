@@ -1,46 +1,52 @@
-# Warehouse Showdown
+# Warehouse Showdown: The Long Shift
 
-A mobile beat 'em up set on a warehouse night shift, in an HD-2D style: pixel-art fighters in a lit 3D warehouse with bloom, depth-of-field blur and drifting embers. Walk anywhere on the floor, fight through five shifts, then beat The Foreman in Overtime.
+A story-driven action RPG for phones, in an HD-2D pixel style. Depot 9 never closes, and nobody who clocked in has ever clocked out. You're the new hire. Explore the warehouse, beat the bosses who run it, and reach the Foreman's office.
 
-Open `index.html` in a phone or desktop browser. No install or build step. It loads three.js r128 from cdnjs, so the first load needs a connection.
+Open `index.html` in a phone or desktop browser. No install or build step. It loads three.js r128 from cdnjs, so the first load needs a connection. Progress saves automatically in the browser.
 
-The original side-scrolling version is kept in [`v1/`](v1/index.html).
+Earlier versions are kept in [`v1/`](v1/index.html) (side-scroller) and [`v2/`](v2/index.html) (arcade waves with classes and upgrades).
 
-## Crew
+## How it plays
 
-| Class | Starts with | Plays like | Special |
-| --- | --- | --- | --- |
-| Knox (Brawler) | Fists | Four-hit combos, strongest punches, lots of HP | Ground Pound: leap and slam, floors everyone nearby |
-| Rin (Cutter) | Box Cutter | Fast slashes, double jump | Surge: one slash hits every enemy on screen |
-| Mara (Loader) | Sledgehammer | Slow, huge swings; light hits don't interrupt her | Forklift Spin: spin and move while shredding anything close |
-| Vee (Slinger) | Knife | Fastest; THROW sends knives from an endless supply | Knife Fan: ten knives in a fan, both ways |
+- **Explore** ten connected rooms: the Break Room, Aisles 1–3 and 4–6, the Dock Yard, the Loading Dock, the Freezer Hall, Cold Storage, the Mezzanine, the Foreman's Office, and a records room hidden behind a wall of boxes. Doors show where they lead, there's a shortcut shutter to unlock from one side, and MAP shows what you've found.
+- **Time clocks** are checkpoints. Punching in heals you, refills your thermos, brings the enemies back, and opens a menu to level up (Vigor, Grit, Might), fast travel between clocks, and change weapons.
+- **Scrip** comes from enemies, crates and envelopes. When you're fired (killed), you drop all of it where you fell. Get back there and pick it up before you die again, or it's gone.
+- **Stamina** limits attacks, rolls and parries. **Roll** through attacks for invincibility frames. **Heal** by drinking from your thermos (limited sips; Coffee Beans add more).
+- **Parry** right before a hit lands to stagger the attacker, then hit them for a triple-damage **riposte**. Hitting an enemy that hasn't noticed you is a **sneak attack** for 2.5× damage. Enemies flash right before they attack.
+- **Weapons** you find stay in your inventory: lead pipe, crowbar, sledgehammer, knife, box cutter, and a golden box cutter from the optional boss. Tap your weapon in the HUD (or press Q) to swap. Fists always work. Throwing knives go on the THROW button.
+- **Story:** Dee, the old night guard in the Break Room, explains what happened and has more to say after each boss. Notes scattered around the depot fill in the rest.
 
-## Weapons, throwing and fists
+## Bosses
 
-- Crates break open into food or weapons: lead pipe, crowbar, knife, sledgehammer. Enemies drop theirs too.
-- **THROW** picks up whatever you're standing on. With nothing nearby, it throws your weapon, which knocks enemies down and lands on the floor for you to pick back up. Without a weapon you fight with your fists.
-- Picked-up weapons break after a number of hits (pips next to the weapon name). Your class weapon never breaks.
+| Boss | Where | Drops |
+| --- | --- | --- |
+| Big Tully, King of the Dock | Loading Dock | Dock Keycard |
+| Quartermaster Vance, Keeper of Cold Storage | Cold Storage | Freezer Keycard |
+| The Auditor (optional) | Records Room (hidden) | Golden Box Cutter |
+| The Foreman, Master of the Night Shift | Office (needs both keycards) | The ending |
 
-## Upgrades
+Each boss has a second phase at half health. The main bosses sit behind red mist; once you step through, there's no leaving until one of you goes down.
 
-After each shift you get a pick of three upgrades: more HP, damage, speed, attack speed, special charge, healing on KOs, throw damage, weapon durability, an extra life, a wider parry, damage reduction or an extra jump.
+## Workers
+
+| Class | Weapon | Skill |
+| --- | --- | --- |
+| Knox (Brawler) | Fists, four-hit combos | Ground Pound |
+| Rin (Cutter) | Box Cutter, cheaper rolls | Surge: hits everything in view |
+| Mara (Loader) | Sledgehammer, light hits don't interrupt | Forklift Spin |
+| Vee (Slinger) | Knife, endless throwing knives | Knife Fan |
 
 ## Controls
 
 | Action | Touch | Keyboard |
 | --- | --- | --- |
-| Move (all directions) | Left-side stick | WASD / arrows |
+| Move | Left-side stick | WASD / arrows |
 | Attack (tap for combo, hold for heavy) | ATTACK | J (K = heavy) |
-| Jump | JUMP | Space |
-| Dash (dodges through attacks; attack mid-dash to lunge) | DASH | Shift |
-| Grab / eat / throw | THROW | E |
-| Parry (right before a hit lands; also reflects bullets) | PARRY | L |
-| Special (when the meter is full) | SPECIAL | U |
-| Pause / mute | buttons top right | P / M |
-
-## Tips
-
-- Enemies flash red right before they attack. That's your cue to parry or dash.
-- Gunners only shoot in a straight line, so step up or down out of their aim.
-- The Foreman's slam sends a shockwave ring across the floor. Jump or dash through it. He's open for a moment after a charge or a slam.
-- Below 25% HP you go into Last Stand: more damage and faster special charge.
+| Roll | ROLL | Space / Shift |
+| Heal (thermos) | HEAL | R |
+| Throw knife | THROW | F |
+| Parry | PARRY | L |
+| Skill (when the meter is full) | SKILL | U |
+| Talk / read / open / rest / pick up | USE (appears when near something) | E |
+| Swap weapon | Tap the weapon in the HUD | Q |
+| Map / pause | buttons top right | Tab / Esc |
