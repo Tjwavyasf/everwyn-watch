@@ -160,7 +160,7 @@ public final class Challenges {
     public String cancel(String id) {
         Wave w = challenges.get(id);
         if (w == null) throw new IllegalArgumentException("That challenge is already over");
-        if (w.state.equals("active")) notifyParticipants(w, prefix().append(Text.literal(w.name + " was cancelled by an admin.").formatted(Formatting.GRAY)));
+        if (w.state.equals("active")) notifyParticipants(w, prefix().append(Text.literal(w.name + " was cancelled by " + EverwynWatch.config().adminName + ".").formatted(Formatting.GRAY)));
         end(w, world(w.dim));
         String msg = "Cancelled challenge " + w.name;
         log.add("event", null, msg);

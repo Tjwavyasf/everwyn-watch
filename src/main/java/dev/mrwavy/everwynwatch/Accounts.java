@@ -31,7 +31,7 @@ final class Accounts {
     static final Set<String> HELPER_ACTIONS = Set.of(
             "message", "broadcast", "heal", "feed", "clear_effects", "tp_to_player", "tp_coords",
             "to_spawn", "kick", "waypoint_add", "waypoint_share");
-    static final Set<String> OWNER_ONLY = Set.of("account_add", "account_remove");
+    static final Set<String> OWNER_ONLY = Set.of("account_add", "account_remove", "admin_name");
 
     private final WatchConfig cfg;
     private final Path auditFile;
@@ -47,7 +47,7 @@ final class Accounts {
     synchronized Account auth(String token) {
         if (token == null || token.isEmpty()) return null;
         byte[] given = token.getBytes(StandardCharsets.UTF_8);
-        if (MessageDigest.isEqual(given, cfg.token.getBytes(StandardCharsets.UTF_8))) return new Account("Owner", Role.OWNER);
+        if (MessageDigest.isEqual(given, cfg.token.getBytes(StandardCharsets.UTF_8))) return new Account(cfg.adminName == null || cfg.adminName.isBlank() ? "Owner" : cfg.adminName, Role.OWNER);
         for (WatchConfig.AccountEntry a : cfg.accounts) {
             if (a.token != null && MessageDigest.isEqual(given, a.token.getBytes(StandardCharsets.UTF_8))) {
                 return new Account(a.name, role(a.role));
@@ -80,7 +80,7 @@ final class Accounts {
     synchronized String add(String name, String roleName) {
         name = name == null ? "" : name.replaceAll("[^A-Za-z0-9_ .-]", "").trim();
         if (name.isEmpty() || name.length() > 24) throw new IllegalArgumentException("Give the login a short name (letters and numbers)");
-        if (name.equalsIgnoreCase("owner")) throw new IllegalArgumentException("Pick a different name");
+        if (name.equalsIgnoreCase("owner") || name.equalsIgnoreCase(cfg.adminName)) throw new IllegalArgumentException("Pick a different name");
         for (WatchConfig.AccountEntry a : cfg.accounts) {
             if (a.name.equalsIgnoreCase(name)) throw new IllegalArgumentException("There's already a login called " + name);
         }

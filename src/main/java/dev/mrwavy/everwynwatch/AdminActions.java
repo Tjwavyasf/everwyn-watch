@@ -178,6 +178,13 @@ final class AdminActions {
                 }
                 yield vault.restore(str(req, "id"), req.has("xp") && req.get("xp").getAsBoolean(), pick);
             }
+            case "admin_name" -> {
+                String n = str(req, "name").replaceAll("[\\p{Cntrl}\\[\\]]", "").trim();
+                if (n.isEmpty() || n.length() > 24) throw new IllegalArgumentException("Use 1 to 24 characters");
+                s.cfg.adminName = n;
+                s.cfg.save();
+                yield "You now show up as " + n;
+            }
             case "xaero_style" -> {
                 s.cfg.xaeroUseUnderscores = req.get("underscores").getAsBoolean();
                 s.cfg.save();
@@ -242,12 +249,12 @@ final class AdminActions {
             case "broadcast" -> {
                 String text = limit(str(req, "text"));
                 server.getPlayerManager().broadcast(
-                        Text.literal("[Server] ").formatted(Formatting.GOLD).append(Text.literal(text).formatted(Formatting.WHITE)), false);
+                        Text.literal("[" + s.cfg.adminName + "] ").formatted(Formatting.GOLD).append(Text.literal(text).formatted(Formatting.WHITE)), false);
                 yield "Broadcast sent";
             }
             case "message" -> {
                 ServerPlayerEntity p = player(server, req, "player");
-                p.sendMessage(Text.literal("[Admin] ").formatted(Formatting.GOLD)
+                p.sendMessage(Text.literal("[" + s.cfg.adminName + "] ").formatted(Formatting.GOLD)
                         .append(Text.literal(limit(str(req, "text"))).formatted(Formatting.WHITE)));
                 yield "Message sent to " + p.getGameProfile().getName();
             }

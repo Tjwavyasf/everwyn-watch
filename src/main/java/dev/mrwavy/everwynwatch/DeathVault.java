@@ -199,7 +199,7 @@ final class DeathVault {
         d.addProperty("restoredAt", System.currentTimeMillis());
         save();
         p.sendMessage(Text.literal("[Everwyn] ").formatted(Formatting.GOLD)
-                .append(Text.literal("An admin gave back the items from your death.").formatted(Formatting.GREEN)));
+                .append(Text.literal(cfg.adminName + " gave back the items from your death.").formatted(Formatting.GREEN)));
         return "Gave " + d.get("player").getAsString() + " back " + restored + " stack" + (restored == 1 ? "" : "s")
                 + (gaveXp ? " and " + xpLevels + " XP levels" : "") + (displaced.isEmpty() ? "" : " (moved " + displaced.size() + " of their current items aside)");
     }

@@ -120,7 +120,7 @@ final class Scheduler {
         String result;
         switch (type) {
             case "announce" -> {
-                broadcast(Text.literal("[Server] ").formatted(Formatting.GOLD).append(Text.literal(job.get("text").getAsString()).formatted(Formatting.WHITE)));
+                broadcast(Text.literal("[" + s.cfg.adminName + "] ").formatted(Formatting.GOLD).append(Text.literal(job.get("text").getAsString()).formatted(Formatting.WHITE)));
                 result = "Announcement sent";
             }
             case "restart" -> {

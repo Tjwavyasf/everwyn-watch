@@ -1570,8 +1570,14 @@ function renderServerTab() {
   const rb = $("#restartBanner");
   if (state.restartAt) { rb.classList.remove("hidden"); rb.innerHTML = `<span>Restart countdown running: <b>${Math.max(0, Math.round((state.restartAt - Date.now()) / 1000))}s</b> left</span>`; }
   else rb.classList.add("hidden");
-  $("#meCard").innerHTML = `<span>Signed in as <b>${esc(state.me?.name || "?")}</b> (${esc(state.me?.role || "")})</span><button class="btn small" id="logoutBtn">Log out</button>`;
+  $("#meCard").innerHTML = `<span>Signed in as <b>${esc(state.me?.name || "?")}</b> (${esc(state.me?.role || "")})</span>
+    ${state.me?.role === "owner" ? `<button class="btn small" id="renameBtn">Rename</button>` : ""}<button class="btn small" id="logoutBtn">Log out</button>`;
   $("#logoutBtn").onclick = () => logout("");
+  const rn = $("#renameBtn");
+  if (rn) rn.onclick = async () => {
+    const v = await ask("Your name", [{ name: "name", label: "Shown in game when you message, broadcast or give items back", value: state.adminName || "Everwyn God" }], "Save");
+    if (v?.name?.trim()) action({ action: "admin_name", name: v.name.trim() });
+  };
   if (currentView === "server" && perfData) renderPerf();
 }
 

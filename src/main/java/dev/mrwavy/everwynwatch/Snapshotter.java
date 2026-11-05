@@ -136,6 +136,7 @@ public final class Snapshotter {
         }
         root.addProperty("publicLeaderboard", cfg.publicLeaderboard);
         root.addProperty("xaeroUnderscores", cfg.xaeroUseUnderscores);
+        root.addProperty("adminName", cfg.adminName);
         JsonObject d = new JsonObject();
         d.addProperty("set", cfg.discordWebhook != null && !cfg.discordWebhook.isEmpty());
         d.addProperty("chat", cfg.discordChat);

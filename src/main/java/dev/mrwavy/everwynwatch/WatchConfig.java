@@ -21,6 +21,8 @@ public class WatchConfig {
     public String token = "";
     /** Shown at the top of the app. */
     public String serverName = "Everwyn SMP";
+    /** Your name in game when you message or broadcast from the app, and your name in the app. */
+    public String adminName = "Everwyn God";
     /** How often (in ticks, 20 = 1 second) player data is refreshed. */
     public int snapshotIntervalTicks = 20;
     /** Show player inventories in the app. */
