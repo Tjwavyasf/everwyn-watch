@@ -49,6 +49,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         s.trails = new Trails(cacheDir.resolve("trails.json"));
         s.perf = new PerfMonitor(config);
         IconRenderer.init(configDir);
+        ScreenViewer.registerReceiver();
 
         // Copy the inventory right before a player dies (before graves/drops take it)
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
@@ -116,6 +117,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             s.server = server;
+            VoiceBridge.server = server;
             s.vault = new DeathVault(server, config);
             s.challenges = new Challenges(server, s.events, configDir.resolve("everwyn-watch-challenges.json"));
             s.ledger = new LedgerBridge(server);
@@ -178,6 +180,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
             safe("perf", () -> s.perf.tick(server, s.snapshotter.mspt(), s.snapshotter.tps()));
             safe("leaderboards", s.boards::tick);
             safe("schedules", s.scheduler::tick);
+            safe("spectate", () -> ScreenViewer.tick(server));
             if (++tickCounter >= Math.max(5, config.snapshotIntervalTicks)) {
                 tickCounter = 0;
                 safe("snapshot", s.snapshotter::refresh);

@@ -3,18 +3,23 @@
   "id": "everwyn-watch",
   "version": "${version}",
   "name": "Everwyn Watch",
-  "description": "Live server dashboard for your phone: map, players, chat feed and admin tools.",
+  "description": "Live server dashboard for your phone: map, players, chat feed, admin tools and spectating. On the server it runs the dashboard; in players' games it only sends their screen while an admin is watching.",
   "authors": ["Mr.Wavy"],
   "license": "MIT",
   "icon": "assets/everwyn-watch/web/icon-192.png",
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
-    "server": ["dev.mrwavy.everwynwatch.EverwynWatch"]
+    "server": ["dev.mrwavy.everwynwatch.EverwynWatch"],
+    "client": ["dev.mrwavy.everwynwatch.client.EverwynWatchClient"],
+    "voicechat": ["dev.mrwavy.everwynwatch.VoicePlugin"]
   },
   "depends": {
     "fabricloader": ">=0.14.21",
     "minecraft": "~1.20.1",
     "java": ">=17",
     "fabric-api": "*"
+  },
+  "suggests": {
+    "voicechat": "*"
   }
 }

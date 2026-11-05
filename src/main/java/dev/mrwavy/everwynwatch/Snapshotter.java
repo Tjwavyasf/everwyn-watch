@@ -137,6 +137,7 @@ public final class Snapshotter {
         root.addProperty("publicLeaderboard", cfg.publicLeaderboard);
         root.addProperty("xaeroUnderscores", cfg.xaeroUseUnderscores);
         root.addProperty("adminName", cfg.adminName);
+        root.addProperty("voice", VoiceBridge.svcLoaded);
         JsonObject d = new JsonObject();
         d.addProperty("set", cfg.discordWebhook != null && !cfg.discordWebhook.isEmpty());
         d.addProperty("chat", cfg.discordChat);
@@ -155,6 +156,8 @@ public final class Snapshotter {
         o.addProperty("name", name);
         o.addProperty("uuid", p.getUuidAsString());
         if (Faces.remember(p)) o.addProperty("face", true);
+        if (ScreenViewer.hasMod(p)) o.addProperty("client", true);
+        if (ScreenViewer.isWatched(p.getUuid())) o.addProperty("watched", true);
         o.addProperty("dim", p.getWorld().getRegistryKey().getValue().toString());
         o.addProperty("x", Math.round(p.getX() * 10) / 10.0);
         o.addProperty("y", Math.round(p.getY() * 10) / 10.0);

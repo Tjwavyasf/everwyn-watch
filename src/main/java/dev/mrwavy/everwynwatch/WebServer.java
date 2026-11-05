@@ -173,6 +173,45 @@ public final class WebServer {
                         q.get("player"), (int) parseLong(q.get("limit"), 200));
                 sendJson(ex, 200, o.toString());
             }
+            case "/api/view" -> {
+                if (!admin) {
+                    sendJson(ex, 403, error("Only admins can watch screens"));
+                    return;
+                }
+                net.minecraft.server.network.ServerPlayerEntity p = s.server.getPlayerManager().getPlayer(q.getOrDefault("player", ""));
+                if (p == null) {
+                    sendJson(ex, 404, error("offline"));
+                    return;
+                }
+                if (!ScreenViewer.hasMod(p)) {
+                    sendJson(ex, 409, error("noclient"));
+                    return;
+                }
+                ScreenViewer.Frame f = ScreenViewer.poll(p.getUuid(), (int) parseLong(q.get("q"), 1));
+                if (f == null) {
+                    ex.getResponseHeaders().set("Cache-Control", "no-store");
+                    ex.sendResponseHeaders(204, -1);
+                } else {
+                    ex.getResponseHeaders().set("X-Frame-Age", Long.toString(System.currentTimeMillis() - f.at()));
+                    send(ex, 200, "image/jpeg", f.jpeg());
+                }
+            }
+            case "/api/audio" -> {
+                if (!admin) {
+                    sendJson(ex, 403, error("Only admins can listen"));
+                    return;
+                }
+                if (!VoiceBridge.svcLoaded) {
+                    sendJson(ex, 409, error("novoice"));
+                    return;
+                }
+                net.minecraft.server.network.ServerPlayerEntity p = s.server.getPlayerManager().getPlayer(q.getOrDefault("player", ""));
+                if (p == null) {
+                    sendJson(ex, 404, error("offline"));
+                    return;
+                }
+                send(ex, 200, "application/octet-stream", VoiceBridge.read(p.getUuid(), parseLong(q.get("after"), 0)));
+            }
             case "/api/accounts" -> {
                 if (!admin) {
                     sendJson(ex, 403, error("Only admins can see this"));
