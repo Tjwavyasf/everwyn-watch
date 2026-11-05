@@ -271,6 +271,7 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">TPS (20 is perfect)</div><canvas class="chart" id="chartTps"></canvas></div>
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Memory used (MB)</div><canvas class="chart" id="chartMem"></canvas></div>
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Entities loaded</div><canvas class="chart" id="chartEnt"></canvas></div>
+        <div id="packBox"></div>
         <h2 class="sec">Map</h2>
         <div id="mapStats"></div>
         <h2 class="sec">Lag finder</h2>
@@ -462,7 +463,7 @@ function showView(v) {
   if (v === "map") { resizeMap(); pollMobsOnce(); }
   if (v === "deaths") loadDeaths();
   if (v === "players") loadBoard();
-  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); }
+  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); }
 }
 $("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
 
@@ -1600,6 +1601,56 @@ function renderServerTab() {
     if (v?.name?.trim()) action({ action: "admin_name", name: v.name.trim() });
   };
   if (currentView === "server" && perfData) renderPerf();
+}
+
+/* ---------- modpack installer (owner only) ---------- */
+let packStatus = null, packTimer = null;
+async function loadPack() {
+  if (state?.me?.role !== "owner") { $("#packBox").innerHTML = ""; return; }
+  try { const res = await api("/api/pack"); if (res.ok) packStatus = await res.json(); } catch (e) {}
+  renderPack();
+  clearTimeout(packTimer);
+  if (packStatus?.state === "running") packTimer = setTimeout(loadPack, 1500);
+}
+function renderPack() {
+  const st = packStatus || { state: "idle" };
+  let h = `<h2 class="sec">Install modpack</h2><div class="card">`;
+  if (st.state === "running") {
+    const pct = st.total ? Math.round(st.done / st.total * 100) : null;
+    h += `<div class="pname">${esc(st.step || "Working")}…</div>
+      ${pct != null ? `<div class="sub">${st.done} of ${st.total} mods</div><div class="bar food" style="height:12px"><span style="width:${pct}%"></span></div>` : `<div class="sub">This can take a few minutes. You can leave this screen.</div>`}`;
+  } else if (st.state === "done") {
+    h += `<div class="note ok">${esc(st.message)}</div>
+      <div class="sub" style="white-space:normal">${st.installed} mods installed · ${st.skippedCount} left out (players only) · ${st.configFiles} config files copied · your old mods are saved in <b>${esc(st.backup)}</b></div>
+      ${st.missing?.length ? `<div class="note warn">Heads up, some mods need something that isn't in the pack:<br>${st.missing.slice(0, 8).map(esc).join("<br>")}</div>` : ""}
+      <p class="hint"><b>Next:</b> open Bisect and press <b>Restart</b>. If the server won't start, tap Undo below first (or in Bisect Files, delete <b>mods</b> and rename <b>${esc(st.backup)}</b> to <b>mods</b>).</p>
+      <details style="margin:8px 0"><summary class="sub" style="cursor:pointer">Mods left out (${st.skippedCount})</summary>
+        <div class="sub" style="white-space:normal;margin-top:6px">${(st.skipped || []).map(x => `${esc(x.name)} <span style="opacity:.7">(${esc(x.why)})</span>`).join("<br>")}</div></details>
+      <div class="actions"><button class="btn red" id="packUndo" style="grid-column:1/-1">Undo (put my old mods back)</button></div>`;
+  } else {
+    if (st.state === "failed") h += `<div class="note bad">${esc(st.message || "Install failed")}${st.failed?.length ? "<br>" + st.failed.slice(0, 10).map(esc).join("<br>") : ""}</div>`;
+    h += `<p class="hint">Pick your <b>CurseForge export zip</b> (the one with manifest.json). The server downloads every mod itself, leaves out the ones that only work in players' games, copies your configs and KubeJS scripts, and keeps a backup of your current mods. Nothing changes until all downloads work.</p>
+      <input type="file" id="packFile" accept=".zip,application/zip" style="display:none">
+      <div class="actions"><button class="btn gold" id="packPick" style="grid-column:1/-1">Choose modpack zip…</button></div>`;
+  }
+  $("#packBox").innerHTML = h + `</div>`;
+  const pick = $("#packPick"); if (pick) pick.onclick = () => $("#packFile").click();
+  const file = $("#packFile"); if (file) file.onchange = e => uploadPack(e.target.files[0]);
+  const undo = $("#packUndo"); if (undo) undo.onclick = async () => {
+    if (await choose("Put your old mods back?", "The new mods get moved out and your previous mods come back. Do this before restarting if you changed your mind.", [{ key: "yes", label: "Undo", cls: "red" }]) === "yes")
+      if (await action({ action: "pack_undo" })) loadPack();
+  };
+}
+async function uploadPack(file) {
+  if (!file) return;
+  if (await choose("Install this modpack?", `${file.name} (${(file.size / 1048576).toFixed(1)} MB). Your current mods get backed up first. You'll restart the server from Bisect after.`, [{ key: "yes", label: "Install", cls: "green" }]) !== "yes") return;
+  $("#packBox").querySelector(".card").innerHTML = `<div class="pname">Uploading…</div><div class="sub">Keep this screen open until it starts.</div>`;
+  try {
+    const res = await fetch("/api/pack", { method: "POST", headers: { "X-Watch-Token": TOKEN, "Content-Type": "application/zip" }, body: file });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || "Upload failed"); packStatus = { state: "failed", message: d.error || "Upload failed" }; renderPack(); return; }
+    packStatus = d; renderPack(); setTimeout(loadPack, 1500);
+  } catch (e) { toast("Upload failed. Check your connection and try again."); loadPack(); }
 }
 
 /* ---------- mobs on the map ---------- */
