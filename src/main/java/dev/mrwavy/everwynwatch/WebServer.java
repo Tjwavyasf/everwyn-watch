@@ -143,13 +143,31 @@ public final class WebServer {
             case "/api/tile" -> {
                 String dim = q.getOrDefault("dim", "minecraft:overworld");
                 TileRenderer.Result r = s.tiles.get(dim, (int) parseLong(q.get("x"), 0), (int) parseLong(q.get("z"), 0));
-                if (r.busy()) {
+                if (r.png() != null) {
+                    send(ex, 200, "image/png", r.png());
+                } else if (r.busy()) {
                     sendJson(ex, 503, error("busy"));
-                } else if (r.png() == null) {
+                } else {
                     ex.getResponseHeaders().set("Cache-Control", "no-store");
                     ex.sendResponseHeaders(204, -1);
+                }
+            }
+            case "/api/heights" -> {
+                // Block heights for one map tile, for the 3D view (gzipped little-endian int16, 128x128).
+                String dim = q.getOrDefault("dim", "minecraft:overworld");
+                TileRenderer.Result r = s.tiles.get(dim, (int) parseLong(q.get("x"), 0), (int) parseLong(q.get("z"), 0));
+                if (r.png() == null && !r.busy()) {
+                    ex.getResponseHeaders().set("Cache-Control", "no-store");
+                    ex.sendResponseHeaders(204, -1);
+                } else if (r.heights() == null) {
+                    sendJson(ex, 503, error("busy"));
                 } else {
-                    send(ex, 200, "image/png", r.png());
+                    java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                    try (java.util.zip.GZIPOutputStream gz = new java.util.zip.GZIPOutputStream(bos)) {
+                        gz.write(TileRenderer.heightBytes(r.heights()));
+                    }
+                    ex.getResponseHeaders().set("Content-Encoding", "gzip");
+                    send(ex, 200, "application/octet-stream", bos.toByteArray());
                 }
             }
             case "/api/mobs" -> {

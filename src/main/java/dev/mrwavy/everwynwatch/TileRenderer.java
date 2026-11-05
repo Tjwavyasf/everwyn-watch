@@ -44,7 +44,9 @@ public final class TileRenderer {
     private static final int DISK_CACHE_MS = 10 * 60_000;
 
     private record Key(String dim, int tx, int tz) {}
-    private record Cached(int[] pixels, byte[] png, long renderedAt, boolean live) {}
+    /** {@code heights}: top block Y per pixel ({@link #NO_HEIGHT} = unknown), used by the 3D view. */
+    private record Cached(int[] pixels, byte[] png, short[] heights, long renderedAt, boolean live) {}
+    public static final short NO_HEIGHT = Short.MIN_VALUE;
 
     /** Raw samples for one tile, before shading. */
     private static final class Raw {
@@ -108,7 +110,14 @@ public final class TileRenderer {
     }
 
     /** Result of a tile request. {@code png == null} means nothing explored there yet. */
-    public record Result(byte[] png, boolean busy) {}
+    public record Result(byte[] png, short[] heights, boolean busy) {}
+
+    /** Heights as little-endian 16-bit numbers, one per block, row by row (z then x). */
+    public static byte[] heightBytes(short[] heights) {
+        java.nio.ByteBuffer b = java.nio.ByteBuffer.allocate(N * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        for (short h : heights) b.putShort(h);
+        return b.array();
+    }
 
     public Result get(String dim, int tx, int tz) throws Exception {
         Key key = new Key(dim, tx, tz);
@@ -122,19 +131,19 @@ public final class TileRenderer {
             }
         }
         long now = System.currentTimeMillis();
-        if (old != null && now - old.renderedAt < (old.live ? cfg.tileCacheSeconds * 1000L : DISK_CACHE_MS)) {
-            return new Result(old.png, false);
+        if (old != null && old.heights != null && now - old.renderedAt < (old.live ? cfg.tileCacheSeconds * 1000L : DISK_CACHE_MS)) {
+            return new Result(old.png, old.heights, false);
         }
         if (!allowRender()) {
             // Too many fresh tiles this second; hand back the old one if we have it.
-            return old != null ? new Result(old.png, false) : new Result(null, true);
+            return old != null ? new Result(old.png, old.heights, old.heights == null) : new Result(null, null, true);
         }
 
         ServerWorld world = null;
         for (ServerWorld w : server.getWorlds()) {
             if (w.getRegistryKey().getValue().toString().equals(dim)) world = w;
         }
-        if (world == null) return new Result(null, false);
+        if (world == null) return new Result(null, null, false);
 
         final ServerWorld target = world;
         Raw raw;
@@ -151,20 +160,36 @@ public final class TileRenderer {
         }
         if (!raw.anyLive && !raw.anyDisk && old == null) {
             EMPTY.incrementAndGet();
-            return new Result(null, false);
+            return new Result(null, null, false);
         }
         DRAWN.incrementAndGet();
 
         int[] pixels = shade(raw, old != null ? old.pixels : null);
+        short[] heights = mergeHeights(raw, old != null ? old.heights : null);
+        boolean heightsChanged = old == null || !java.util.Arrays.equals(heights, old.heights);
         if (old != null && java.util.Arrays.equals(pixels, old.pixels)) {
-            cache.put(key, new Cached(old.pixels, old.png, now, raw.anyLive));
-            return new Result(old.png, false);
+            cache.put(key, new Cached(old.pixels, old.png, heights, now, raw.anyLive));
+            if (heightsChanged) saveHeights(key, heights);
+            return new Result(old.png, heights, false);
         }
         byte[] png = encode(pixels);
         if (cache.size() > 3000) cache.clear();
-        cache.put(key, new Cached(pixels, png, now, raw.anyLive));
+        cache.put(key, new Cached(pixels, png, heights, now, raw.anyLive));
         saveToDisk(key, png);
-        return new Result(png, false);
+        if (heightsChanged) saveHeights(key, heights);
+        return new Result(png, heights, false);
+    }
+
+    /** Freshly read heights, keeping the old value wherever this render had no data. */
+    private static short[] mergeHeights(Raw raw, short[] base) {
+        short[] out = base != null ? base.clone() : new short[N];
+        if (base == null) java.util.Arrays.fill(out, NO_HEIGHT);
+        for (int i = 0; i < N; i++) {
+            if (!raw.fresh[i]) continue;
+            out[i] = raw.mapColor[i] == -1 ? NO_HEIGHT
+                    : (short) Math.max(Short.MIN_VALUE + 1, Math.min(Short.MAX_VALUE, raw.heights[i]));
+        }
+        return out;
     }
 
     // ------------------------------------------------------------------ live (loaded) chunks
@@ -437,10 +462,46 @@ public final class TileRenderer {
             BufferedImage img = ImageIO.read(new ByteArrayInputStream(png));
             if (img == null || img.getWidth() != TILE || img.getHeight() != TILE) return null;
             int[] pixels = img.getRGB(0, 0, TILE, TILE, null, 0, TILE);
-            return new Cached(pixels, png, 0L, false);
+            return new Cached(pixels, png, loadHeights(key), 0L, false);
         } catch (Exception e) {
             EverwynWatch.LOG.debug("Could not read saved map tile {}", file, e);
             return null;
+        }
+    }
+
+    /** Heights sit next to the image as <x>_<z>.heights (gzipped). Missing for tiles saved by older versions. */
+    private Path heightFile(Key key) {
+        Path png = tileFile(key);
+        return png.resolveSibling(key.tx() + "_" + key.tz() + ".heights");
+    }
+
+    private short[] loadHeights(Key key) {
+        Path file = heightFile(key);
+        if (!Files.isRegularFile(file)) return null;
+        try (java.io.InputStream in = new java.util.zip.GZIPInputStream(Files.newInputStream(file))) {
+            byte[] bytes = in.readAllBytes();
+            if (bytes.length != N * 2) return null;
+            java.nio.ByteBuffer b = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            short[] h = new short[N];
+            for (int i = 0; i < N; i++) h[i] = b.getShort();
+            return h;
+        } catch (Exception e) {
+            EverwynWatch.LOG.debug("Could not read saved map heights {}", file, e);
+            return null;
+        }
+    }
+
+    private void saveHeights(Key key, short[] heights) {
+        Path file = heightFile(key);
+        try {
+            Files.createDirectories(file.getParent());
+            Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+            try (java.io.OutputStream out = new java.util.zip.GZIPOutputStream(Files.newOutputStream(tmp))) {
+                out.write(heightBytes(heights));
+            }
+            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            EverwynWatch.LOG.debug("Could not save map heights {}", file, e);
         }
     }
 

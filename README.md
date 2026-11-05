@@ -3,6 +3,7 @@
 A server-side Fabric 1.20.1 mod that runs a small web app you can open on your phone:
 
 - **Map** – live player positions on a top-down map drawn from your actual world (vanilla map colors), Overworld / Nether / End, pinch to zoom, tap a player.
+- **3D map** – tap **Tabletop 3D** above the map for a tilted, rotatable diorama of the real terrain (drag to move, pinch to zoom, twist to turn, Tilt for top-down), or **Free cam** to fly around it (left thumb moves, drag to look, ▲▼ up/down; WASD + mouse on a computer). Players, waypoints, deaths and spawn show up in 3D too; hold on the ground for the usual waypoint/care-package menu. The 3D engine (three.js) loads from the internet the first time you open it.
 - **Players** – health, food, XP, origin (Origins mod), every scoreboard value (RPG levels, kills…), full inventory and armor.
 - **Feed** – chat, joins/leaves, deaths, advancements, and a log of admin actions.
 - **Admin** – message, heal, teleport (to a player or coordinates), change gamemode, kick, broadcast.

@@ -67,6 +67,19 @@ nav .ico{width:22px;height:22px;background:var(--line);-webkit-mask-size:contain
 .map-side .btn{width:44px;padding:0;font-size:18px}
 .map-info{position:absolute;left:10px;bottom:12px;font-family:var(--pix);font-size:11px;background:rgba(20,25,21,.85);padding:6px 8px;box-shadow:0 0 0 2px #0b0e0c;border-radius:2px}
 .map-info b{color:var(--teal);font-weight:normal}
+/* 3D map */
+#map3d{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#view-map:not([data-mode="2d"]) .only-2d,
+#view-map:not([data-mode="table"]) .only-table,
+#view-map:not([data-mode="free"]) .only-free,
+#view-map[data-mode="free"] .no-free,
+#view-map[data-mode="2d"] .only-3d{display:none!important}
+.map-modes{position:absolute;left:10px;top:58px;display:flex;box-shadow:0 0 0 2px #0b0e0c;border-radius:2px;overflow:hidden}
+.map-modes button{border:0;background:var(--panel);font-family:var(--pix);font-size:11px;padding:8px 10px;cursor:pointer;min-height:34px}
+.map-modes button + button{border-left:2px solid #0b0e0c}
+.map-modes button.on{background:var(--grass-d)}
+.joy{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(11,14,12,.35);box-shadow:0 0 0 2px rgba(230,235,227,.35);pointer-events:none}
+.joy i{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:rgba(230,235,227,.75);box-shadow:0 0 0 2px #0b0e0c}
 
 /* lists */
 .wrap{padding:12px 12px 24px;max-width:720px;margin:0 auto}
@@ -219,19 +232,30 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
     <button class="iconbtn" id="bellBtn" aria-label="Notifications"><span class="ico i-bell"></span></button>
   </header>
   <main>
-    <section class="view" id="view-map">
-      <canvas id="map"></canvas>
+    <section class="view" id="view-map" data-mode="2d">
+      <canvas id="map" class="only-2d"></canvas>
+      <canvas id="map3d" class="only-3d"></canvas>
+      <div class="joy hidden" id="joy"><i id="joyKnob"></i></div>
       <div class="map-top">
         <select id="dimSel" aria-label="Dimension"></select>
         <div class="chips" id="mapChips"></div>
+      </div>
+      <div class="map-modes" id="mapModes">
+        <button data-mode="2d" class="on">Map</button><button data-mode="table">Tabletop 3D</button><button data-mode="free">Free cam</button>
       </div>
       <div class="map-info" id="mapInfo"></div>
       <div class="map-status hidden" id="mapStatus"></div>
       <div class="map-hint hidden" id="mapHint">Hold anywhere on the map to drop a waypoint</div>
       <div class="map-side">
         <button class="btn" id="layersBtn" aria-label="Markers" style="font-size:12px">◆</button>
-        <button class="btn" id="zoomIn" aria-label="Zoom in">+</button>
-        <button class="btn" id="zoomOut" aria-label="Zoom out">−</button>
+        <button class="btn only-table" id="rotL" aria-label="Turn left">⟲</button>
+        <button class="btn only-table" id="rotR" aria-label="Turn right">⟳</button>
+        <button class="btn only-table" id="tiltBtn" aria-label="Tilt" style="font-size:11px">Tilt</button>
+        <button class="btn only-free" id="upBtn" aria-label="Fly up">▲</button>
+        <button class="btn only-free" id="downBtn" aria-label="Fly down">▼</button>
+        <button class="btn only-free" id="speedBtn" aria-label="Fly speed" style="font-size:11px">×1</button>
+        <button class="btn no-free" id="zoomIn" aria-label="Zoom in">+</button>
+        <button class="btn no-free" id="zoomOut" aria-label="Zoom out">−</button>
       </div>
     </section>
 
@@ -412,6 +436,8 @@ function start() {
   if (running) return;
   running = true; lastEvent = 0; events = [];
   loopState(); loopEvents(); resizeMap();
+  const savedMode = store.get("ew_mapmode");
+  if (savedMode === "table" || savedMode === "free") setMapMode(savedMode);
 }
 async function pollStateOnce() {
   try {
@@ -1657,7 +1683,7 @@ async function uploadPack(file) {
 let mobMode = store.get("ew_mobs") || "all", mobData = null;
 const MOB_OUTLINE = { hostile: "#e0453c", animal: "#5caa4a", villager: "#e8b33a", boss: "#a77bff" };
 async function pollMobsOnce() {
-  if (!running || currentView !== "map" || mobMode === "off" || view.scale < 0.5 || !canvas.width) return;
+  if (!running || currentView !== "map" || mapMode !== "2d" || mobMode === "off" || view.scale < 0.5 || !canvas.width) return;
   const dpr = window.devicePixelRatio || 1, w = canvas.width / dpr / view.scale, h = canvas.height / dpr / view.scale;
   const qs = new URLSearchParams({ dim: view.dim, x0: Math.floor(view.cx - w / 2), z0: Math.floor(view.cz - h / 2), x1: Math.ceil(view.cx + w / 2), z1: Math.ceil(view.cz + h / 2) });
   try {
@@ -1806,6 +1832,7 @@ let inflight = 0;
 const MAX_INFLIGHT = 4, TILE_REFRESH_MS = 90000;
 
 function resizeMap() {
+  if (mapMode !== "2d") { resize3d(); return; }
   const dpr = window.devicePixelRatio || 1;
   const r = canvas.getBoundingClientRect();
   if (!r.width) return;
@@ -1884,6 +1911,7 @@ let drawQueued = false;
 function requestDraw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(() => { drawQueued = false; drawMap(); }); } }
 
 function drawMap() {
+  if (mapMode !== "2d") { sync3dFromView(); return; }
   if (currentView !== "map" || !canvas.width) return;
   const dpr = window.devicePixelRatio || 1, w = canvas.width / dpr, h = canvas.height / dpr, s = view.scale;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -2044,8 +2072,8 @@ function zoomAt(factor, sx, sy) {
   view.cx = wx - (sx - w / 2) / ns; view.cz = wz - (sy - h / 2) / ns;
   requestDraw();
 }
-$("#zoomIn").addEventListener("click", () => { const r = canvas.getBoundingClientRect(); zoomAt(2, r.width / 2, r.height / 2); });
-$("#zoomOut").addEventListener("click", () => { const r = canvas.getBoundingClientRect(); zoomAt(0.5, r.width / 2, r.height / 2); });
+$("#zoomIn").addEventListener("click", () => { if (mapMode === "table") return zoom3d(1 / 1.6); const r = canvas.getBoundingClientRect(); zoomAt(2, r.width / 2, r.height / 2); });
+$("#zoomOut").addEventListener("click", () => { if (mapMode === "table") return zoom3d(1.6); const r = canvas.getBoundingClientRect(); zoomAt(0.5, r.width / 2, r.height / 2); });
 canvas.addEventListener("wheel", e => { e.preventDefault(); const r = canvas.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
 
 const pointers = new Map();
@@ -2117,6 +2145,683 @@ function pinchInfo() {
   const [a, b] = [...pointers.values()];
   return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
 }
+
+/* ---------- 3D map: tabletop (orbit) and free cam (fly) ---------- */
+// Terrain comes from the same map tiles as the 2D map, plus each block's height (/api/heights).
+// three.js is only downloaded the first time someone opens a 3D mode.
+const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const NO_H = -32768, FOV = 60;
+let mapMode = "2d";
+const canvas3 = $("#map3d");
+const M3 = {
+  T: null, loading: null, renderer: null, scene: null, camera: null, terrain: null, markerGroup: null, material: null,
+  tiles: new Map(), inflight: 0, dirty: true, raf: 0, last: 0,
+  table: { tx: 0, ty: 64, tz: 0, dist: 160, yaw: 0, pitch: 0.96, spin: 0, pitchTo: null },
+  free: { x: 0, y: 100, z: 0, yaw: 0, pitch: -0.5, speed: 1 },
+  syncedX: null, syncedZ: null, syncedDim: null, followName: null, followLast: null,
+  keys: new Set(), joy: null, vert: 0, markers: new Map(), hint: {}
+};
+const readCanvas = document.createElement("canvas"); readCanvas.width = readCanvas.height = TILE;
+const readCtx = readCanvas.getContext("2d", { willReadFrequently: true });
+
+function loadThree() {
+  if (!M3.loading) {
+    M3.loading = import(THREE_URL).then(T => { M3.T = T; init3d(); return T; })
+      .catch(e => { M3.loading = null; throw e; });
+  }
+  return M3.loading;
+}
+function init3d() {
+  const T = M3.T;
+  T.ColorManagement.enabled = false; // map colors are used exactly as drawn
+  const r = M3.renderer = new T.WebGLRenderer({ canvas: canvas3, antialias: true, powerPreference: "high-performance" });
+  r.outputColorSpace = T.LinearSRGBColorSpace;
+  r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  M3.scene = new T.Scene();
+  M3.scene.fog = new T.Fog(0x0f1310, 300, 800);
+  M3.camera = new T.PerspectiveCamera(FOV, 1, 0.3, 5000);
+  M3.terrain = new T.Group(); M3.markerGroup = new T.Group();
+  M3.scene.add(M3.terrain, M3.markerGroup);
+  M3.material = new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide });
+  M3.raycaster = new T.Raycaster();
+}
+
+async function setMapMode(m) {
+  if (m === mapMode) return;
+  if (m !== "2d" && !M3.T) {
+    toast("Loading 3D…");
+    try { await loadThree(); }
+    catch (e) { toast("Couldn't load the 3D view. This device needs internet access for it."); return; }
+  }
+  const prev = mapMode;
+  mapMode = m; store.set("ew_mapmode", m);
+  $("#view-map").dataset.mode = m;
+  document.querySelectorAll("#mapModes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  stopJoy();
+  if (m === "2d") { if (M3.raf) cancelAnimationFrame(M3.raf); M3.raf = 0; resizeMap(); return; }
+
+  const t = M3.table, f = M3.free;
+  if (prev === "2d") {
+    t.tx = view.cx; t.tz = view.cz; t.ty = groundY(view.cx, view.cz) ?? nearbyY(view.cx, view.cz);
+    t.dist = Math.min(700, Math.max(25, 200 / view.scale));
+  }
+  if (m === "free") {
+    if (prev === "table" || prev === "2d") { // start from where the tabletop camera is
+      const p = tablePose();
+      f.x = p.x; f.y = p.y; f.z = p.z; f.yaw = t.yaw; f.pitch = -Math.min(1.2, t.pitch);
+    }
+  } else if (prev === "free") { // look at whatever the free cam was looking at
+    const hit = groundAhead();
+    t.yaw = f.yaw;
+    t.pitch = Math.min(1.53, Math.max(0.3, -f.pitch));
+    t.tx = hit.x; t.ty = hit.y; t.tz = hit.z;
+    t.dist = Math.min(700, Math.max(15, Math.hypot(f.x - hit.x, f.y - hit.y, f.z - hit.z)));
+  }
+  M3.followName = follow; M3.followLast = null;
+  M3.syncedX = view.cx; M3.syncedZ = view.cz; M3.syncedDim = view.dim;
+  if (!M3.hint[m]) {
+    M3.hint[m] = 1;
+    toast(m === "table" ? "Drag to move · pinch to zoom · twist two fingers to turn · slide two fingers up/down to tilt"
+      : "Left thumb: move · drag on the right: look around · ▲▼ fly up/down (WASD + mouse on a computer)");
+  }
+  resize3d();
+}
+$("#mapModes").addEventListener("click", e => { const b = e.target.closest("[data-mode]"); if (b) setMapMode(b.dataset.mode); });
+
+function resize3d() {
+  if (!M3.renderer || mapMode === "2d") return;
+  const r = canvas3.getBoundingClientRect();
+  if (!r.width) return;
+  M3.renderer.setSize(r.width, r.height, false);
+  M3.camera.aspect = r.width / r.height; M3.camera.updateProjectionMatrix();
+  kick3d();
+}
+function kick3d() {
+  M3.dirty = true;
+  if (!M3.raf && mapMode !== "2d" && M3.renderer) { M3.last = 0; M3.raf = requestAnimationFrame(frame3d); }
+}
+
+/** The 2D code moved the map (spawn chip, "show on map", dimension pick…): move the 3D camera there too. */
+function sync3dFromView() {
+  if (!M3.renderer) return;
+  if (follow !== M3.followName) { // a player was just picked to follow
+    M3.followName = follow; M3.followLast = null;
+    const p = follow && findPlayer(follow);
+    if (p) { if (p.dim !== view.dim) setDim(p.dim); jump3d(p.x, p.z, p.y); }
+  } else if (!follow && (view.cx !== M3.syncedX || view.cz !== M3.syncedZ || view.dim !== M3.syncedDim)) {
+    jump3d(view.cx, view.cz);
+  }
+  M3.syncedDim = view.dim;
+  kick3d();
+}
+function jump3d(x, z, y) {
+  const gy = groundY(x, z) ?? y ?? nearbyY(x, z);
+  if (mapMode === "table") { const t = M3.table; t.tx = x; t.tz = z; t.ty = gy; }
+  else {
+    const f = M3.free;
+    if (f.pitch > -0.25) f.pitch = -0.5;
+    const back = 40, cp = Math.cos(f.pitch);
+    f.x = x + Math.sin(f.yaw) * cp * back; f.z = z + Math.cos(f.yaw) * cp * back; f.y = gy - Math.sin(f.pitch) * back;
+  }
+  M3.syncedX = view.cx = x; M3.syncedZ = view.cz = z;
+}
+/** Best guess at ground level when no terrain is loaded yet: a nearby player's height, else sea level. */
+function nearbyY(x, z) {
+  let y = 64, best = 400;
+  for (const p of state?.players || []) {
+    const d = Math.hypot(p.x - x, p.z - z);
+    if (p.dim === view.dim && d < best) { best = d; y = p.y; }
+  }
+  return y;
+}
+/** Surface height (top of the highest block) at a spot, if that tile is loaded. */
+function groundY(x, z) {
+  const tx = Math.floor(x / TILE), tz = Math.floor(z / TILE);
+  const t = M3.tiles.get(view.dim + "|" + tx + "|" + tz);
+  if (!t?.heights) return null;
+  const h = t.heights[(Math.floor(z) - tz * TILE) * TILE + (Math.floor(x) - tx * TILE)];
+  return h === NO_H ? null : h + 1;
+}
+
+/* --- camera poses --- */
+function tablePose() {
+  const t = M3.table, cp = Math.cos(t.pitch), sp = Math.sin(t.pitch);
+  return { x: t.tx + Math.sin(t.yaw) * t.dist * cp, y: t.ty + t.dist * sp, z: t.tz + Math.cos(t.yaw) * t.dist * cp };
+}
+function freeForward() {
+  const f = M3.free, cp = Math.cos(f.pitch);
+  return { x: -Math.sin(f.yaw) * cp, y: Math.sin(f.pitch), z: -Math.cos(f.yaw) * cp };
+}
+/** Where the free cam's view meets the ground (or a point ahead if it's looking at the sky). */
+function groundAhead() {
+  const f = M3.free, d = freeForward();
+  if (M3.renderer) {
+    M3.raycaster.set(new M3.T.Vector3(f.x, f.y, f.z), new M3.T.Vector3(d.x, d.y, d.z));
+    M3.raycaster.far = 1500;
+    const hit = M3.raycaster.intersectObjects(M3.terrain.children, false)[0];
+    if (hit) return { x: hit.point.x, y: hit.point.y, z: hit.point.z };
+  }
+  const dist = d.y < -0.1 ? Math.min(300, (f.y - nearbyY(f.x, f.z)) / -d.y) : 60;
+  const x = f.x + d.x * dist, z = f.z + d.z * dist;
+  return { x, y: groundY(x, z) ?? f.y + d.y * dist, z };
+}
+function updateCamera3d() {
+  const c = M3.camera;
+  if (mapMode === "table") {
+    const p = tablePose(), t = M3.table;
+    c.position.set(p.x, p.y, p.z); c.lookAt(t.tx, t.ty, t.tz);
+  } else {
+    const f = M3.free, d = freeForward();
+    c.position.set(f.x, f.y, f.z); c.lookAt(f.x + d.x, f.y + d.y, f.z + d.z);
+  }
+}
+/** The point the view is centered on, used to pick which tiles to load. */
+function focus3d() {
+  if (mapMode === "table") {
+    const t = M3.table;
+    return { x: t.tx, z: t.tz, radius: Math.min(900, Math.max(300, t.dist * 2.4)), near: Math.min(240, Math.max(110, t.dist * 0.9)) };
+  }
+  const f = M3.free, d = freeForward(), hor = Math.hypot(d.x, d.z) || 1;
+  const alt = Math.max(0, f.y - (groundY(f.x, f.z) ?? nearbyY(f.x, f.z)));
+  const ahead = Math.min(200, 40 + alt);
+  return { x: f.x + d.x / hor * ahead, z: f.z + d.z / hor * ahead, radius: Math.min(900, Math.max(420, 380 + alt * 2)), near: 190 };
+}
+
+/* --- per-frame loop --- */
+function frame3d(ts) {
+  M3.raf = 0;
+  if (mapMode === "2d" || currentView !== "map" || !M3.renderer) return;
+  const dt = M3.last ? Math.min(0.1, (ts - M3.last) / 1000) : 0.016; M3.last = ts;
+  let moving = controls3d(dt);
+  moving = follow3d() || moving;
+  updateCamera3d();
+  const fc = focus3d();
+  tiles3d(fc);
+  moving = markers3d(dt) || moving;
+  // keep the 2D map in step, so switching back shows the same place
+  const cx = mapMode === "table" ? M3.table.tx : fc.x, cz = mapMode === "table" ? M3.table.tz : fc.z;
+  M3.syncedX = view.cx = cx; M3.syncedZ = view.cz = cz;
+  if (M3.dirty || moving) {
+    const sky = view.dim.includes("nether") ? 0x2b0f0c : view.dim.includes("end") ? 0x14111c : mapMode === "free" ? 0x9cc2ea : 0x0f1310;
+    M3.scene.background = new M3.T.Color(sky);
+    M3.scene.fog.color.setHex(sky);
+    const camDist = mapMode === "table" ? M3.table.dist : 0;
+    M3.scene.fog.near = camDist + fc.radius * 0.55; M3.scene.fog.far = camDist + fc.radius * 1.05;
+    M3.camera.far = camDist + fc.radius * 1.6; M3.camera.updateProjectionMatrix();
+    M3.renderer.render(M3.scene, M3.camera);
+    M3.dirty = false;
+    if (Math.random() < 0.1 || moving) info3d();
+  }
+  M3.raf = requestAnimationFrame(frame3d);
+}
+
+function info3d() {
+  const c = M3.camera.position, t = M3.table;
+  const [x, y, z] = mapMode === "table" ? [t.tx, t.ty, t.tz] : [c.x, c.y, c.z];
+  const others = state ? state.players.filter(p => p.dim !== view.dim).length : 0;
+  $("#mapInfo").innerHTML = `<b>X</b> ${Math.round(x)} <b>Y</b> ${Math.round(y)} <b>Z</b> ${Math.round(z)}${follow ? ` · following ${esc(follow)}` : ""}${others ? ` · ${others} elsewhere` : ""}`;
+  let have = 0, waiting = 0;
+  for (const tt of M3.tiles.values()) if (tt.wanted) { if (tt.heights) have++; else if (tt.loading || tt.at === 0) waiting++; }
+  const ms = $("#mapStatus");
+  if (!have && state) { ms.textContent = waiting ? "Loading the 3D map…" : "Nothing explored here. Tap Spawn above, or a player."; ms.classList.remove("hidden"); }
+  else ms.classList.add("hidden");
+}
+
+function controls3d(dt) {
+  const k = M3.keys, has = c => k.has(c);
+  let moved = false;
+  if (mapMode === "free") {
+    const f = M3.free;
+    let mx = 0, mz = 0, my = M3.vert;
+    if (has("KeyW") || has("ArrowUp")) mz += 1;
+    if (has("KeyS") || has("ArrowDown")) mz -= 1;
+    if (has("KeyD") || has("ArrowRight")) mx += 1;
+    if (has("KeyA") || has("ArrowLeft")) mx -= 1;
+    if (has("Space") || has("KeyE")) my += 1;
+    if (has("ShiftLeft") || has("ShiftRight") || has("KeyQ")) my -= 1;
+    if (M3.joy) { mx += M3.joy.vx; mz += M3.joy.vy; }
+    if (mx || mz || my) {
+      const sp = 24 * f.speed * dt * (has("ControlLeft") ? 3 : 1);
+      const s = Math.sin(f.yaw), c = Math.cos(f.yaw);
+      f.x += (-s * mz + c * mx) * sp; f.z += (-c * mz - s * mx) * sp; f.y = Math.min(800, f.y + my * sp);
+      moved = true;
+    }
+    const g = groundY(f.x, f.z);
+    if (g != null && f.y < g + 1.6) { f.y = g + 1.6; moved = true; }
+  } else {
+    const t = M3.table;
+    let px = 0, pz = 0, rot = 0;
+    if (has("KeyW") || has("ArrowUp")) pz -= 1;
+    if (has("KeyS") || has("ArrowDown")) pz += 1;
+    if (has("KeyD") || has("ArrowRight")) px += 1;
+    if (has("KeyA") || has("ArrowLeft")) px -= 1;
+    if (has("KeyQ")) rot += 1;
+    if (has("KeyE")) rot -= 1;
+    if (px || pz) { pan3d(px * t.dist * dt * 1.2, pz * t.dist * dt * 1.2, true); moved = true; }
+    if (rot) { t.yaw += rot * dt * 1.6; moved = true; }
+    if (t.spin) { // the ⟲ ⟳ buttons turn smoothly
+      const step = Math.sign(t.spin) * Math.min(Math.abs(t.spin), dt * 4);
+      t.yaw += step; t.spin -= step; if (Math.abs(t.spin) < 1e-4) t.spin = 0; moved = true;
+    }
+    if (t.pitchTo != null) {
+      const d = t.pitchTo - t.pitch, step = Math.sign(d) * Math.min(Math.abs(d), dt * 2.5);
+      t.pitch += step; if (Math.abs(d) < 1e-3) t.pitchTo = null; moved = true;
+    }
+    const g = groundY(t.tx, t.tz);
+    if (g != null && Math.abs(g - t.ty) > 0.05) { t.ty += (g - t.ty) * Math.min(1, dt * 6); moved = true; }
+  }
+  return moved;
+}
+/** Move the tabletop target by screen-space amounts (right, down) in blocks. */
+function pan3d(dx, dz, flat) {
+  const t = M3.table, s = Math.sin(t.yaw), c = Math.cos(t.yaw);
+  if (!flat) dz /= Math.max(0.35, Math.sin(t.pitch)); // ground looks squashed when tilted
+  t.tx += c * dx + s * dz; t.tz += -s * dx + c * dz;
+}
+function zoom3d(factor) { const t = M3.table; t.dist = Math.min(900, Math.max(8, t.dist * factor)); kick3d(); }
+
+/** Keep a followed player in view: the camera moves along with them. */
+function follow3d() {
+  const p = follow && findPlayer(follow);
+  if (!p) { M3.followLast = null; return false; }
+  const m = M3.markers.get("p:" + p.name);
+  const pos = m ? { x: m.cur.x, y: m.cur.y, z: m.cur.z } : { x: p.x, y: p.y, z: p.z };
+  const last = M3.followLast; M3.followLast = pos;
+  if (!last) return false;
+  const dx = pos.x - last.x, dy = pos.y - last.y, dz = pos.z - last.z;
+  if (!dx && !dy && !dz) return false;
+  if (mapMode === "table") { M3.table.tx += dx; M3.table.tz += dz; }
+  else { M3.free.x += dx; M3.free.y += dy; M3.free.z += dz; }
+  return true;
+}
+
+/* --- terrain tiles --- */
+function tiles3d(fc) {
+  const R = fc.radius, now = Date.now();
+  const tx0 = Math.floor((fc.x - R) / TILE), tx1 = Math.floor((fc.x + R) / TILE);
+  const tz0 = Math.floor((fc.z - R) / TILE), tz1 = Math.floor((fc.z + R) / TILE);
+  const list = [];
+  for (let tx = tx0; tx <= tx1; tx++) for (let tz = tz0; tz <= tz1; tz++) {
+    const dx = Math.max(tx * TILE - fc.x, 0, fc.x - (tx + 1) * TILE), dz = Math.max(tz * TILE - fc.z, 0, fc.z - (tz + 1) * TILE);
+    const d = Math.hypot(dx, dz);
+    if (d <= R) list.push([tx, tz, d]);
+  }
+  list.sort((a, b) => a[2] - b[2]);
+  const wanted = new Set();
+  const build = [];
+  for (const [tx, tz, d] of list.slice(0, 70)) {
+    const k = view.dim + "|" + tx + "|" + tz;
+    let t = M3.tiles.get(k);
+    if (!t) { t = { k, dim: view.dim, tx, tz, colors: null, heights: null, at: 0, retryAt: 0, loading: false, mesh: null, ver: 0, nb: 0, built: "" }; M3.tiles.set(k, t); }
+    wanted.add(k);
+    if (!t.loading && now >= t.retryAt && (now - t.at > TILE_REFRESH_MS || t.at === 0) && M3.inflight < MAX_INFLIGHT) load3d(t);
+    if (!t.heights) continue;
+    const step = d < fc.near ? 1 : d < fc.near * 2.2 ? 2 : 4;
+    const key = t.ver + ":" + t.nb + ":" + step;
+    if (t.built !== key) build.push([t, step, key]);
+  }
+  for (const t of M3.tiles.values()) {
+    t.wanted = wanted.has(t.k);
+    if (!t.wanted && t.mesh) { M3.terrain.remove(t.mesh); t.mesh.geometry.dispose(); t.mesh = null; t.built = ""; M3.dirty = true; }
+  }
+  // Build a few meshes per frame so the screen never freezes
+  const start = performance.now();
+  for (const [t, step, key] of build) {
+    if (performance.now() - start > 10) break;
+    const geo = tileGeometry(t, step);
+    if (t.mesh) { M3.terrain.remove(t.mesh); t.mesh.geometry.dispose(); t.mesh = null; }
+    if (geo) {
+      t.mesh = new M3.T.Mesh(geo, M3.material);
+      t.mesh.position.set(t.tx * TILE, 0, t.tz * TILE);
+      M3.terrain.add(t.mesh);
+    }
+    t.built = key; M3.dirty = true;
+  }
+  if (M3.tiles.size > 400) { // forget far-away tiles we aren't showing
+    for (const [k, t] of M3.tiles) { if (M3.tiles.size <= 300) break; if (!t.wanted && !t.loading) M3.tiles.delete(k); }
+  }
+}
+
+async function load3d(t) {
+  t.loading = true; M3.inflight++;
+  const q = `dim=${encodeURIComponent(t.dim)}&x=${t.tx}&z=${t.tz}`;
+  try {
+    // heights first: that request draws the tile if needed, then the image comes straight from the cache
+    const hr = await api("/api/heights?" + q);
+    if (hr.status === 200) {
+      const buf = await hr.arrayBuffer();
+      const pr = await api("/api/tile?" + q);
+      if (pr.status === 200 && buf.byteLength >= TILE * TILE * 2) {
+        const bmp = await createImageBitmap(await pr.blob());
+        readCtx.clearRect(0, 0, TILE, TILE); readCtx.drawImage(bmp, 0, 0);
+        t.colors = readCtx.getImageData(0, 0, TILE, TILE).data;
+        const dv = new DataView(buf), h = new Int16Array(TILE * TILE);
+        for (let i = 0; i < h.length; i++) h[i] = dv.getInt16(i * 2, true);
+        t.heights = h; t.at = Date.now(); t.ver++;
+        const t2 = tiles.get(t.k); if (t2) { t2.bmp = bmp; t2.at = t.at; } // the 2D map can use it too
+        for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { // neighbors can now close their edges
+          const n = M3.tiles.get(t.dim + "|" + (t.tx + dx) + "|" + (t.tz + dz)); if (n) n.nb++;
+        }
+      } else if (pr.status === 204) { t.at = Date.now(); }
+      else t.retryAt = Date.now() + 1500;
+    } else if (hr.status === 204) { t.at = Date.now(); }
+    else t.retryAt = Date.now() + 1500;
+  } catch (e) { t.retryAt = Date.now() + 5000; }
+  finally { t.loading = false; M3.inflight--; M3.dirty = true; }
+}
+
+/** Index of the block that stands for one cell (step x step blocks), or -1 if nothing is known there. */
+function cellIndex(t, cx, cz, step) {
+  const H = t.heights, C = t.colors, m = step >> 1;
+  let i = (cz * step + m) * TILE + cx * step + m;
+  if (H[i] !== NO_H && C[i * 4 + 3] >= 128) return i;
+  for (let dz = 0; dz < step; dz++) for (let dx = 0; dx < step; dx++) {
+    i = (cz * step + dz) * TILE + cx * step + dx;
+    if (H[i] !== NO_H && C[i * 4 + 3] >= 128) return i;
+  }
+  return -1;
+}
+
+/** Blocky terrain for one tile: a flat top per cell, plus walls wherever the neighbor is lower. */
+function tileGeometry(t, step) {
+  const n = TILE / step, H = t.heights, C = t.colors;
+  const top = new Int32Array(n * n).fill(NO_H), rgb = new Float32Array(n * n * 3);
+  let minY = Infinity;
+  for (let cz = 0; cz < n; cz++) for (let cx = 0; cx < n; cx++) {
+    const i = cellIndex(t, cx, cz, step);
+    if (i < 0) continue;
+    const c = cz * n + cx, y = H[i] + 1;
+    top[c] = y; minY = Math.min(minY, y);
+    rgb[c * 3] = C[i * 4] / 255; rgb[c * 3 + 1] = C[i * 4 + 1] / 255; rgb[c * 3 + 2] = C[i * 4 + 2] / 255;
+  }
+  if (minY === Infinity) return null;
+  const floor = minY - 4;
+  // neighbor tiles, so walls along the edge stop at the right height
+  const nbT = {};
+  for (const [name, dx, dz] of [["e", 1, 0], ["w", -1, 0], ["s", 0, 1], ["n", 0, -1]]) {
+    const o = M3.tiles.get(t.dim + "|" + (t.tx + dx) + "|" + (t.tz + dz));
+    nbT[name] = o?.heights ? o : null;
+  }
+  const edgeH = (o, cx, cz) => { const i = cellIndex(o, cx, cz, step); return i < 0 ? NO_H : o.heights[i] + 1; };
+  const below = (cx, cz) => {
+    if (cx >= 0 && cz >= 0 && cx < n && cz < n) { const h = top[cz * n + cx]; return h === NO_H ? floor : h; }
+    let o = null, ox = cx, oz = cz;
+    if (cx >= n) { o = nbT.e; ox = 0; } else if (cx < 0) { o = nbT.w; ox = n - 1; }
+    else if (cz >= n) { o = nbT.s; oz = 0; } else { o = nbT.n; oz = n - 1; }
+    if (!o) return floor;
+    const h = edgeH(o, ox, oz);
+    return h === NO_H ? floor : Math.min(h, floor + 4) - 2; // a little extra so seams between detail levels stay closed
+  };
+  const DIRS = [[0, -1, 0.78], [0, 1, 0.58], [1, 0, 0.68], [-1, 0, 0.88]]; // N S E W and how much light each face gets
+  // count quads first so the buffers are allocated once
+  let quads = 0;
+  for (let cz = 0; cz < n; cz++) for (let cx = 0; cx < n; cx++) {
+    const h = top[cz * n + cx]; if (h === NO_H) continue;
+    quads++;
+    for (const [dx, dz] of DIRS) if (below(cx + dx, cz + dz) < h) quads++;
+  }
+  const pos = new Float32Array(quads * 12), col = new Float32Array(quads * 12), idx = new Uint32Array(quads * 6);
+  let q = 0;
+  const quad = (ax, ay, az, bx, by, bz, cx_, cy, cz_, dx_, dy, dz_, r, g, b) => {
+    const p = q * 12;
+    pos[p] = ax; pos[p + 1] = ay; pos[p + 2] = az; pos[p + 3] = bx; pos[p + 4] = by; pos[p + 5] = bz;
+    pos[p + 6] = cx_; pos[p + 7] = cy; pos[p + 8] = cz_; pos[p + 9] = dx_; pos[p + 10] = dy; pos[p + 11] = dz_;
+    for (let v = 0; v < 4; v++) { col[p + v * 3] = r; col[p + v * 3 + 1] = g; col[p + v * 3 + 2] = b; }
+    const v0 = q * 4, ii = q * 6;
+    idx[ii] = v0; idx[ii + 1] = v0 + 1; idx[ii + 2] = v0 + 2; idx[ii + 3] = v0; idx[ii + 4] = v0 + 2; idx[ii + 5] = v0 + 3;
+    q++;
+  };
+  for (let cz = 0; cz < n; cz++) for (let cx = 0; cx < n; cx++) {
+    const c = cz * n + cx, h = top[c]; if (h === NO_H) continue;
+    const r = rgb[c * 3], g = rgb[c * 3 + 1], b = rgb[c * 3 + 2];
+    const x0 = cx * step, x1 = x0 + step, z0 = cz * step, z1 = z0 + step;
+    quad(x0, h, z0, x0, h, z1, x1, h, z1, x1, h, z0, r, g, b);
+    for (const [dx, dz, light] of DIRS) {
+      const lo = below(cx + dx, cz + dz); if (lo >= h) continue;
+      const R = r * light, G = g * light, B = b * light;
+      if (dz === -1) quad(x0, lo, z0, x0, h, z0, x1, h, z0, x1, lo, z0, R, G, B);
+      else if (dz === 1) quad(x1, lo, z1, x1, h, z1, x0, h, z1, x0, lo, z1, R, G, B);
+      else if (dx === 1) quad(x1, lo, z0, x1, h, z0, x1, h, z1, x1, lo, z1, R, G, B);
+      else quad(x0, lo, z1, x0, h, z1, x0, h, z0, x0, lo, z0, R, G, B);
+    }
+  }
+  const T = M3.T, geo = new T.BufferGeometry();
+  geo.setAttribute("position", new T.BufferAttribute(pos, 3));
+  geo.setAttribute("color", new T.BufferAttribute(col, 3));
+  geo.setIndex(new T.BufferAttribute(idx, 1));
+  geo.computeBoundingSphere();
+  return geo;
+}
+
+/* --- players, waypoints, deaths and spawn --- */
+function labelCanvas(kind, d) {
+  const dpr = 2, c = document.createElement("canvas"), g = c.getContext("2d");
+  g.font = "11px Silkscreen, monospace";
+  const text = kind === "p" ? d.name : kind === "w" ? d.name : kind === "d" ? "✝ " + d.player : "Spawn";
+  const tw = Math.ceil(g.measureText(text).width) + 10;
+  const icon = kind === "p" ? 24 : 20, w = Math.max(tw, icon + 4), h = 16 + 4 + icon + 6;
+  c.width = w * dpr; c.height = h * dpr;
+  g.scale(dpr, dpr); g.font = "11px Silkscreen, monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.imageSmoothingEnabled = false;
+  const cx = w / 2, iy = 20;
+  let color = "#e6ebe3";
+  if (kind === "p") {
+    const face = d.face ? faceImg(d.uuid) : null, on = follow === d.name;
+    g.fillStyle = on ? "#5caa4a" : "#0b0e0c"; g.fillRect(cx - 12, iy, 24, 24);
+    if (face && face.complete && face.naturalWidth) g.drawImage(face, cx - 10, iy + 2, 20, 20);
+    else { g.fillStyle = playerColor(d.name); g.fillRect(cx - 10, iy + 2, 20, 20); }
+    if (on) color = "#5caa4a";
+  } else if (kind === "w") {
+    const col = XAERO[d.color] || XAERO[10];
+    g.save(); g.translate(cx, iy + 10); g.rotate(Math.PI / 4);
+    g.fillStyle = "#0b0e0c"; g.fillRect(-8, -8, 16, 16); g.fillStyle = col; g.fillRect(-6, -6, 12, 12); g.restore();
+    color = [0, 1, 2, 3, 4, 5, 8].includes(d.color) ? "#e6ebe3" : col;
+  } else if (kind === "d") {
+    g.fillStyle = "#0b0e0c"; g.fillRect(cx - 9, iy + 1, 18, 18); g.fillStyle = "#d9564f";
+    for (let k = -5; k <= 4; k++) { g.fillRect(cx + k, iy + 10 + k, 2, 2); g.fillRect(cx + k, iy + 9 - k, 2, 2); }
+    color = "#ff8a80";
+  } else {
+    g.fillStyle = "#0b0e0c"; g.fillRect(cx - 7, iy + 3, 14, 14); g.fillStyle = "#e8b33a"; g.fillRect(cx - 5, iy + 5, 10, 10);
+    color = "#e8b33a";
+  }
+  // little stem pointing at the exact spot
+  g.fillStyle = "#0b0e0c"; g.fillRect(cx - 1, h - 6, 2, 6);
+  g.fillStyle = "rgba(11,14,12,.85)"; g.fillRect(cx - tw / 2, 0, tw, 16);
+  g.fillStyle = color; g.fillText(text, cx, 8.5);
+  return { c, w, h };
+}
+function markers3d(dt) {
+  const T = M3.T, want = new Map();
+  if (state) {
+    for (const p of state.players) if (p.dim === view.dim) want.set("p:" + p.name, ["p", p, p.x, p.y + 1.9, p.z]);
+    if (showMarkers) {
+      for (const w of state.waypoints || []) if (w.dim === view.dim) want.set("w:" + w.id, ["w", w, w.x + .5, w.y + .5, w.z + .5]);
+      for (const d of state.deaths || []) if (d.dim === view.dim) want.set("d:" + d.player, ["d", d, d.x + .5, d.y + .5, d.z + .5]);
+    }
+    const sp = state.spawn;
+    if (sp && sp.dim === view.dim) want.set("s", ["s", sp, sp.x + .5, (groundY(sp.x, sp.z) ?? sp.y) + .2, sp.z + .5]);
+  }
+  let moving = false;
+  for (const [k, m] of M3.markers) if (!want.has(k)) {
+    M3.markerGroup.remove(m.obj); m.tex.dispose(); m.sprite.material.dispose(); if (m.pawn) m.pawn.material.dispose();
+    M3.markers.delete(k); M3.dirty = true;
+  }
+  const H = canvas3.getBoundingClientRect().height || 1, k2 = 2 * Math.tan(FOV * Math.PI / 360) / H;
+  for (const [k, [kind, d, x, y, z]] of want) {
+    let m = M3.markers.get(k);
+    const face = kind === "p" && d.face ? faceImg(d.uuid) : null;
+    const sig = kind === "p" ? d.name + (follow === d.name) + !!(face && face.complete && face.naturalWidth)
+      : kind === "w" ? d.name + d.color : kind === "d" ? d.player : "s";
+    if (!m) {
+      const obj = new T.Group();
+      const tex = new T.CanvasTexture(document.createElement("canvas"));
+      tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+      const sprite = new T.Sprite(new T.SpriteMaterial({ map: tex, sizeAttenuation: false, depthTest: false, transparent: true }));
+      sprite.center.set(0.5, 0); sprite.renderOrder = 10;
+      obj.add(sprite);
+      let pawn = null;
+      if (kind === "p") { // a little player-sized block so you can see them standing on the terrain
+        pawn = new T.Mesh(M3.pawnGeo || (M3.pawnGeo = new T.BoxGeometry(0.6, 1.8, 0.6)),
+          new T.MeshBasicMaterial({ color: new T.Color().setHSL(hashHue(d.name) / 360, 0.7, 0.62) }));
+        pawn.position.y = -1.0; obj.add(pawn);
+      }
+      m = { obj, sprite, tex, pawn, sig: null, cur: { x, y, z }, kind, ref: d };
+      obj.position.set(x, y, z);
+      M3.markerGroup.add(obj); M3.markers.set(k, m);
+    }
+    m.ref = d;
+    if (m.sig !== sig) {
+      const L = labelCanvas(kind, d);
+      m.tex.image = L.c; m.tex.needsUpdate = true; m.w = L.w; m.h = L.h; m.sig = sig; M3.dirty = true;
+    }
+    m.sprite.scale.set(m.w * k2, m.h * k2, 1);
+    // glide players between position updates
+    const a = 1 - Math.exp(-dt * 8), c = m.cur;
+    const dist = Math.abs(x - c.x) + Math.abs(y - c.y) + Math.abs(z - c.z);
+    if (dist > 60) { c.x = x; c.y = y; c.z = z; } else if (dist > 0.01) { c.x += (x - c.x) * a; c.y += (y - c.y) * a; c.z += (z - c.z) * a; moving = true; }
+    m.obj.position.set(c.x, c.y, c.z);
+    if (m.pawn) m.pawn.rotation.y = -(d.yaw || 0) * Math.PI / 180;
+  }
+  return moving;
+}
+/** The marker label under a screen point (players first). */
+function pick3d(x, y) {
+  const r = canvas3.getBoundingClientRect(), v = new M3.T.Vector3();
+  let best = null, bestD = 1e9;
+  for (const m of M3.markers.values()) {
+    v.copy(m.obj.position).project(M3.camera);
+    if (v.z > 1 || v.z < -1) continue;
+    const sx = (v.x + 1) / 2 * r.width, sy = (1 - v.y) / 2 * r.height;
+    if (x < sx - m.w / 2 - 6 || x > sx + m.w / 2 + 6 || y < sy - m.h - 6 || y > sy + 10) continue;
+    const d = Math.hypot(sx - x, sy - m.h / 2 - y) - (m.kind === "p" ? 1000 : 0);
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  return best;
+}
+function terrainAt(x, y) {
+  const r = canvas3.getBoundingClientRect();
+  M3.raycaster.setFromCamera(new M3.T.Vector2(x / r.width * 2 - 1, -(y / r.height) * 2 + 1), M3.camera);
+  M3.raycaster.far = Infinity;
+  return M3.raycaster.intersectObjects(M3.terrain.children, false)[0]?.point || null;
+}
+
+/* --- touch, mouse and keyboard --- */
+const p3 = new Map();
+let g3 = null;
+function stopJoy() { M3.joy = null; $("#joy").classList.add("hidden"); }
+function twoInfo() {
+  const [a, b] = [...p3.values()];
+  return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), ang: Math.atan2(b.y - a.y, b.x - a.x), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+}
+canvas3.addEventListener("pointerdown", e => {
+  canvas3.setPointerCapture(e.pointerId);
+  const r = canvas3.getBoundingClientRect(), lx = e.clientX - r.left, ly = e.clientY - r.top;
+  const pt = { x: e.clientX, y: e.clientY, role: "drag", button: e.button };
+  // Free cam on a touch screen: a thumb on the left side is a joystick
+  if (mapMode === "free" && e.pointerType !== "mouse" && lx < r.width * 0.45 && !M3.joy) {
+    pt.role = "joy"; M3.joy = { id: e.pointerId, ox: lx, oy: ly, vx: 0, vy: 0 };
+    const j = $("#joy"); j.style.left = lx + "px"; j.style.top = ly + "px"; $("#joyKnob").style.transform = ""; j.classList.remove("hidden");
+    p3.set(e.pointerId, pt); kick3d(); return;
+  }
+  p3.set(e.pointerId, pt);
+  if (g3?.lp) clearTimeout(g3.lp);
+  const drags = [...p3.values()].filter(p => p.role === "drag");
+  if (drags.length === 1) {
+    const g = g3 = { sx: lx, sy: ly, t: Date.now(), moved: 0 };
+    g.lp = setTimeout(() => { // hold still: actions for that spot
+      if (g3 !== g || g.moved > 6) return;
+      g.long = true;
+      try { navigator.vibrate && navigator.vibrate(20); } catch (err) {}
+      const hit = terrainAt(g.sx, g.sy);
+      if (hit) mapSpotMenu(view.dim, Math.floor(hit.x - 1e-3), Math.round(hit.y), Math.floor(hit.z - 1e-3));
+    }, 550);
+  } else if (drags.length === 2 && mapMode === "table") g3 = { two: twoInfo(), moved: 99 };
+  else g3 = { moved: 99 };
+});
+canvas3.addEventListener("pointermove", e => {
+  const pt = p3.get(e.pointerId); if (!pt) return;
+  const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
+  pt.x = e.clientX; pt.y = e.clientY;
+  const r = canvas3.getBoundingClientRect();
+  if (pt.role === "joy" && M3.joy) {
+    const jx = e.clientX - r.left - M3.joy.ox, jy = e.clientY - r.top - M3.joy.oy, len = Math.hypot(jx, jy), max = 50;
+    const k = len > max ? max / len : 1;
+    M3.joy.vx = jx * k / max; M3.joy.vy = -jy * k / max;
+    $("#joyKnob").style.transform = `translate(${jx * k}px,${jy * k}px)`;
+    return;
+  }
+  const drags = [...p3.values()].filter(p => p.role === "drag");
+  if (g3 && !g3.two) g3.moved += Math.abs(dx) + Math.abs(dy);
+  if (g3 && g3.moved <= 6) return;
+  if (mapMode === "table") {
+    const t = M3.table;
+    if (drags.length === 2 && g3?.two) {
+      const now = twoInfo(), was = g3.two;
+      t.dist = Math.min(900, Math.max(8, t.dist * was.d / now.d));
+      let da = now.ang - was.ang; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
+      t.yaw += da;
+      t.pitch = Math.min(1.53, Math.max(0.3, t.pitch + (now.my - was.my) * 0.006));
+      t.pitchTo = null;
+      g3.two = now;
+    } else if (drags.length === 1) {
+      if (follow) { follow = null; M3.followName = null; renderChips(); }
+      if (pt.button === 2 || e.shiftKey || e.ctrlKey) { // mouse: right-drag turns and tilts
+        t.yaw += dx * 0.008; t.pitch = Math.min(1.53, Math.max(0.3, t.pitch + dy * 0.006)); t.pitchTo = null;
+      } else {
+        const k = t.dist * 2 * Math.tan(FOV * Math.PI / 360) / r.height;
+        pan3d(-dx * k, -dy * k);
+      }
+    }
+  } else if (drags.length >= 1) { // free cam: drag to look around
+    const f = M3.free;
+    f.yaw -= dx * 0.005; f.pitch = Math.min(1.5, Math.max(-1.5, f.pitch - dy * 0.005));
+  }
+  kick3d();
+});
+function end3d(e) {
+  const pt = p3.get(e.pointerId); if (!pt) return;
+  p3.delete(e.pointerId);
+  if (pt.role === "joy") { stopJoy(); return; }
+  if (g3?.lp) clearTimeout(g3.lp);
+  if (g3 && !g3.two && !g3.long && g3.moved <= 6 && Date.now() - g3.t < 400 && e.type === "pointerup") {
+    const r = canvas3.getBoundingClientRect(), m = pick3d(e.clientX - r.left, e.clientY - r.top);
+    if (m?.kind === "p") openSheet(m.ref.name);
+    else if (m?.kind === "w") waypointMenu(m.ref);
+    else if (m?.kind === "d") deathMenu(m.ref);
+  }
+  const drags = [...p3.values()].filter(p => p.role === "drag");
+  if (drags.length === 1 && mapMode === "table") g3 = { moved: 99 };
+  else if (!drags.length) g3 = null;
+}
+canvas3.addEventListener("pointerup", end3d);
+canvas3.addEventListener("pointercancel", end3d);
+canvas3.addEventListener("contextmenu", e => e.preventDefault());
+canvas3.addEventListener("wheel", e => {
+  e.preventDefault();
+  if (mapMode === "table") zoom3d(e.deltaY < 0 ? 0.85 : 1.18);
+  else { const f = M3.free, d = freeForward(), s = (e.deltaY < 0 ? 1 : -1) * 6 * f.speed; f.x += d.x * s; f.y += d.y * s; f.z += d.z * s; kick3d(); }
+}, { passive: false });
+window.addEventListener("keydown", e => {
+  if (mapMode === "2d" || currentView !== "map" || e.target.closest?.("input,textarea,select") || e.metaKey || e.altKey) return;
+  if (/^(Key[WASDQE]|Arrow|Space|Shift|ControlLeft)/.test(e.code)) { M3.keys.add(e.code); kick3d(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); }
+});
+window.addEventListener("keyup", e => M3.keys.delete(e.code));
+window.addEventListener("blur", () => { M3.keys.clear(); M3.vert = 0; });
+for (const [id, v] of [["#upBtn", 1], ["#downBtn", -1]]) {
+  const b = $(id);
+  b.addEventListener("pointerdown", e => { e.preventDefault(); M3.vert = v; kick3d(); });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => { M3.vert = 0; });
+}
+$("#speedBtn").addEventListener("click", () => {
+  const f = M3.free; f.speed = f.speed === 1 ? 3 : f.speed === 3 ? 8 : 1;
+  $("#speedBtn").textContent = "×" + f.speed;
+});
+$("#rotL").addEventListener("click", () => { M3.table.spin += Math.PI / 4; kick3d(); });
+$("#rotR").addEventListener("click", () => { M3.table.spin -= Math.PI / 4; kick3d(); });
+$("#tiltBtn").addEventListener("click", () => { // top-down → angled → low
+  const t = M3.table, steps = [1.53, 0.96, 0.5];
+  const i = steps.findIndex(s => Math.abs((t.pitchTo ?? t.pitch) - s) < 0.05);
+  t.pitchTo = steps[(i + 1) % steps.length]; kick3d();
+});
 
 /* ---------- boot ---------- */
 if (TOKEN) {
