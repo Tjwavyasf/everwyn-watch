@@ -169,7 +169,20 @@ final class AdminActions {
                 }
                 yield "Weather set to " + str(req, "value");
             }
-            case "restore_death" -> vault.restore(str(req, "id"), !req.has("xp") || req.get("xp").getAsBoolean());
+            case "restore_death" -> {
+                java.util.Set<Integer> pick = null;
+                if (req.has("slots") && req.get("slots").isJsonArray()) {
+                    pick = new java.util.HashSet<>();
+                    for (com.google.gson.JsonElement el : req.getAsJsonArray("slots")) pick.add(el.getAsInt());
+                    if (pick.isEmpty()) throw new IllegalArgumentException("Pick at least one item");
+                }
+                yield vault.restore(str(req, "id"), req.has("xp") && req.get("xp").getAsBoolean(), pick);
+            }
+            case "xaero_style" -> {
+                s.cfg.xaeroUseUnderscores = req.get("underscores").getAsBoolean();
+                s.cfg.save();
+                yield "Waypoints now use the " + (s.cfg.xaeroUseUnderscores ? "newer (underscore)" : "older (dash)") + " Xaero style. Send one again to test.";
+            }
             case "notify_settings" -> {
                 WatchConfig cfg = EverwynWatch.config();
                 if (req.has("enabled")) cfg.notificationsEnabled = req.get("enabled").getAsBoolean();
@@ -299,7 +312,7 @@ final class AdminActions {
         initial = initial.isEmpty() ? "W" : initial.substring(0, 1).toUpperCase();
         String dimId = w.get("dim").getAsString();
         String path = dimId.contains(":") ? dimId.substring(dimId.indexOf(':') + 1) : dimId;
-        String sep = EverwynWatch.config().xaeroUnderscoreFormat ? "_" : "-";
+        String sep = EverwynWatch.config().xaeroUseUnderscores ? "_" : "-";
         String dim = "Internal" + sep + path.replace("_", sep).replace("/", sep) + sep + "waypoints";
         return "xaero-waypoint:" + name + ":" + initial + ":"
                 + w.get("x").getAsInt() + ":" + w.get("y").getAsInt() + ":" + w.get("z").getAsInt() + ":"

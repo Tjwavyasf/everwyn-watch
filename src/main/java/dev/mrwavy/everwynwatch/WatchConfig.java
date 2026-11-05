@@ -34,11 +34,10 @@ public class WatchConfig {
     /** Limit on new map tiles drawn per second, to protect TPS. */
     public int maxTileRendersPerSecond = 6;
     /**
-     * Shared waypoints use Xaero's newer "Internal_overworld_waypoints" style.
-     * If players' [Add] button puts waypoints in the wrong world, set this to false
-     * for the older "Internal-overworld-waypoints" style.
+     * How shared waypoints name the dimension for Xaero's Minimap. false = "Internal-overworld-waypoints"
+     * (what most 1.20.1 Xaero versions expect). If players' [Add] button does nothing, flip this in the app.
      */
-    public boolean xaeroUnderscoreFormat = true;
+    public boolean xaeroUseUnderscores = false;
 
     /** Push notifications through the free ntfy app. Subscribe to this topic in the app. */
     public boolean notificationsEnabled = true;

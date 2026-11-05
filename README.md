@@ -29,7 +29,7 @@ A server-side Fabric 1.20.1 mod that runs a small web app you can open on your p
 
 Waypoints and deaths are saved in `config/everwyn-watch-markers.json`; placed challenges in `config/everwyn-watch-challenges.json`. Saved map images live in your world folder under `everwyn-watch/tiles`.
 
-If a shared waypoint lands in the wrong world on players' Xaero's maps, set `"xaeroUnderscoreFormat": false` in the config and restart.
+If players tap [Add] on a shared waypoint and nothing happens, open the bell menu in the app and flip "Use the newer Xaero format", then send it again.
 
 Server-only: players don't need it installed. It never loads or generates chunks; the map fills in as people explore.
 

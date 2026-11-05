@@ -159,6 +159,9 @@ h2.sec{font-family:var(--pix);font-size:12px;color:var(--muted);margin:16px 2px 
 .topic input{flex:1;min-width:0;font-family:var(--pix);font-size:12px}
 ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{margin:6px 0}
 .btn[disabled]{opacity:.45;pointer-events:none}
+.slot.picked{box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff, 0 0 0 3px var(--grass)}
+.slot.picked::after{content:"";position:absolute;right:2px;top:2px;width:8px;height:8px;background:var(--grass);box-shadow:0 0 0 1px #0b0e0c}
+.slot.done{opacity:.4}
 .i-server{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h1V3h1v3h1V1h1v5h1V2h1v4h1V0h1v8H0z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h1V3h1v3h1V1h1v5h1V2h1v4h1V0h1v8H0z'/%3E%3C/svg%3E")}
 nav button{font-size:10px}
 canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
@@ -675,6 +678,7 @@ $("#sheet").addEventListener("change", e => {
   const t = e.target.closest("[data-nkey]"), d = e.target.closest("[data-dkey]");
   if (t) action({ action: "notify_settings", [t.dataset.nkey]: t.checked });
   if (d) action({ action: "discord_settings", [d.dataset.dkey]: d.checked });
+  if (e.target.id === "xaeroStyle") action({ action: "xaero_style", underscores: e.target.checked });
 });
 $("#sheet").addEventListener("click", e => {
   const lr = e.target.closest("[data-lr]"), lh = e.target.closest("[data-lh]"), lp = e.target.closest("[data-lp]");
@@ -683,6 +687,13 @@ $("#sheet").addEventListener("click", e => {
   if (lp && L) { L.player = lp.dataset.lp || null; loadLedger(); }
 });
 $("#sheet").addEventListener("click", async e => {
+  const ds = sheetMode === "death" && canAll() && openDeathData?.online ? e.target.closest("[data-dslot]") : null;
+  if (ds) {
+    const i = +ds.dataset.dslot;
+    if (deathPick.has(i)) { deathPick.delete(i); ds.classList.remove("picked"); } else { deathPick.add(i); ds.classList.add("picked"); }
+    updatePickButton();
+    return;
+  }
   const slot = e.target.closest("[data-item]");
   if (slot) { const [n, id] = slot.dataset.item.split("|"); toast(`${n}  (${id})`); return; }
   const b = e.target.closest("[data-a]"); if (!b) return;
@@ -712,6 +723,9 @@ $("#sheet").addEventListener("click", async e => {
       break;
     }
     case "drestore": restoreDeath(); break;
+    case "dpick": restoreDeath(true); break;
+    case "dselall": document.querySelectorAll("#sheetBody [data-dslot]").forEach(el => { deathPick.add(+el.dataset.dslot); el.classList.add("picked"); }); updatePickButton(); break;
+    case "dselnone": deathPick.clear(); document.querySelectorAll("#sheetBody [data-dslot].picked").forEach(el => el.classList.remove("picked")); updatePickButton(); break;
     case "ender": showEnder(name); break;
     case "lrb": ledgerRollback(); break;
     case "pdeaths": closeSheet(); deathFilter = profileData.name; showView("deaths"); break;
@@ -1056,28 +1070,55 @@ async function openDeath(id) {
       : d.grave === "gone" ? `<div class="note ok">No grave left near the death spot. Safe to give everything back.</div>`
       : `<div class="note">Couldn't check for a grave because nobody is near that spot right now.</div>`;
   }
-  h += `<h2 class="sec">Gear</h2><div class="equip">${[39, 38, 37, 36].map(i => slotHtml(slots[i])).join("")}<div style="width:12px"></div>${slotHtml(slots[40])}</div>
-    <h2 class="sec">Inventory</h2><div class="inv">${Array.from({ length: 27 }, (_, i) => slotHtml(slots[i + 9])).join("")}</div>
-    <div class="inv" style="margin-top:8px">${Array.from({ length: 9 }, (_, i) => slotHtml(slots[i])).join("")}</div>`;
+  // Death slots can be tapped to pick which items to give back
+  deathPick = new Set();
+  const done = new Set(d.restoredSlots || []);
+  const pickable = canAll() && d.online;
+  const ds = i => {
+    const it = slots[i];
+    const html = slotHtml(it);
+    if (!it) return html;
+    return html.replace('<div class="slot', `<div data-dslot="${i}" class="slot${done.has(i) ? " done" : ""}`);
+  };
+  if (pickable) h += `<p class="hint">Tap items to pick just some of them. Faded items were already given back.</p>`;
+  h += `<h2 class="sec">Gear</h2><div class="equip">${[39, 38, 37, 36].map(ds).join("")}<div style="width:12px"></div>${ds(40)}</div>
+    <h2 class="sec">Inventory</h2><div class="inv">${Array.from({ length: 27 }, (_, i) => ds(i + 9)).join("")}</div>
+    <div class="inv" style="margin-top:8px">${Array.from({ length: 9 }, (_, i) => ds(i)).join("")}</div>`;
   const extra = d.itemList.filter(it => it.slot > 40);
-  if (extra.length) h += `<div class="inv" style="margin-top:8px">${extra.map(it => slotHtml(it)).join("")}</div>`;
+  if (extra.length) h += `<div class="inv" style="margin-top:8px">${extra.map(it => ds(it.slot)).join("")}</div>`;
   h += `<h2 class="sec">Give it back</h2>`;
   if (canAll()) {
-    h += d.online ? `<label class="check"><input type="checkbox" id="dXp" checked> Also give back their XP (level ${d.xp})</label>
+    h += d.online ? `<label class="check"><input type="checkbox" id="dXp"${d.restored ? "" : " checked"}> Also give back their XP (level ${d.xp})</label>
         <p class="hint">Items go back into the same slots. Anything they're holding in those slots now gets moved aside, not deleted.</p>`
       : `<div class="note">${esc(d.player)} is offline. They need to be online to get their items back.</div>`;
-    h += `<div class="actions"><button class="btn green" data-a="drestore" style="grid-column:1/-1"${d.online && d.items ? "" : " disabled"}>Give items back to ${esc(d.player)}</button>`;
+    h += `<div class="actions">
+      <button class="btn green" data-a="dpick" id="dPickBtn" style="grid-column:1/-1" disabled>Give back selected (0)</button>
+      <button class="btn" data-a="dselall"${pickable ? "" : " disabled"}>Select all</button>
+      <button class="btn" data-a="dselnone"${pickable ? "" : " disabled"}>Clear selection</button>
+      <button class="btn gold" data-a="drestore" style="grid-column:1/-1"${d.online && d.items ? "" : " disabled"}>Give back everything</button>`;
   } else h += `<div class="actions">`;
   h += `<button class="btn" data-a="dmap">Show on map</button>${canDo("waypoint_add") ? `<button class="btn" data-a="dwp">Save as waypoint</button>` : ""}</div>`;
   $("#sheetBody").innerHTML = h; $("#sheetBody").scrollTop = 0;
   $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
 }
-async function restoreDeath() {
+let deathPick = new Set();
+function updatePickButton() {
+  const b = $("#dPickBtn"); if (!b) return;
+  b.textContent = `Give back selected (${deathPick.size})`;
+  b.disabled = deathPick.size === 0;
+}
+async function restoreDeath(onlyPicked = false) {
   const d = openDeathData; if (!d) return;
-  const warn = d.grave === "present" ? "Their grave is still there, so they could end up with double items. " : d.restored ? "This was already given back before. " : "";
-  if (await choose(`Give ${d.player} their items back?`, warn + `${d.items} stacks go back into their inventory.`, [{ key: "yes", label: "Give back", cls: "green" }]) !== "yes") return;
+  const slots = onlyPicked ? [...deathPick] : null;
+  const already = (d.restoredSlots || []).filter(i => !slots || slots.includes(i)).length;
+  const warn = d.grave === "present" ? "Their grave is still there, so they could end up with double items. "
+    : already ? `${already} of these were already given back, so they'd get another copy. ` : "";
+  const what = slots ? `${slots.length} selected stack${slots.length === 1 ? "" : "s"}` : `All ${d.items} stacks`;
+  if (await choose(`Give ${d.player} items back?`, warn + `${what} go back into their inventory.`, [{ key: "yes", label: "Give back", cls: "green" }]) !== "yes") return;
   const xp = $("#dXp") ? $("#dXp").checked : false;
-  if (await action({ action: "restore_death", id: d.id, xp })) { await loadDeaths(); openDeath(d.id); }
+  const body = { action: "restore_death", id: d.id, xp };
+  if (slots) body.slots = slots;
+  if (await action(body)) { await loadDeaths(); openDeath(d.id); }
 }
 
 /* ---------- notification settings ---------- */
@@ -1108,6 +1149,9 @@ function openSettings() {
     ${t("challenge", "A mob wave challenge is beaten or failed", n.challenge)}
     ${t("lag", "The server is lagging (TPS low for a minute)", n.lag)}
     ${t("server", "The server starts, stops or crashes", n.server)}
+    <h2 class="sec">Xaero's waypoints</h2>
+    <p class="hint">If players tap [Add] on a shared waypoint and nothing happens, switch this and send it again.</p>
+    <label class="check"><input type="checkbox" id="xaeroStyle"${state.xaeroUnderscores ? " checked" : ""}${canAll() ? "" : " disabled"}> Use the newer Xaero format (underscores)</label>
     <h2 class="sec">Discord</h2>
     <p class="hint">Post chat and events to a Discord channel. In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL, then paste it here.</p>
     <div class="topic"><input class="bfield" id="hookIn" placeholder="${state.discord?.set ? "Connected ✓ (paste a new link to change)" : "https://discord.com/api/webhooks/…"}"${canAll() ? "" : " disabled"}><button class="btn" data-a="dsave"${canAll() ? "" : " disabled"}>Save</button></div>

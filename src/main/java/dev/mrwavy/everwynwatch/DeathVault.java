@@ -159,7 +159,7 @@ final class DeathVault {
      * holding in those slots now is moved to a free slot or dropped at their feet,
      * so nothing they have now gets deleted.
      */
-    String restore(String id, boolean xp) {
+    String restore(String id, boolean xp, java.util.Set<Integer> pick) {
         JsonObject d = find(id);
         ServerPlayerEntity p = server.getPlayerManager().getPlayer(UUID.fromString(d.get("uuid").getAsString()));
         if (p == null) throw new IllegalArgumentException(d.get("player").getAsString() + " has to be online to get their items back");
@@ -167,9 +167,14 @@ final class DeathVault {
         JsonArray slots = d.getAsJsonArray("slots");
         List<ItemStack> displaced = new ArrayList<>();
         int restored = 0;
+        JsonArray done = d.has("restoredSlots") ? d.getAsJsonArray("restoredSlots") : new JsonArray();
         for (int i = 0; i < slots.size(); i++) {
+            if (pick != null && !pick.contains(i)) continue;
             ItemStack saved = stack(slots.get(i));
             if (saved.isEmpty()) continue;
+            boolean seen = false;
+            for (JsonElement e : done) if (e.getAsInt() == i) seen = true;
+            if (!seen) done.add(i);
             if (i < inv.size()) {
                 ItemStack current = inv.getStack(i);
                 if (!current.isEmpty()) displaced.add(current.copy());
@@ -188,6 +193,8 @@ final class DeathVault {
             p.addExperienceLevels(xpLevels - p.experienceLevel);
             gaveXp = true;
         }
+        if (restored == 0) throw new IllegalArgumentException("None of those slots had items");
+        d.add("restoredSlots", done);
         d.addProperty("restored", d.get("restored").getAsInt() + 1);
         d.addProperty("restoredAt", System.currentTimeMillis());
         save();
