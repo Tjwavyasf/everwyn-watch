@@ -1,0 +1,19 @@
+name: CurseForge download test
+on:
+  push:
+    branches: [cftest]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try downloading two mods (nothing is saved or published)
+        run: |
+          for pair in "852498 9280614" "238222 5101366"; do
+            set -- $pair
+            echo "== project $1 file $2"
+            curl -sS -o /dev/null -D - -A "Mozilla/5.0" "https://www.curseforge.com/api/v1/mods/$1/files/$2/download" | grep -iE "^HTTP|^location" || true
+            curl -sSL -A "Mozilla/5.0" -o test.jar -w "final %{http_code} %{size_download} bytes %{url_effective}\n" "https://www.curseforge.com/api/v1/mods/$1/files/$2/download" || true
+            file test.jar; unzip -p test.jar fabric.mod.json 2>/dev/null | head -c 300; echo; rm -f test.jar
+          done
+          echo "== cfwidget"
+          curl -sS "https://api.cfwidget.com/852498" | head -c 400; echo
