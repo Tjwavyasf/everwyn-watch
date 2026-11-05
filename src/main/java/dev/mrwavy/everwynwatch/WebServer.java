@@ -152,6 +152,12 @@ public final class WebServer {
                     send(ex, 200, "image/png", r.png());
                 }
             }
+            case "/api/mobs" -> {
+                String dim = q.getOrDefault("dim", "minecraft:overworld");
+                int x0 = (int) parseLong(q.get("x0"), 0), z0 = (int) parseLong(q.get("z0"), 0);
+                int x1 = (int) parseLong(q.get("x1"), 0), z1 = (int) parseLong(q.get("z1"), 0);
+                sendJson(ex, 200, onServer(() -> Mobs.near(s.server, dim, x0, z0, x1, z1).toString(), 5));
+            }
             case "/api/events" -> sendJson(ex, 200, s.events.since(parseLong(q.get("after"), 0)).toString());
             case "/api/trail" -> sendJson(ex, 200, s.trails.trail(q.getOrDefault("player", ""), (int) parseLong(q.get("hours"), 1)).toString());
             case "/api/perf" -> sendJson(ex, 200, s.perf.history((int) parseLong(q.get("hours"), 1)).toString());

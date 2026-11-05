@@ -77,6 +77,7 @@ final class AdminActions {
                 Discord.send("test", ":white_check_mark: Everwyn Watch is connected to this channel.", null, null);
                 yield "Test message sent to Discord";
             }
+            case "remove_entity" -> Mobs.remove(server, str(req, "id"));
             case "kill" -> {
                 ServerPlayerEntity p = player(server, req, "player");
                 p.kill();

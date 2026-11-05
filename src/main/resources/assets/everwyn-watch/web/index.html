@@ -459,7 +459,7 @@ function showView(v) {
   currentView = v;
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
   document.querySelectorAll("section.view").forEach(s => s.classList.toggle("hidden", s.id !== "view-" + v));
-  if (v === "map") resizeMap();
+  if (v === "map") { resizeMap(); pollMobsOnce(); }
   if (v === "deaths") loadDeaths();
   if (v === "players") loadBoard();
   if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); }
@@ -574,13 +574,17 @@ async function deathMenu(d) {
   if (k === "map") goTo(d.dim, d.x + .5, d.z + .5);
   else if (k === "save") addWaypoint(d.dim, d.x, d.y, d.z, `${d.player} death`);
 }
-$("#layersBtn").addEventListener("click", () => {
-  showMarkers = !showMarkers; store.set("ew_markers", showMarkers ? "1" : "0");
-  $("#layersBtn").style.opacity = showMarkers ? 1 : .5;
-  toast(showMarkers ? "Waypoints and deaths shown" : "Waypoints and deaths hidden");
+$("#layersBtn").addEventListener("click", async () => {
+  const mark = m => mobMode === m ? " ✓" : "";
+  const k = await choose("Show on the map", "", [
+    { key: "all", label: "All mobs" + mark("all") }, { key: "hostile", label: "Hostile mobs only" + mark("hostile") },
+    { key: "off", label: "No mobs" + mark("off") },
+    { key: "markers", label: showMarkers ? "Hide waypoints & deaths" : "Show waypoints & deaths" }]);
+  if (!k) return;
+  if (k === "markers") { showMarkers = !showMarkers; store.set("ew_markers", showMarkers ? "1" : "0"); }
+  else { mobMode = k; store.set("ew_mobs", k); mobData = null; if (k !== "off") pollMobsOnce(); }
   drawMap();
 });
-$("#layersBtn").style.opacity = showMarkers ? 1 : .5;
 
 /* ---------- feed ---------- */
 const FILTERS = [["all","All"],["chat","Chat"],["event","Events"],["join","Joins"],["death","Deaths"],["advancement","Advancements"],["admin","Admin"]];
@@ -1598,6 +1602,53 @@ function renderServerTab() {
   if (currentView === "server" && perfData) renderPerf();
 }
 
+/* ---------- mobs on the map ---------- */
+let mobMode = store.get("ew_mobs") || "all", mobData = null;
+const MOB_OUTLINE = { hostile: "#e0453c", animal: "#5caa4a", villager: "#e8b33a", boss: "#a77bff" };
+async function pollMobsOnce() {
+  if (!running || currentView !== "map" || mobMode === "off" || view.scale < 0.5 || !canvas.width) return;
+  const dpr = window.devicePixelRatio || 1, w = canvas.width / dpr / view.scale, h = canvas.height / dpr / view.scale;
+  const qs = new URLSearchParams({ dim: view.dim, x0: Math.floor(view.cx - w / 2), z0: Math.floor(view.cz - h / 2), x1: Math.ceil(view.cx + w / 2), z1: Math.ceil(view.cz + h / 2) });
+  try {
+    const res = await api("/api/mobs?" + qs);
+    if (res.ok) { mobData = await res.json(); requestDraw(); }
+  } catch (e) {}
+}
+setInterval(() => { if (!document.hidden) pollMobsOnce(); }, 2000);
+function drawMobs(left, top, s, w, h) {
+  if (mobMode === "off" || !mobData || mobData.dim !== view.dim || s < 0.5) return 0;
+  let n = 0;
+  const size = s >= 3 ? 12 : s >= 1.5 ? 9 : 6;
+  for (const m of mobData.mobs) {
+    const t = mobData.types[m.t] || {};
+    if (mobMode === "hostile" && t.cat !== "hostile" && t.cat !== "boss") continue;
+    const x = Math.round((m.x - left) * s), y = Math.round((m.z - top) * s);
+    if (x < -10 || x > w + 10 || y < -10 || y > h + 10) continue;
+    n++;
+    const egg = t.egg || [0x888888, 0x444444], half = size / 2;
+    ctx.fillStyle = m.wave ? "#ffffff" : (MOB_OUTLINE[t.cat] || "#888");
+    ctx.fillRect(x - half - 1.5, y - half - 1.5, size + 3, size + 3);
+    ctx.fillStyle = hex(egg[0]); ctx.fillRect(x - half, y - half, size, size);
+    if (size >= 9) { ctx.fillStyle = hex(egg[1]); const sp = Math.max(2, Math.round(size / 4)); ctx.fillRect(x - half + 1, y - half + 1, sp, sp); ctx.fillRect(x + half - sp - 1, y + 1, sp, sp); }
+    if (m.n && s >= 1.5) { ctx.font = "10px Silkscreen, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "rgba(11,14,12,.8)";
+      const tw = ctx.measureText(m.n).width + 8; ctx.fillRect(x - tw / 2, y - half - 17, tw, 13); ctx.fillStyle = "#e6ebe3"; ctx.fillText(m.n, x, y - half - 10); }
+    hitboxes.push({ x, y, kind: "mob", ref: m });
+  }
+  return n;
+}
+const mobLabel = (m, t) => m.n || (t.name && !/^entity\./.test(t.name) ? t.name : prettyId(m.t));
+async function mobMenu(m) {
+  const t = mobData?.types[m.t] || {};
+  const label = { hostile: "Hostile", animal: "Animal", villager: "Villager", boss: "Boss" }[t.cat] || "Mob";
+  const extra = [m.pet ? "Tamed pet" : "", m.wave ? "Challenge mob" : "", m.n ? prettyId(m.t) : ""].filter(Boolean).join(" · ");
+  const buttons = [];
+  if (canAll()) buttons.push({ key: "rm", label: "Remove this mob", cls: "red" });
+  const k = await choose(mobLabel(m, t), `${label} · ${m.hp}/${m.max} health\n${m.x.toFixed(0)}, ${m.y}, ${m.z.toFixed(0)}${extra ? "\n" + extra : ""}`, buttons);
+  if (k !== "rm") return;
+  if ((m.pet || m.n) && await choose("Remove it anyway?", m.pet ? "This is someone's tamed pet." : "This mob has a name, so someone probably cares about it.", [{ key: "yes", label: "Remove", cls: "red" }]) !== "yes") return;
+  if (await action({ action: "remove_entity", id: m.u })) pollMobsOnce();
+}
+
 /* ---------- voice listening (Simple Voice Chat) ---------- */
 let listen = null;
 async function startListen(name) {
@@ -1830,6 +1881,7 @@ function drawMap() {
   }
 
   hitboxes = [];
+  const mobCount = drawMobs(left, top, s, w, h);
   ctx.font = "11px Silkscreen, monospace"; ctx.textBaseline = "middle"; ctx.textAlign = "center";
   const onScreen = (x, y) => x > -40 && x < w + 40 && y > -40 && y < h + 40;
 
@@ -1928,7 +1980,8 @@ function drawMap() {
     ms.classList.remove("hidden");
   } else ms.classList.add("hidden");
   const others = state ? state.players.filter(p => p.dim !== view.dim).length : 0;
-  $("#mapInfo").innerHTML = `<b>X</b> ${Math.round(view.cx)} <b>Z</b> ${Math.round(view.cz)}${follow ? ` · following ${esc(follow)}` : ""}${others ? ` · ${others} elsewhere` : ""}`;
+  $("#mapInfo").innerHTML = `<b>X</b> ${Math.round(view.cx)} <b>Z</b> ${Math.round(view.cz)}${follow ? ` · following ${esc(follow)}` : ""}${others ? ` · ${others} elsewhere` : ""}${
+    mobMode !== "off" && s < 0.5 ? " · zoom in for mobs" : mobCount ? ` · ${mobCount} mobs` : ""}`;
 }
 let hitboxes = [];
 
@@ -1995,12 +2048,13 @@ function endPointer(e) {
   if (gesture && !gesture.pinch && !gesture.longPressed && gesture.moved <= 6 && Date.now() - gesture.t < 400 && e.type === "pointerup") {
     const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     const hits = hitboxes.filter(hb => Math.hypot(hb.x - x, hb.y - y) < 22);
-    const hit = hits.find(hb => hb.kind === "player") ||
+    const hit = hits.find(hb => hb.kind === "player") || hits.find(hb => hb.kind !== "mob" && Math.hypot(hb.x - x, hb.y - y) < 14) ||
       hits.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
     if (hit?.kind === "player") openSheet(hit.name);
     else if (hit?.kind === "waypoint") waypointMenu(hit.ref);
     else if (hit?.kind === "death") deathMenu(hit.ref);
     else if (hit?.kind === "challenge") challengeMenu(hit.ref);
+    else if (hit?.kind === "mob") mobMenu(hit.ref);
   }
   if (pointers.size === 1) { const [p] = pointers.values(); gesture = { startX: p.x, startY: p.y, t: 0, moved: 99 }; }
   else if (pointers.size === 0) gesture = null;
