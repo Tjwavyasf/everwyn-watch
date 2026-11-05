@@ -86,6 +86,36 @@ public final class Snapshotter {
         root.add("waypoints", m.get("waypoints"));
         root.add("deaths", m.get("deaths"));
         root.add("challenges", challenges.toJson());
+        root.addProperty("yigd", net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("yigd"));
+        root.addProperty("icons", IconRenderer.status());
+
+        // Banned players
+        JsonArray bans = new JsonArray();
+        net.minecraft.server.BannedPlayerList banList = server.getPlayerManager().getUserBanList();
+        for (String name : banList.getNames()) {
+            JsonObject b = new JsonObject();
+            b.addProperty("name", name);
+            com.mojang.authlib.GameProfile gp = AdminActions.profileByName(server, name);
+            net.minecraft.server.BannedPlayerEntry entry = gp != null ? banList.get(gp) : null;
+            if (entry != null) {
+                if (entry.getReason() != null) b.addProperty("reason", entry.getReason());
+                if (entry.getExpiryDate() != null) b.addProperty("expires", entry.getExpiryDate().getTime());
+            }
+            bans.add(b);
+        }
+        root.add("bans", bans);
+
+        // Notification settings for the app's settings screen
+        JsonObject n = new JsonObject();
+        n.addProperty("enabled", cfg.notificationsEnabled);
+        n.addProperty("server", cfg.ntfyServer);
+        n.addProperty("topic", cfg.ntfyTopic);
+        n.addProperty("join", cfg.notifyJoin);
+        n.addProperty("firstJoin", cfg.notifyFirstJoin);
+        n.addProperty("leave", cfg.notifyLeave);
+        n.addProperty("death", cfg.notifyDeath);
+        n.addProperty("challenge", cfg.notifyChallenge);
+        root.add("notify", n);
 
         json = root.toString();
     }
@@ -95,6 +125,7 @@ public final class Snapshotter {
         String name = p.getGameProfile().getName();
         o.addProperty("name", name);
         o.addProperty("uuid", p.getUuidAsString());
+        if (Faces.remember(p)) o.addProperty("face", true);
         o.addProperty("dim", p.getWorld().getRegistryKey().getValue().toString());
         o.addProperty("x", Math.round(p.getX() * 10) / 10.0);
         o.addProperty("y", Math.round(p.getY() * 10) / 10.0);

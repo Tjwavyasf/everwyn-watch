@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.stat.Stats;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -30,6 +32,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
     private EventLog events;
     private Markers markers;
     private Challenges challenges;
+    private DeathVault vault;
     private Snapshotter snapshotter;
     private TileRenderer tiles;
     private WebServer web;
@@ -43,6 +46,34 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         CONFIG = config;
         events = new EventLog(config.eventBufferSize);
         markers = new Markers(FabricLoader.getInstance().getConfigDir().resolve("everwyn-watch-markers.json"));
+        IconRenderer.init(FabricLoader.getInstance().getConfigDir());
+
+        // Copy the inventory right before a player dies (before graves/drops take it)
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+            if (entity instanceof ServerPlayerEntity p && vault != null) {
+                try {
+                    vault.snapshot(p);
+                } catch (Exception e) {
+                    LOG.error("Everwyn Watch couldn't back up {}'s inventory", p.getGameProfile().getName(), e);
+                }
+            }
+            return true;
+        });
+
+        // Push notifications when people join / leave
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayerEntity p = handler.getPlayer();
+            String name = p.getGameProfile().getName();
+            int online = server.getPlayerManager().getCurrentPlayerCount();
+            boolean first = p.getStatHandler().getStat(Stats.CUSTOM.getOrCreateStat(Stats.LEAVE_GAME)) == 0;
+            if (first) Notifier.send("firstJoin", "New player: " + name, name + " joined " + config.serverName + " for the first time! (" + online + " online)", "tada");
+            else Notifier.send("join", name + " joined", name + " is on " + config.serverName + " (" + online + " online)", "video_game");
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            String name = handler.getPlayer().getGameProfile().getName();
+            int online = Math.max(0, server.getPlayerManager().getCurrentPlayerCount() - 1);
+            Notifier.send("leave", name + " left", name + " left " + config.serverName + " (" + online + " online)", "wave");
+        });
 
         // Remember where each player last died
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
@@ -52,6 +83,15 @@ public class EverwynWatch implements DedicatedServerModInitializer {
                         p.getX(), p.getY(), p.getZ(),
                         source.getDeathMessage(p).getString());
                 if (challenges != null) challenges.onPlayerDeath(p);
+                String msg = source.getDeathMessage(p).getString();
+                if (vault != null) {
+                    try {
+                        vault.commit(p, msg);
+                    } catch (Exception e) {
+                        LOG.error("Everwyn Watch couldn't save {}'s death", p.getGameProfile().getName(), e);
+                    }
+                }
+                Notifier.send("death", p.getGameProfile().getName() + " died", msg, "skull");
             }
         });
 
@@ -74,12 +114,13 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            vault = new DeathVault(server, config);
             challenges = new Challenges(server, events, FabricLoader.getInstance().getConfigDir().resolve("everwyn-watch-challenges.json"));
             snapshotter = new Snapshotter(server, config, markers, challenges);
             tiles = new TileRenderer(server, config);
             snapshotter.refresh();
             try {
-                web = new WebServer(server, config, snapshotter, events, tiles, markers, challenges);
+                web = new WebServer(server, config, snapshotter, events, tiles, markers, challenges, vault);
                 web.start();
                 LOG.info("Everwyn Watch dashboard running on port {}. Your login token is in config/everwyn-watch.json", config.port);
             } catch (IOException e) {

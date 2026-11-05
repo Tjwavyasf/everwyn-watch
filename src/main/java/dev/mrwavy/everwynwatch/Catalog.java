@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -31,8 +30,6 @@ import java.util.stream.Stream;
  * from mod jars when they include a texture; vanilla textures aren't on servers.
  */
 final class Catalog {
-    private static final Map<String, Path> ICON_PATHS = new HashMap<>();
-    private static final Map<String, byte[]> ICON_CACHE = new ConcurrentHashMap<>();
     private static volatile String json;
 
     private Catalog() {}
@@ -47,8 +44,10 @@ final class Catalog {
         Map<String, String> modLang = new HashMap<>();
         Map<String, Path> textures = new HashMap<>();
         for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
-            for (Path root : mod.getRootPaths()) {
-                scanAssets(root.resolve("assets"), modLang, textures);
+            try {
+                for (Path root : mod.getRootPaths()) scanAssets(root.resolve("assets"), modLang, textures);
+            } catch (Throwable ignored) {
+                // built-in pseudo mods have no files
             }
         }
 
@@ -69,12 +68,6 @@ final class Catalog {
                     // some modded blocks need a world to pick a color
                 }
             }
-            Path icon = textures.get(id.getNamespace() + ":item/" + id.getPath());
-            if (icon == null) icon = textures.get(id.getNamespace() + ":block/" + id.getPath());
-            if (icon != null) {
-                ICON_PATHS.put(id.toString(), icon);
-                o.addProperty("icon", true);
-            }
             items.add(o);
         }
 
@@ -91,7 +84,7 @@ final class Catalog {
         JsonObject root = new JsonObject();
         root.add("items", items);
         root.add("mobs", mobs);
-        EverwynWatch.LOG.info("Everwyn Watch catalog: {} items ({} with icons), {} mobs", items.size(), ICON_PATHS.size(), mobs.size());
+        EverwynWatch.LOG.info("Everwyn Watch catalog: {} items, {} mobs", items.size(), mobs.size());
         return root.toString();
     }
 
@@ -127,38 +120,10 @@ final class Catalog {
                         // broken lang file; names fall back to ids
                     }
                 }
-                for (String kind : new String[]{"item", "block"}) {
-                    Path dir = nsDir.resolve("textures").resolve(kind);
-                    if (!Files.isDirectory(dir)) continue;
-                    try (Stream<Path> files = Files.walk(dir, 4)) {
-                        files.filter(f -> f.toString().endsWith(".png")).forEach(f -> {
-                            String rel = dir.relativize(f).toString().replace('\\', '/');
-                            rel = rel.substring(0, rel.length() - 4);
-                            textures.putIfAbsent(ns + ":" + kind + "/" + rel, f);
-                        });
-                    } catch (Exception ignored) {
-                        // unreadable folder
-                    }
-                }
             });
         } catch (Exception ignored) {
             // unreadable mod
         }
     }
 
-    /** PNG bytes for an item icon, or null if the pack has no texture for it. */
-    static byte[] icon(String id) {
-        if (json == null) return null;
-        byte[] cached = ICON_CACHE.get(id);
-        if (cached != null) return cached;
-        Path p = ICON_PATHS.get(id);
-        if (p == null) return null;
-        try {
-            byte[] data = Files.readAllBytes(p);
-            if (ICON_CACHE.size() < 4000) ICON_CACHE.put(id, data);
-            return data;
-        } catch (Exception e) {
-            return null;
-        }
-    }
 }

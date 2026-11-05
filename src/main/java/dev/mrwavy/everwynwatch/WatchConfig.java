@@ -40,6 +40,23 @@ public class WatchConfig {
      */
     public boolean xaeroUnderscoreFormat = true;
 
+    /** Push notifications through the free ntfy app. Subscribe to this topic in the app. */
+    public boolean notificationsEnabled = true;
+    public String ntfyServer = "https://ntfy.sh";
+    public String ntfyTopic = "";
+    public boolean notifyJoin = true;
+    public boolean notifyFirstJoin = true;
+    public boolean notifyLeave = false;
+    public boolean notifyDeath = false;
+    public boolean notifyChallenge = true;
+    /** Optional: your dashboard address, so tapping a notification opens it. */
+    public String dashboardUrl = "";
+
+    /** How many deaths to keep in the death vault (all players combined). */
+    public int deathHistoryLimit = 300;
+
+    private transient Path path;
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static WatchConfig load(Path path) {
@@ -53,8 +70,14 @@ public class WatchConfig {
         }
         if (cfg == null) cfg = new WatchConfig();
         if (cfg.token == null || cfg.token.isBlank()) cfg.token = randomToken();
+        if (cfg.ntfyTopic == null || cfg.ntfyTopic.isBlank()) cfg.ntfyTopic = "everwyn-" + randomToken().substring(0, 16).toLowerCase();
+        cfg.path = path;
         cfg.save(path);
         return cfg;
+    }
+
+    public void save() {
+        if (path != null) save(path);
     }
 
     public void save(Path path) {

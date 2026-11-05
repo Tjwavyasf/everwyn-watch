@@ -39,14 +39,16 @@ public final class WebServer {
     private final TileRenderer tiles;
     private final Markers markers;
     private final Challenges challenges;
+    private DeathVault vault;
     private final byte[] tokenBytes;
     private final Map<String, int[]> failures = new ConcurrentHashMap<>(); // ip -> {count, windowStartSeconds}
     private HttpServer http;
     private ExecutorService pool;
 
-    public WebServer(MinecraftServer server, WatchConfig cfg, Snapshotter snapshotter, EventLog events, TileRenderer tiles, Markers markers, Challenges challenges) {
+    public WebServer(MinecraftServer server, WatchConfig cfg, Snapshotter snapshotter, EventLog events, TileRenderer tiles, Markers markers, Challenges challenges, DeathVault vault) {
         this.markers = markers;
         this.challenges = challenges;
+        this.vault = vault;
         this.server = server;
         this.cfg = cfg;
         this.snapshotter = snapshotter;
@@ -78,12 +80,25 @@ public final class WebServer {
             String path = ex.getRequestURI().getPath();
             if (path.equals("/icon") && "GET".equals(ex.getRequestMethod())) {
                 String id = query(ex.getRequestURI().getRawQuery()).getOrDefault("id", "");
-                byte[] png = Catalog.icon(id);
+                byte[] png = IconRenderer.icon(id);
                 if (png == null) {
                     send(ex, 404, "text/plain", "No icon");
                 } else {
                     ex.getResponseHeaders().set("Content-Type", "image/png");
-                    ex.getResponseHeaders().set("Cache-Control", "public, max-age=86400");
+                    ex.getResponseHeaders().set("Cache-Control", "public, max-age=604800");
+                    ex.sendResponseHeaders(200, png.length);
+                    try (OutputStream os = ex.getResponseBody()) {
+                        os.write(png);
+                    }
+                }
+            } else if (path.equals("/face") && "GET".equals(ex.getRequestMethod())) {
+                String u = query(ex.getRequestURI().getRawQuery()).getOrDefault("u", "");
+                byte[] png = u.matches("[0-9a-fA-F-]{32,36}") ? Faces.face(u) : null;
+                if (png == null) {
+                    send(ex, 404, "text/plain", "No face");
+                } else {
+                    ex.getResponseHeaders().set("Content-Type", "image/png");
+                    ex.getResponseHeaders().set("Cache-Control", "public, max-age=3600");
                     ex.sendResponseHeaders(200, png.length);
                     try (OutputStream os = ex.getResponseBody()) {
                         os.write(png);
@@ -131,6 +146,16 @@ public final class WebServer {
                 sendJson(ex, 200, o.toString());
             }
             case "/api/state" -> sendJson(ex, 200, snapshotter.json());
+            case "/api/deaths" -> sendJson(ex, 200, server.submit(() -> vault.summaries().toString()).get(5, TimeUnit.SECONDS));
+            case "/api/death" -> {
+                String id = q.getOrDefault("id", "");
+                try {
+                    sendJson(ex, 200, server.submit(() -> vault.detail(id).toString()).get(5, TimeUnit.SECONDS));
+                } catch (java.util.concurrent.ExecutionException e) {
+                    if (e.getCause() instanceof IllegalArgumentException iae) sendJson(ex, 404, error(iae.getMessage()));
+                    else throw e;
+                }
+            }
             case "/api/catalog" -> sendJson(ex, 200, server.submit(Catalog::json).get(20, TimeUnit.SECONDS));
             case "/api/events" -> {
                 long after = parseLong(q.get("after"), 0);
@@ -162,7 +187,7 @@ public final class WebServer {
                 byte[] body = ex.getRequestBody().readNBytes(8192);
                 JsonObject req = JsonParser.parseString(new String(body, StandardCharsets.UTF_8)).getAsJsonObject();
                 try {
-                    String msg = server.submit(() -> AdminActions.run(server, events, markers, challenges, req)).get(5, TimeUnit.SECONDS);
+                    String msg = server.submit(() -> AdminActions.run(server, events, markers, challenges, vault, req)).get(5, TimeUnit.SECONDS);
                     server.execute(snapshotter::refresh); // show the change in the app right away
                     JsonObject o = new JsonObject();
                     o.addProperty("ok", true);

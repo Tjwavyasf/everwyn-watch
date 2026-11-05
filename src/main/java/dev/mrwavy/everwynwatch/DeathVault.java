@@ -1,0 +1,266 @@
+package dev.mrwavy.everwynwatch;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.registry.Registries;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.WorldSavePath;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameRules;
+
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Keeps a copy of every player's inventory from the moment they die (taken before
+ * YIGD or vanilla drops anything), so it can be given back later even if the grave
+ * despawned, was looted, or was destroyed. Saved in <world>/everwyn-watch/deaths.json.
+ */
+final class DeathVault {
+    private static final Gson GSON = new Gson();
+
+    private final MinecraftServer server;
+    private final WatchConfig cfg;
+    private final Path file;
+    private final List<JsonObject> deaths = new ArrayList<>(); // oldest first
+    private final Map<UUID, JsonObject> pending = new HashMap<>();
+    private final ExecutorService saver = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "EverwynWatch-DeathSaver");
+        t.setDaemon(true);
+        return t;
+    });
+
+    DeathVault(MinecraftServer server, WatchConfig cfg) {
+        this.server = server;
+        this.cfg = cfg;
+        this.file = server.getSavePath(WorldSavePath.ROOT).resolve("everwyn-watch").resolve("deaths.json");
+        load();
+    }
+
+    /** Called right before a player dies (their items are still on them). */
+    void snapshot(ServerPlayerEntity p) {
+        PlayerInventory inv = p.getInventory();
+        JsonObject d = new JsonObject();
+        d.addProperty("player", p.getGameProfile().getName());
+        d.addProperty("uuid", p.getUuidAsString());
+        d.addProperty("dim", p.getWorld().getRegistryKey().getValue().toString());
+        d.addProperty("x", (int) Math.floor(p.getX()));
+        d.addProperty("y", (int) Math.floor(p.getY()));
+        d.addProperty("z", (int) Math.floor(p.getZ()));
+        d.addProperty("xp", p.experienceLevel);
+        JsonArray slots = new JsonArray();
+        int count = 0;
+        for (int i = 0; i < inv.size(); i++) {
+            ItemStack s = inv.getStack(i);
+            if (s.isEmpty()) {
+                slots.add(JsonNull.INSTANCE);
+            } else {
+                slots.add(s.writeNbt(new NbtCompound()).asString());
+                count++;
+            }
+        }
+        d.add("slots", slots);
+        d.addProperty("items", count);
+        pending.put(p.getUuid(), d);
+    }
+
+    /** Called after the death really happened (not saved by a totem). */
+    void commit(ServerPlayerEntity p, String message) {
+        JsonObject d = pending.remove(p.getUuid());
+        if (d == null) return;
+        d.addProperty("id", Long.toString(System.currentTimeMillis(), 36) + Integer.toString(p.getRandom().nextInt(1296), 36));
+        d.addProperty("time", System.currentTimeMillis());
+        d.addProperty("message", message);
+        d.addProperty("keepInventory", p.getWorld().getGameRules().getBoolean(GameRules.KEEP_INVENTORY));
+        d.addProperty("restored", 0);
+        deaths.add(d);
+        int limit = Math.max(20, cfg.deathHistoryLimit);
+        while (deaths.size() > limit) deaths.remove(0);
+        save();
+    }
+
+    /** Drops a stale snapshot if the player survived (e.g. totem of undying). */
+    void survived(ServerPlayerEntity p) {
+        pending.remove(p.getUuid());
+    }
+
+    /** Short list for the app, newest first. */
+    JsonArray summaries() {
+        JsonArray out = new JsonArray();
+        for (int i = deaths.size() - 1; i >= 0; i--) {
+            JsonObject d = deaths.get(i);
+            JsonObject o = new JsonObject();
+            for (String k : new String[]{"id", "player", "uuid", "dim", "x", "y", "z", "xp", "items", "time", "message", "restored", "keepInventory"}) {
+                if (d.has(k)) o.add(k, d.get(k));
+            }
+            out.add(o);
+        }
+        return out;
+    }
+
+    /** Full details with the item list. Runs on the server thread. */
+    JsonObject detail(String id) {
+        JsonObject d = find(id);
+        JsonObject o = new JsonObject();
+        for (Map.Entry<String, JsonElement> e : d.entrySet()) {
+            if (!e.getKey().equals("slots")) o.add(e.getKey(), e.getValue());
+        }
+        JsonArray items = new JsonArray();
+        JsonArray slots = d.getAsJsonArray("slots");
+        for (int i = 0; i < slots.size(); i++) {
+            ItemStack s = stack(slots.get(i));
+            if (s.isEmpty()) continue;
+            JsonObject it = new JsonObject();
+            it.addProperty("slot", i);
+            it.addProperty("id", Registries.ITEM.getId(s.getItem()).toString());
+            it.addProperty("name", s.getName().getString());
+            it.addProperty("count", s.getCount());
+            if (s.hasEnchantments()) it.addProperty("ench", true);
+            if (s.isDamageable() && s.getMaxDamage() > 0) {
+                it.addProperty("dur", Math.round(100.0 * (s.getMaxDamage() - s.getDamage()) / s.getMaxDamage()));
+            }
+            items.add(it);
+        }
+        o.add("itemList", items);
+        o.addProperty("online", server.getPlayerManager().getPlayer(UUID.fromString(d.get("uuid").getAsString())) != null);
+        o.addProperty("grave", graveStatus(d));
+        o.addProperty("yigd", FabricLoader.getInstance().isModLoaded("yigd"));
+        return o;
+    }
+
+    /**
+     * Puts the items back into the slots they were in. Anything the player is
+     * holding in those slots now is moved to a free slot or dropped at their feet,
+     * so nothing they have now gets deleted.
+     */
+    String restore(String id, boolean xp) {
+        JsonObject d = find(id);
+        ServerPlayerEntity p = server.getPlayerManager().getPlayer(UUID.fromString(d.get("uuid").getAsString()));
+        if (p == null) throw new IllegalArgumentException(d.get("player").getAsString() + " has to be online to get their items back");
+        PlayerInventory inv = p.getInventory();
+        JsonArray slots = d.getAsJsonArray("slots");
+        List<ItemStack> displaced = new ArrayList<>();
+        int restored = 0;
+        for (int i = 0; i < slots.size(); i++) {
+            ItemStack saved = stack(slots.get(i));
+            if (saved.isEmpty()) continue;
+            if (i < inv.size()) {
+                ItemStack current = inv.getStack(i);
+                if (!current.isEmpty()) displaced.add(current.copy());
+                inv.setStack(i, saved);
+            } else {
+                displaced.add(saved);
+            }
+            restored++;
+        }
+        for (ItemStack s : displaced) inv.offerOrDrop(s);
+        inv.markDirty();
+        p.playerScreenHandler.sendContentUpdates();
+        int xpLevels = d.has("xp") ? d.get("xp").getAsInt() : 0;
+        boolean gaveXp = false;
+        if (xp && xpLevels > p.experienceLevel) {
+            p.addExperienceLevels(xpLevels - p.experienceLevel);
+            gaveXp = true;
+        }
+        d.addProperty("restored", d.get("restored").getAsInt() + 1);
+        d.addProperty("restoredAt", System.currentTimeMillis());
+        save();
+        p.sendMessage(Text.literal("[Everwyn] ").formatted(Formatting.GOLD)
+                .append(Text.literal("An admin gave back the items from your death.").formatted(Formatting.GREEN)));
+        return "Gave " + d.get("player").getAsString() + " back " + restored + " stack" + (restored == 1 ? "" : "s")
+                + (gaveXp ? " and " + xpLevels + " XP levels" : "") + (displaced.isEmpty() ? "" : " (moved " + displaced.size() + " of their current items aside)");
+    }
+
+    /** "present" if a YIGD grave block is still near the death spot, "gone", or "unknown" (area not loaded). */
+    private String graveStatus(JsonObject d) {
+        if (!FabricLoader.getInstance().isModLoaded("yigd")) return "unknown";
+        ServerWorld world = null;
+        for (ServerWorld w : server.getWorlds()) {
+            if (w.getRegistryKey().getValue().toString().equals(d.get("dim").getAsString())) world = w;
+        }
+        if (world == null) return "unknown";
+        int x = d.get("x").getAsInt(), y = d.get("y").getAsInt(), z = d.get("z").getAsInt();
+        if (!world.getChunkManager().isChunkLoaded(x >> 4, z >> 4)) return "unknown";
+        BlockPos.Mutable pos = new BlockPos.Mutable();
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -4; dz <= 4; dz++) {
+                if (!world.getChunkManager().isChunkLoaded((x + dx) >> 4, (z + dz) >> 4)) continue;
+                for (int dy = -6; dy <= 6; dy++) {
+                    BlockState st = world.getBlockState(pos.set(x + dx, y + dy, z + dz));
+                    Identifier id = Registries.BLOCK.getId(st.getBlock());
+                    if (id.getNamespace().equals("yigd")) return "present";
+                }
+            }
+        }
+        return "gone";
+    }
+
+    private JsonObject find(String id) {
+        for (JsonObject d : deaths) {
+            if (d.get("id").getAsString().equals(id)) return d;
+        }
+        throw new IllegalArgumentException("That death record no longer exists");
+    }
+
+    private static ItemStack stack(JsonElement el) {
+        if (el == null || el.isJsonNull()) return ItemStack.EMPTY;
+        try {
+            return ItemStack.fromNbt(StringNbtReader.parse(el.getAsString()));
+        } catch (Exception e) {
+            return ItemStack.EMPTY;
+        }
+    }
+
+    private void load() {
+        if (!Files.exists(file)) return;
+        try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            for (JsonElement el : JsonParser.parseReader(r).getAsJsonArray()) deaths.add(el.getAsJsonObject());
+        } catch (Exception e) {
+            EverwynWatch.LOG.error("Could not read {}", file, e);
+        }
+    }
+
+    private void save() {
+        JsonArray arr = new JsonArray();
+        deaths.forEach(arr::add);
+        String json = GSON.toJson(arr);
+        saver.execute(() -> {
+            try {
+                Files.createDirectories(file.getParent());
+                Path tmp = file.resolveSibling("deaths.json.tmp");
+                try (Writer w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+                    w.write(json);
+                }
+                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception e) {
+                EverwynWatch.LOG.error("Could not save {}", file, e);
+            }
+        });
+    }
+}

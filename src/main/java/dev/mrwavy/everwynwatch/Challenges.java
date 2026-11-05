@@ -330,6 +330,7 @@ public final class Challenges {
         if (w.announce) broadcast(msg);
         else notifyParticipants(w, msg);
         log.add("event", null, "Challenge complete at " + w.name + ". Loot chest at " + where);
+        Notifier.send("challenge", "Challenge beaten: " + w.name, "Loot chest at " + where, "trophy");
         end(w, world);
     }
 
@@ -343,6 +344,7 @@ public final class Challenges {
         if (w.announce) broadcast(msg);
         else notifyParticipants(w, msg);
         log.add("event", null, "Challenge failed at " + w.name + ": " + reason);
+        Notifier.send("challenge", "Challenge failed: " + w.name, reason, "skull");
         end(w, world);
     }
 
