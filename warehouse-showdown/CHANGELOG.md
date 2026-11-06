@@ -1,5 +1,11 @@
 # Changelog
 
+## Player names
+- Customize screen has a NAME box (12 chars, letters/numbers/space/._-). The name shows over your head, in the HUD, and to your co-op partner (instead of FRIEND/HOST).
+
+## Working relay for co-op
+- Replaced the dead free relay servers with a Metered TURN credential (free plan) so phones on different mobile networks can connect.
+
 ## Jump, double jump, slam; connection test
 - JUMP button (V / B on keyboard). Press again in the air to double jump.
 - Attack in the air = slam dive that hits everything around the landing spot (harder and wider after a double jump). Works in co-op.

@@ -142,7 +142,12 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #pBar{height:6px;width:70%}#pBar i{background:#3a9ad8}
 #barks span.ptag{background:rgba(40,110,170,.92);color:#fff;font-size:10px;letter-spacing:.1em;padding:1px 6px;border-radius:3px}
 #barks span.ptag::after{display:none}
-#custom .menu{width:min(100%,780px);max-height:calc(100vh - 28px);grid-template-rows:auto minmax(0,1fr) auto}
+#custom .menu{width:min(100%,780px);max-height:calc(100vh - 28px);grid-template-rows:auto auto minmax(0,1fr) auto}
+@media (max-height:480px) and (orientation:landscape){.nrow label{display:none}.nrow input{padding:5px 10px}#custom .menu{gap:8px;padding:12px 16px}}
+.cbody{overflow-y:auto}
+.nrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.nrow label{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--mute)}
+.nrow input{flex:1;min-width:140px;background:rgba(6,8,14,.75);border:1.5px solid var(--line);color:inherit;font:inherit;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:8px 10px}
+#barks span.ptag.me{background:rgba(190,100,10,.92)}
 .cbody{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;min-height:0}
 .cprev{display:grid;gap:8px;align-content:start;justify-items:center}
 #cPrev{width:150px;height:150px;image-rendering:pixelated;border:1px solid var(--line);background:radial-gradient(circle at 50% 72%,rgba(255,138,31,.22),rgba(5,7,11,.6));cursor:pointer}
@@ -221,6 +226,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 <div id="custom" class="screen" hidden>
   <div class="menu">
     <h2>CUSTOMIZE TEEJAY</h2>
+    <div class="nrow"><label for="cName">NAME (SHOWN OVER YOUR HEAD)</label><input id="cName" maxlength="12" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="YOUR NAME (SHOWN OVER YOUR HEAD)" aria-label="Your name"></div>
     <div class="cbody">
       <div class="cprev"><canvas id="cPrev" width="48" height="48" title="Tap to switch idle / walking"></canvas><button class="ghost" id="cRand">RANDOMIZE</button><button class="ghost" id="cReset">RESET</button></div>
       <div class="copts" id="cOpts"></div>
@@ -845,6 +851,9 @@ function bakeLook(key, L) {
   for (const c in D.pal) { D.T[c] = tri(D.pal[c]); D.TD[c] = tri(mixHex(D.pal[c], '#1a1033', 0.3)); }
   for (const sk of Object.keys(SHEETS)) if (sk.indexOf(key + '|') === 0) { SHEETS[sk].tex.dispose(); delete SHEETS[sk]; }
 }
+const cleanName = v => String(v == null ? '' : v).replace(/[^A-Za-z0-9 _.\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
+let NAME = cleanName(load('name', ''));
+const dispName = () => (NAME || 'TEEJAY').toUpperCase();
 let LOOK = cleanLook(load('look', null));
 function applyLook() { bakeLook('teejay', LOOK); }
 
@@ -1285,9 +1294,11 @@ function buildLookUi() {
   refreshLookUi();
 }
 function openCustom() {
-  ensureAudio(); sfx('ui'); ui = 'custom'; show('title', false); show('custom', true); buildLookUi(); cuFrame = 0; drawPreview();
+  $('cName').value = NAME; ensureAudio(); sfx('ui'); ui = 'custom'; show('title', false); show('custom', true); buildLookUi(); cuFrame = 0; drawPreview();
   clearInterval(cuTimer); cuTimer = setInterval(() => { cuFrame++; drawPreview(); }, 220);
 }
+$('cName').addEventListener('input', () => { NAME = cleanName($('cName').value); store('name', NAME); });
+$('cName').addEventListener('blur', () => { $('cName').value = NAME; });
 function closeCustom() { clearInterval(cuTimer); cuTimer = null; show('custom', false); show('title', true); ui = null; sfx('ui'); }
 $('custBtn').addEventListener('click', openCustom);
 $('cDone').addEventListener('click', closeCustom);
@@ -2675,7 +2686,7 @@ function updateHud(dt) {
   $('hpFill').style.transform = `scaleX(${hf})`; P.hpLag = Math.max(hf, P.hpLag - dt * 0.4); $('hpLag').style.transform = `scaleX(${P.hpLag})`;
   $('hpBar').classList.toggle('low', hf < 0.25);
   $('stFill').style.transform = `scaleX(${Math.max(0, P.st / P.stMax)})`;
-  if (S && !NETG && S.lvl) { $('xpFill').style.transform = `scaleX(${Math.min(1, S.xp / xpNeed(S.lvl))})`; const wt = 'TEEJAY · LV ' + S.lvl + (S.sp ? ' ★' : ''); if ($('whoTxt').textContent !== wt) $('whoTxt').textContent = wt; }
+  if (S && !NETG && S.lvl) { $('xpFill').style.transform = `scaleX(${Math.min(1, S.xp / xpNeed(S.lvl))})`; const wt = dispName() + ' · LV ' + S.lvl + (S.sp ? ' ★' : ''); if ($('whoTxt').textContent !== wt) $('whoTxt').textContent = wt; }
   if (J && !$('bossBar').hidden) {
     const f = Math.max(0, J.hp / J.max); $('bFill').style.transform = `scaleX(${f})`; J.lag = Math.max(f, (J.lag == null ? 1 : J.lag) - dt * 0.3); $('bLag').style.transform = `scaleX(${J.lag})`;
     const pf = J.state === 'STAGGERED' || J.state === 'FORKLIFT_READY' ? Math.max(0, J.win / 12) : J.posture / J.pMax;
@@ -2696,7 +2707,7 @@ function updateHud(dt) {
   BTNS.parry.classList.toggle('dim', !!P.carry);
   BTNS.run.classList.toggle('dim', !!P.carry || !!P.runLock);
   const ph = NETG ? NETG.partner : (NETH.on && P2 && P2.live ? { hp: P2.hp, mhp: P2.maxHp } : null);
-  if (ph) { if ($('pHud').hidden) { $('pHud').hidden = false; $('pWho').textContent = NETG ? 'HOST' : 'FRIEND'; } $('pFill').style.transform = `scaleX(${clamp(ph.hp / (ph.mhp || 120), 0, 1)})`; }
+  if (ph) { if ($('pHud').hidden) { $('pHud').hidden = false; $('pWho').textContent = NETG ? (NETG.hn || 'HOST') : (NETH.pn || 'FRIEND'); } $('pFill').style.transform = `scaleX(${clamp(ph.hp / (ph.mhp || 120), 0, 1)})`; }
   else if (!$('pHud').hidden) $('pHud').hidden = true;
 }
 
@@ -3100,19 +3111,21 @@ function guestDamage(m) {
 /* ---------- name tags over the other player ---------- */
 const TAGS = {};
 function tagsClear() { for (const k in TAGS) { TAGS[k].remove(); delete TAGS[k]; } }
-function tagFor(key, text, a, on) {
+function tagFor(key, text, a, on, cls) {
   let el = TAGS[key];
   if (!on) { if (el) el.hidden = true; return; }
-  if (!el) { el = document.createElement('span'); el.className = 'ptag'; el.textContent = text; $('barks').appendChild(el); TAGS[key] = el; }
+  if (el && el.textContent !== text) el.textContent = text;
+  if (!el) { el = document.createElement('span'); el.className = 'ptag' + (cls ? ' ' + cls : ''); el.textContent = text; $('barks').appendChild(el); TAGS[key] = el; }
   const v = new THREE.Vector3(), r = stageEl.getBoundingClientRect();
   v.set(a.x, (a.D ? a.D.fh / PXU * 0.85 : 2) + (a.y || 0) + 0.25, a.z).project(camera);
   el.hidden = false; el.style.left = ((v.x + 1) / 2 * r.width) + 'px'; el.style.top = ((1 - v.y) / 2 * r.height) + 'px';
 }
 function netTags() {
-  if (NETH.on && P2 && P2.live && mode === 'play') tagFor('p2', 'FRIEND', P2, P2.mesh.visible);
+  if (P && mode === 'play' && !cine && !P.riding) tagFor('me', dispName(), P, P.mesh.visible && P.state !== 'dead', 'me'); else if (TAGS.me) tagFor('me', '', null, false);
+  if (NETH.on && P2 && P2.live && mode === 'play') tagFor('p2', NETH.pn || 'FRIEND', P2, P2.mesh.visible);
   else if (TAGS.p2) tagFor('p2', '', null, false);
-  const g = NETG && NETG.started && mode === 'play' ? NETG.ghosts.get('P') : null;
-  if (g) tagFor('host', 'HOST', g.a, g.a.mesh.visible); else if (TAGS.host) tagFor('host', '', null, false);
+  const G0 = NETG || {}, g = NETG && NETG.started && mode === 'play' ? NETG.ghosts.get('P') : null;
+  if (g) tagFor('host', G0.hn || 'HOST', g.a, g.a.mesh.visible); else if (TAGS.host) tagFor('host', '', null, false);
 }
 
 
@@ -3185,7 +3198,7 @@ function hostRecv(m) {
       bakeLook('coop', cleanLook(m.look));
       if (P2) P2.setWeapon('cutter');
       NETH.on = true; NETH.q.length = 0; NETH.tk = 0; NETH.gReady = false;
-      netSend({ t: 'welcome', v: NET_V, look: LOOK });
+      NETH.pn = cleanName(m.name).toUpperCase(); netSend({ t: 'welcome', v: NET_V, look: LOOK, name: NAME });
       if (mode === 'play') { hostSpawnP2(); netSend({ t: 'start' }); netRoom({}); toast('CO-OP', 'Friend joined'); }
       coopInfoUpdate();
       if (mode === 'title' && (ui === 'lobby' || !ui)) enterLounge();
@@ -3200,7 +3213,7 @@ function hostRecv(m) {
 function guestRecv(m) {
   const G = NETG; if (!G) return;
   switch (m.t) {
-    case 'welcome': bakeLook('coop', cleanLook(m.look)); for (const g of G.ghosts.values()) if (g.a.ck === 'coop') g.a.setWeapon('cutter'); lobbyView({ title: 'CO-OP', msg: 'Connected. Waiting for the host to start the game…', leave: true }); break;
+    case 'welcome': G.hn = cleanName(m.name).toUpperCase(); bakeLook('coop', cleanLook(m.look)); for (const g of G.ghosts.values()) if (g.a.ck === 'coop') g.a.setWeapon('cutter'); lobbyView({ title: 'CO-OP', msg: 'Connected. Waiting for the host to start the game…', leave: true }); break;
     case 'reject': netLeave(); lobbyOpen(); lobbyView({ title: 'CO-OP', msg: str(m.why, 'The host refused the connection.', 120), join: true, back: true }); break;
     case 'start': guestStart(); break;
     case 'room': guestRoom(m); break;
@@ -3239,7 +3252,7 @@ function netLeave() {
 /* Used by the real connection and by tests: wire the message pipe for a role. */
 function netAttach(role, sendFn) {
   NET.role = role; NET.send = sendFn; NET.lastRx = performance.now();
-  if (role === 'guest') { NETG = newGuest(); netSend({ t: 'hello', v: NET_V, look: LOOK }); }
+  if (role === 'guest') { NETG = newGuest(); netSend({ t: 'hello', v: NET_V, look: LOOK, name: NAME }); }
 }
 
 /* ---------- connecting (PeerJS room code) ---------- */
@@ -3263,9 +3276,9 @@ function peerOpts() {
   if (h === 'localhost' || h === '127.0.0.1') return { host: h, port: +q.get('peerport') || 9000, path: q.get('peerpath') || '/', secure: false, debug: 0 };   // dev/test only, never a remote host
   // Phones on mobile data usually cannot connect directly, so list relay servers too (PeerJS's own plus a public TCP/443 one that carrier networks rarely block).
   return { debug: 0, config: { iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' },
-    { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
-    { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turns:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }
+    { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: ['turn:global.relay.metered.ca:80', 'turn:global.relay.metered.ca:80?transport=tcp', 'turn:global.relay.metered.ca:443', 'turns:global.relay.metered.ca:443?transport=tcp'], username: '19d3fe2067ed68a19a9bb783', credential: '7CnyKx4ER9uVs+BI' },
+    { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' }
   ], sdpSemantics: 'unified-plan' } };
 }
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
