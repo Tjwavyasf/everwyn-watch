@@ -61,6 +61,20 @@ public class WatchConfig {
     public boolean notifyServer = true;
     public double lagTpsThreshold = 15.0;
 
+    /** Automated hostile population protection. Loaded mobs only, every 10 seconds. */
+    public boolean mobGuardEnabled = true;
+    public int mobGuardPerChunk = 16;
+    public int mobGuardPerDimension = 200;
+    /** Mobs near players are never removed. */
+    public int mobGuardPlayerDistance = 48;
+    /** Maximum removals in any 10-second scan. */
+    public int mobGuardMaxRemovedPerScan = 25;
+    /** If TPS remains below this for a minute, tighten limits temporarily. */
+    public double mobGuardEmergencyTps = 14.0;
+
+    /** Danger: only enable if your host is CONFIRMED to restart a cleanly stopped server. */
+    public boolean hostRestartsOnStop = false;
+
     /** Leaderboard page anyone can open at http://your-ip:port/board (off by default). */
     public boolean publicLeaderboard = false;
 

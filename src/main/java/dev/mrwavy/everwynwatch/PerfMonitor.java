@@ -162,6 +162,23 @@ final class PerfMonitor {
         return n;
     }
 
+    /** Clear naturally spawned hostile mobs from loaded entities across every dimension.
+     * Does not load chunks, and protects named, persistent, or challenge mobs. */
+    static int clearAllHostiles(MinecraftServer server) {
+        int n = 0;
+        for (ServerWorld w : server.getWorlds()) {
+            List<Entity> doomed = new ArrayList<>();
+            for (Entity e : w.iterateEntities()) {
+                if (!(e instanceof Monster mob)) continue;
+                if (mob.hasCustomName() || mob.isPersistent() || e.getCommandTags().contains(Challenges.MOB_TAG)) continue;
+                doomed.add(e);
+            }
+            for (Entity e : doomed) e.discard();
+            n += doomed.size();
+        }
+        return n;
+    }
+
     private static int sum(Map<String, Integer> m) {
         int s = 0;
         for (int v : m.values()) s += v;

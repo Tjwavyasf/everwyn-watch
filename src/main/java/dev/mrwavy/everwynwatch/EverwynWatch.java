@@ -48,6 +48,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         s.accounts = new Accounts(config, configDir.resolve("everwyn-watch-audit.json"));
         s.trails = new Trails(cacheDir.resolve("trails.json"));
         s.perf = new PerfMonitor(config);
+        s.mobGuard = new MobGuard(config);
         IconRenderer.init(configDir);
 
         // Copy the inventory right before a player dies (before graves/drops take it)
@@ -123,6 +124,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
             s.boards = new Leaderboards(server, cacheDir.resolve("stats-history.json"));
             s.snapshotter = new Snapshotter(server, config, s.markers, s.challenges);
             s.scheduler = new Scheduler(s, configDir.resolve("everwyn-watch-schedule.json"));
+            s.restart = new RestartController(s);
             s.snapshotter.services = s;
             s.tiles = new TileRenderer(server, config);
             s.snapshotter.refresh();
@@ -177,8 +179,10 @@ public class EverwynWatch implements DedicatedServerModInitializer {
             safe("challenges", s.challenges::tick);
             safe("trails", () -> s.trails.tick(server));
             safe("perf", () -> s.perf.tick(server, s.snapshotter.mspt(), s.snapshotter.tps()));
+            safe("mobGuard", () -> s.mobGuard.tick(server, s.snapshotter.tps()));
             safe("leaderboards", s.boards::tick);
             safe("schedules", s.scheduler::tick);
+            safe("restart", s.restart::tick);
             safe("voice", () -> VoiceBridge.tick(server));
             if (++tickCounter >= Math.max(5, config.snapshotIntervalTicks)) {
                 tickCounter = 0;

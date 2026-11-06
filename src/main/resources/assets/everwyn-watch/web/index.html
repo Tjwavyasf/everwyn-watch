@@ -295,9 +295,17 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">TPS (20 is perfect)</div><canvas class="chart" id="chartTps"></canvas></div>
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Memory used (MB)</div><canvas class="chart" id="chartMem"></canvas></div>
         <div class="card" style="padding:10px"><div class="l pix" style="font-size:10px;color:var(--muted)">Entities loaded</div><canvas class="chart" id="chartEnt"></canvas></div>
+        <div id="restartActions"></div>
+        <div id="singleModBox"></div>
         <div id="packBox"></div>
         <h2 class="sec">Map</h2>
         <div id="mapStats"></div>
+        <h2 class="sec">Mob cleanup</h2>
+        <p class="hint">Remove unnamed, non-persistent hostile mobs from loaded chunks in all dimensions. Pets and challenge mobs are protected. This does not prevent new spawns.</p>
+        <div class="actions" id="hostileActions"></div>
+        <h2 class="sec">Automatic mob protection</h2>
+        <p class="hint">Every 10 seconds, limits excess hostile mobs in loaded chunks, away from players. Named, persistent, and challenge mobs stay. Low TPS for a full minute temporarily tightens the limits.</p>
+        <div id="mobGuardBox" class="card sub">Loading mob protection…</div>
         <h2 class="sec">Lag finder</h2>
         <div class="actions"><button class="btn gold" id="lagBtn" style="grid-column:1/-1">Find what's causing lag</button></div>
         <div id="lagOut"></div>
@@ -306,6 +314,8 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
         <div class="actions" id="schedAdd"></div>
         <h2 class="sec">Worlds</h2>
         <div id="worldList"></div>
+        <h2 class="sec">Whitelist</h2>
+        <div id="whitelistBox" class="card sub">Loading…</div>
         <h2 class="sec">Banned players</h2>
         <div id="banList"></div>
         <div id="adminBox"></div>
@@ -489,7 +499,7 @@ function showView(v) {
   if (v === "map") { resizeMap(); pollMobsOnce(); }
   if (v === "deaths") loadDeaths();
   if (v === "players") loadBoard();
-  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); }
+  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); loadRestartStatus(); }
 }
 $("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
 
@@ -973,14 +983,18 @@ $("#bBody").addEventListener("click", async e => {
   const d = t.dataset;
   if (d.add) {
     const it = catalog.byId.get(d.add);
-    const s = B.chest.find(c => c.id === d.add && c.count < it.max);
-    if (s) s.count++;
-    else { if (B.chest.length >= B.maxStacks) { toast(`That's full (${B.maxStacks} stacks)`); return; } B.chest.push({ id: d.add, count: 1 }); }
+    const quantity = await ask(`Add ${it.name}`, [{ name: "count", label: `Amount (1–${it.max} per stack)`, type: "number", min: 1, max: it.max, value: Math.min(it.max, 1) }], "Add items");
+    if (!quantity) return;
+    const amount = Math.floor(Number(quantity.count));
+    if (!Number.isFinite(amount) || amount < 1 || amount > it.max) { toast(`Enter an amount from 1 to ${it.max}`); return; }
+    const s = B.chest.find(c => c.id === d.add && c.count + amount <= it.max);
+    if (s) s.count += amount;
+    else { if (B.chest.length >= B.maxStacks) { toast(`That's full (${B.maxStacks} stacks)`); return; } B.chest.push({ id: d.add, count: amount }); }
     const total = B.chest.filter(c => c.id === d.add).reduce((n, c) => n + c.count, 0);
     renderChest(); toast(`${it.name} ×${total}`);
   } else if (d.cslot != null) {
     const s = B.chest[+d.cslot], it = catalog.byId.get(s.id), max = it?.max || 64;
-    const v = await ask(itemName(s.id), [{ name: "count", label: `Amount (max ${max} per stack, 0 removes it)`, type: "number", value: s.count }], "Save");
+    const v = await ask(itemName(s.id), [{ name: "count", label: `Amount (max ${max} per stack, 0 removes it)`, type: "number", min: 0, max, value: s.count }], "Save");
     if (!v) return;
     const n = Math.floor(+v.count);
     if (!n || n < 0) B.chest.splice(+d.cslot, 1); else s.count = Math.min(max, n);
@@ -1482,6 +1496,72 @@ $("#lagOut").addEventListener("click", async e => {
     if (await action({ action: "clear_hostiles", dim: c.dim, cx: c.cx, cz: c.cz })) $("#lagBtn").click();
 });
 
+/* ---------- automated mob protection ---------- */
+let mobGuardData = null, mobGuardLastFetch = 0, mobGuardFetching = false;
+async function loadMobGuard(force = false) {
+  if (!force && (mobGuardFetching || Date.now() - mobGuardLastFetch < 15000)) return;
+  mobGuardFetching = true;
+  mobGuardLastFetch = Date.now();
+  if (!canAll()) { $("#mobGuardBox").textContent = "Mob protection settings require admin access."; return; }
+  try {
+    const res = await api("/api/mob-guard");
+    if (!res.ok) throw Error("Could not read protection settings");
+    mobGuardData = await res.json();
+    renderMobGuard();
+  } catch (e) { $("#mobGuardBox").textContent = "Couldn't load mob protection settings."; }
+  finally { mobGuardFetching = false; }
+}
+function renderMobGuard() {
+  const d = mobGuardData; if (!d) return;
+  const field = (id, label, value, min, max, step = 1) => `<label style="display:block;margin-top:10px"><span class="sub">${label}</span><input class="bfield" type="number" inputmode="numeric" id="mg-${id}" value="${value}" min="${min}" max="${max}" step="${step}"></label>`;
+  $("#mobGuardBox").innerHTML = `<label style="display:flex;align-items:center;gap:8px"><input id="mg-enabled" type="checkbox" ${d.enabled ? "checked" : ""}> <b>Enable automatic mob protection</b></label>
+    <div class="sub" style="margin-top:9px">${d.emergency ? "Low-TPS emergency protection is active" : "Normal limits active"} · ${Number(d.totalRemoved).toLocaleString()} mobs trimmed total · ${d.lastRemoved} in last scan</div>
+    ${field("perChunk", "Max removable hostiles per chunk", d.perChunk, 1, 64)}
+    ${field("perDimension", "Max removable hostiles per dimension", d.perDimension, 20, 2000)}
+    ${field("playerDistance", "Protect mobs within this many blocks of players", d.playerDistance, 16, 128)}
+    ${field("maxRemovedPerScan", "Max removals every 10 seconds", d.maxRemovedPerScan, 1, 100)}
+    ${field("emergencyTps", "Emergency TPS threshold (sustained for 60 seconds)", d.emergencyTps, 5, 19, 0.5)}
+    <button class="btn gold" id="mg-save" style="width:100%;margin-top:10px">Save mob limits</button>`;
+}
+$("#mobGuardBox").addEventListener("click", async e => {
+  if (e.target.id !== "mg-save") return;
+  const numbers = [
+    ["perChunk",1,64],["perDimension",20,2000],["playerDistance",16,128],
+    ["maxRemovedPerScan",1,100],["emergencyTps",5,19]
+  ];
+  const req = { action: "mob_guard_settings", enabled: $("#mg-enabled").checked };
+  for (const [id,min,max] of numbers) {
+    const value = Number($("#mg-" + id).value);
+    if (!Number.isFinite(value) || value < min || value > max) { toast(`Check the ${id} setting (${min}–${max})`); return; }
+    req[id] = id === "emergencyTps" ? value : Math.floor(value);
+  }
+  if (await action(req)) await loadMobGuard(true);
+});
+
+/* ---------- server-wide hostile cleanup and whitelist ---------- */
+async function refreshWhitelist() {
+  const el = $("#whitelistBox");
+  if (!canAll()) { el.textContent = "Whitelist management requires admin access."; return; }
+  try {
+    const res = await api("/api/whitelist");
+    if (!res.ok) throw Error("Whitelist unavailable");
+    const names = await res.json();
+    el.innerHTML = names.length ? names.map(name => `<div class="mobrow"><span class="n">${esc(name)}</span><button class="btn small red" data-unwhite="${esc(name)}">Unwhitelist</button></div>`).join("")
+      : `<span class="sub">No whitelisted players.</span>`;
+  } catch (e) { el.textContent = "Couldn't load whitelist."; }
+}
+$("#whitelistBox").addEventListener("click", async e => {
+  const b = e.target.closest("[data-unwhite]"); if (!b || !canAll()) return;
+  const name = b.dataset.unwhite;
+  if (await choose(`Unwhitelist ${name}?`, "They won't be able to join while the whitelist is enabled. This does not ban or immediately kick them.", [{ key: "yes", label: "Unwhitelist", cls: "red" }]) !== "yes") return;
+  if (await action({ action: "unwhitelist", player: name })) refreshWhitelist();
+});
+$("#hostileActions").addEventListener("click", async e => {
+  if (!e.target.closest("#clearAllHostiles") || !canAll()) return;
+  if (await choose("Clear hostile mobs across the server?", "Removes non-protected hostile mobs from loaded chunks in every dimension. New mobs can spawn afterward.", [{ key: "yes", label: "Clear hostile mobs", cls: "red" }]) !== "yes") return;
+  if (await action({ action: "clear_all_hostiles" })) { if (lagData) $("#lagBtn").click(); }
+});
+
 /* ---------- scheduled events ---------- */
 function scheduleWhen(j) {
   if (j.every) return `Every ${j.every >= 60 ? (j.every / 60) + " hour" + (j.every >= 120 ? "s" : "") : j.every + " minutes"}`;
@@ -1615,6 +1695,8 @@ function renderServerTab() {
       <div class="stat"><div class="l">From saved world</div><div class="v">${m.savedChunks.toLocaleString()}</div></div>
     </div>${m.lastError ? `<div class="note bad">Last map problem (${ago(m.lastErrorAt)}): ${esc(m.lastError)}</div>` : ""}`;
   renderSchedules();
+  $("#hostileActions").innerHTML = canAll() ? `<button class="btn red" id="clearAllHostiles" style="grid-column:1/-1">Clear all hostile mobs</button>` : "";
+  if (currentView === "server") { refreshWhitelist(); loadMobGuard(); }
   const rb = $("#restartBanner");
   if (state.restartAt) { rb.classList.remove("hidden"); rb.innerHTML = `<span>Restart countdown running: <b>${Math.max(0, Math.round((state.restartAt - Date.now()) / 1000))}s</b> left</span>`; }
   else rb.classList.add("hidden");
@@ -1627,6 +1709,42 @@ function renderServerTab() {
     if (v?.name?.trim()) action({ action: "admin_name", name: v.name.trim() });
   };
   if (currentView === "server" && perfData) renderPerf();
+}
+
+/* ---------- single JAR upload and owner restart ---------- */
+let restartInfo = null;
+async function loadRestartStatus() {
+  if (state?.me?.role !== "owner") { $("#restartActions").innerHTML = ""; $("#singleModBox").innerHTML = ""; return; }
+  try { const res = await api("/api/restart"); if (res.ok) restartInfo = await res.json(); } catch (e) {}
+  const r = restartInfo || {};
+  $("#restartActions").innerHTML = `<h2 class="sec">Restart server</h2><div class="card">
+    <p class="hint">Warns everyone, counts down 10 seconds, then stops Minecraft cleanly. Bisect must be set to start it again.</p>
+    ${!r.enabled ? `<div class="note warn">First, confirm Bisect automatically starts the server after a normal stop. Then set <b>hostRestartsOnStop</b> to <b>true</b> in config/everwyn-watch.json and restart from Bisect to apply it. Until then, use the Bisect Restart button.</div>` : ""}
+    <div class="actions"><button class="btn red" id="restartNow" style="grid-column:1/-1" ${!r.enabled || r.active ? "disabled" : ""}>${r.active ? "Restart countdown running…" : "Restart server (10 seconds)"}</button></div></div>`;
+  $("#restartNow").onclick = async () => {
+    if (await choose("Restart the Minecraft server?", "Players will see a 10-second countdown, then Minecraft will stop. Only continue if Bisect has been set to bring it back online.", [{key:"yes",label:"Restart",cls:"red"}]) !== "yes") return;
+    try { const res = await api("/api/restart", {method:"POST"}); const d = await res.json(); if (!res.ok) toast(d.error || "Restart was refused"); else { toast("Countdown started"); restartInfo=d; loadRestartStatus(); } }
+    catch (e) { toast("Could not start restart"); }
+  };
+  $("#singleModBox").innerHTML = `<h2 class="sec">Upload mod JAR</h2><div class="card">
+    <p class="hint">Choose one Fabric server mod JAR (max 50 MB). Replaces older JARs with the same mod ID and backs them up. Dependencies and Minecraft version must match. Needs a server restart.</p>
+    <input type="file" accept=".jar,application/java-archive" id="singleJarFile" style="display:none">
+    <div class="actions"><button class="btn gold" id="singleJarPick" style="grid-column:1/-1">Choose mod JAR…</button></div>
+    <div class="sub" id="singleJarStatus"></div></div>`;
+  $("#singleJarPick").onclick = () => $("#singleJarFile").click();
+  $("#singleJarFile").onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".jar") || file.size > 50*1024*1024) { toast("Choose a JAR smaller than 50 MB"); return; }
+    if (await choose("Upload this mod?", `${file.name} (${(file.size/1048576).toFixed(1)} MB). Only install server-compatible Fabric 1.20.1 mods. Any previous JAR with the same mod ID is backed up.`, [{key:"yes",label:"Upload",cls:"green"}]) !== "yes") return;
+    $("#singleJarStatus").textContent = "Uploading… keep this screen open.";
+    $("#singleJarPick").disabled = true;
+    try {
+      const res = await fetch("/api/mod-upload", {method:"POST", headers:{"X-Watch-Token":TOKEN,"X-Mod-Filename":file.name}, body:file});
+      const d = await res.json(); $("#singleJarStatus").textContent = d.message || d.error || "Upload failed";
+      toast(res.ok ? "Mod uploaded; restart to activate" : (d.error || "Upload failed"));
+    } catch (e) { $("#singleJarStatus").textContent = "Upload failed. Check connection."; }
+    $("#singleJarPick").disabled = false;
+  };
 }
 
 /* ---------- modpack installer (owner only) ---------- */
@@ -1792,13 +1910,21 @@ function ask(title, fields, confirmLabel, danger) {
         ? `<div class="swatches">${XAERO.map((c, i) => `<label style="background:${c}" title="${XAERO_NAMES[i]}"><input type="radio" name="${fl.name}" value="${i}"${i === fl.value ? " checked" : ""}><span></span></label>`).join("")}</div>`
       : fl.type === "select"
         ? `<select name="${fl.name}">${fl.options.map(([v,l]) => `<option value="${esc(v)}"${v === fl.value ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
-        : `<input name="${fl.name}" type="${fl.type === "number" ? "text" : (fl.type || "text")}" ${fl.type === "number" ? 'pattern="-?[0-9.]*"' : ""} value="${esc(fl.value ?? "")}" placeholder="${esc(fl.placeholder || "")}" maxlength="256">`
+        : fl.type === "number"
+          ? `<div class="topic"><button type="button" class="btn" data-step="-1" data-for="${esc(fl.name)}" aria-label="Decrease ${esc(fl.label)}">−</button><input name="${esc(fl.name)}" type="number" min="${fl.min ?? 0}" max="${fl.max ?? 9999}" step="1" inputmode="numeric" value="${esc(fl.value ?? 0)}" style="min-width:0;flex:1"><button type="button" class="btn" data-step="1" data-for="${esc(fl.name)}" aria-label="Increase ${esc(fl.label)}">+</button></div>`
+          : `<input name="${esc(fl.name)}" type="${fl.type || "text"}" value="${esc(fl.value ?? "")}" placeholder="${esc(fl.placeholder || "")}" maxlength="256">`
     }</div>`).join("") + `<div class="actions"><button type="button" class="btn" data-x>Cancel</button><button class="btn ${danger ? "red" : "green"}" type="submit">${esc(confirmLabel)}</button></div>`;
     $("#modal").classList.remove("hidden");
     const first = f.querySelector("input"); if (first && first.type === "text") setTimeout(() => first.focus(), 50);
     const done = v => { $("#modal").classList.add("hidden"); f.onsubmit = null; resolve(v); };
     f.querySelector("[data-x]").onclick = () => done(null);
-    f.onsubmit = e => { e.preventDefault(); done(Object.fromEntries(new FormData(f).entries())); };
+    f.querySelectorAll("[data-step]").forEach(b => b.onclick = () => {
+      const inp = [...f.querySelectorAll('input[type="number"]')].find(i => i.name === b.dataset.for);
+      if (!inp) return;
+      const min = Number(inp.min), max = Number(inp.max);
+      inp.value = String(Math.max(min, Math.min(max, (Number(inp.value) || 0) + Number(b.dataset.step))));
+    });
+    f.onsubmit = e => { e.preventDefault(); if (!f.reportValidity()) return; done(Object.fromEntries(new FormData(f).entries())); };
   });
 }
 /** A small menu of buttons. Resolves to the chosen key, or null for Cancel. */

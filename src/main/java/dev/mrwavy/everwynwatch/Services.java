@@ -15,7 +15,9 @@ final class Services {
     Accounts accounts;
     Trails trails;
     PerfMonitor perf;
+    MobGuard mobGuard;
     Leaderboards boards;
     Scheduler scheduler;
+    RestartController restart;
     LedgerBridge ledger;
 }

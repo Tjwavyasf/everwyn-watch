@@ -179,8 +179,18 @@ public final class WebServer {
             case "/api/events" -> sendJson(ex, 200, s.events.since(parseLong(q.get("after"), 0)).toString());
             case "/api/trail" -> sendJson(ex, 200, s.trails.trail(q.getOrDefault("player", ""), (int) parseLong(q.get("hours"), 1)).toString());
             case "/api/perf" -> sendJson(ex, 200, s.perf.history((int) parseLong(q.get("hours"), 1)).toString());
+            case "/api/mob-guard" -> {
+                if (!admin) { sendJson(ex, 403, error("Only admins can view mob protection")); return; }
+                sendJson(ex, 200, onServer(() -> s.mobGuard.status().toString(), 5));
+            }
             case "/api/lag" -> sendJson(ex, 200, onServer(() -> PerfMonitor.lagReport(s.server).toString(), 10));
             case "/api/leaderboard" -> sendJson(ex, 200, onServer(s.boards::json, 20));
+            case "/api/whitelist" -> {
+                if (!admin) { sendJson(ex, 403, error("Only admins can view the whitelist")); return; }
+                JsonArray arr = new JsonArray();
+                for (String name : onServer(() -> s.server.getPlayerManager().getWhitelistedNames(), 5)) arr.add(name);
+                sendJson(ex, 200, arr.toString());
+            }
             case "/api/players" -> {
                 JsonArray arr = new JsonArray();
                 for (String[] p : onServer(s.boards::knownPlayers, 10)) {
@@ -224,6 +234,28 @@ public final class WebServer {
                     return;
                 }
                 send(ex, 200, "application/octet-stream", VoiceBridge.read(p.getUuid(), parseLong(q.get("after"), 0)));
+            }
+            case "/api/mod-upload" -> {
+                if (me.role() != Accounts.Role.OWNER) { sendJson(ex, 403, error("Only the owner can upload mods")); return; }
+                if (!"POST".equals(ex.getRequestMethod())) { sendJson(ex, 405, error("Use POST")); return; }
+                if (!s.cfg.allowAdminActions) { sendJson(ex, 403, error("Admin actions are disabled")); return; }
+                String filename = ex.getRequestHeaders().getFirst("X-Mod-Filename");
+                String result = SingleModUpload.install(ex.getRequestBody(), filename);
+                s.accounts.record(me, "mod_upload", result);
+                s.events.add("admin", me.name(), result);
+                JsonObject o = new JsonObject();
+                o.addProperty("ok", true);
+                o.addProperty("message", result);
+                sendJson(ex, 200, o.toString());
+            }
+            case "/api/restart" -> {
+                if (me.role() != Accounts.Role.OWNER) { sendJson(ex, 403, error("Only the owner can restart")); return; }
+                if ("POST".equals(ex.getRequestMethod())) {
+                    if (!s.cfg.allowAdminActions) { sendJson(ex, 403, error("Admin actions are disabled")); return; }
+                    onServer(() -> { s.restart.begin(); return true; }, 5);
+                    s.accounts.record(me, "server_restart", "Requested restart in 10 seconds");
+                } else if (!"GET".equals(ex.getRequestMethod())) { sendJson(ex, 405, error("Use GET or POST")); return; }
+                sendJson(ex, 200, onServer(() -> s.restart.status().toString(), 5));
             }
             case "/api/pack" -> {
                 if (me.role() != Accounts.Role.OWNER) {

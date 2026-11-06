@@ -42,6 +42,34 @@ final class AdminActions {
                 int n = PerfMonitor.clearItems(server, req.has("dim") ? str(req, "dim") : null, cx, cz);
                 yield "Removed " + n + " dropped item" + (n == 1 ? "" : "s");
             }
+            case "mob_guard_settings" -> {
+                WatchConfig cfg = s.cfg;
+                if (req.has("enabled")) cfg.mobGuardEnabled = req.get("enabled").getAsBoolean();
+                if (req.has("perChunk")) cfg.mobGuardPerChunk = Math.max(1, Math.min(64, req.get("perChunk").getAsInt()));
+                if (req.has("perDimension")) cfg.mobGuardPerDimension = Math.max(20, Math.min(2000, req.get("perDimension").getAsInt()));
+                if (req.has("playerDistance")) cfg.mobGuardPlayerDistance = Math.max(16, Math.min(128, req.get("playerDistance").getAsInt()));
+                if (req.has("maxRemovedPerScan")) cfg.mobGuardMaxRemovedPerScan = Math.max(1, Math.min(100, req.get("maxRemovedPerScan").getAsInt()));
+                if (req.has("emergencyTps")) {
+                    double threshold = req.get("emergencyTps").getAsDouble();
+                    if (!Double.isFinite(threshold)) throw new IllegalArgumentException("Enter a valid TPS number");
+                    cfg.mobGuardEmergencyTps = Math.max(5, Math.min(19, threshold));
+                }
+                cfg.save();
+                yield "Automatic mob protection settings saved";
+            }
+            case "clear_all_hostiles" -> {
+                int n = PerfMonitor.clearAllHostiles(server);
+                yield "Removed " + n + " hostile mobs across loaded chunks (named, persistent and challenge mobs protected)";
+            }
+            case "unwhitelist" -> {
+                String name = str(req, "player").trim();
+                if (!name.matches("[A-Za-z0-9_]{3,16}")) throw new IllegalArgumentException("Enter a valid Minecraft player name");
+                GameProfile profile = profileByName(server, name);
+                if (profile == null || !server.getPlayerManager().getWhitelist().contains(profile))
+                    throw new IllegalArgumentException(name + " isn't on the whitelist or couldn't be resolved");
+                server.getPlayerManager().getWhitelist().remove(profile);
+                yield "Removed " + profile.getName() + " from the whitelist";
+            }
             case "clear_hostiles" -> {
                 int n = PerfMonitor.clearHostiles(server, str(req, "dim"), (int) num(req, "cx"), (int) num(req, "cz"));
                 yield "Removed " + n + " hostile mob" + (n == 1 ? "" : "s") + " (named and tamed ones are kept)";
