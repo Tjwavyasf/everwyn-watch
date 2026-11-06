@@ -1,6 +1,7 @@
 package dev.mrwavy.everwynwatch;
 
 import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -10,6 +11,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
+import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +53,11 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         s.mobGuard = new MobGuard(config);
         IconRenderer.init(configDir);
 
-        // Copy the inventory right before a player dies (before graves/drops take it)
-        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+        // Copy the inventory right before a player dies (before graves/drops take it).
+        // Runs in an early phase so other mods' "before death" handlers can't empty or skip it first.
+        Identifier beforeOthers = new Identifier("everwyn-watch", "copy_inventory_first");
+        ServerLivingEntityEvents.ALLOW_DEATH.addPhaseOrdering(beforeOthers, Event.DEFAULT_PHASE);
+        ServerLivingEntityEvents.ALLOW_DEATH.register(beforeOthers, (entity, source, amount) -> {
             if (entity instanceof ServerPlayerEntity p && s.vault != null) {
                 try {
                     s.vault.snapshot(p);
@@ -84,16 +89,18 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         // Deaths
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (!(entity instanceof ServerPlayerEntity p)) return;
-            String msg = source.getDeathMessage(p).getString();
-            s.markers.recordDeath(p.getGameProfile().getName(), p.getWorld().getRegistryKey().getValue().toString(), p.getX(), p.getY(), p.getZ(), msg);
-            if (s.challenges != null) s.challenges.onPlayerDeath(p);
-            if (s.vault != null) {
-                try {
-                    s.vault.commit(p, msg);
-                } catch (Exception e) {
-                    LOG.error("Everwyn Watch couldn't save {}'s death", p.getGameProfile().getName(), e);
-                }
+            String name = p.getGameProfile().getName();
+            String msg;
+            try {
+                msg = source.getDeathMessage(p).getString();
+            } catch (Exception e) {
+                msg = name + " died";
             }
+            final String message = msg;
+            // Save the items first and keep every step separate, so one problem can't lose the death
+            if (s.vault != null) safe("death vault (" + name + ")", () -> s.vault.commit(p, message));
+            safe("death marker", () -> s.markers.recordDeath(name, p.getWorld().getRegistryKey().getValue().toString(), p.getX(), p.getY(), p.getZ(), message));
+            if (s.challenges != null) safe("challenge death", () -> s.challenges.onPlayerDeath(p));
             Notifier.send("death", p.getGameProfile().getName() + " died", msg, "skull");
             Discord.send("death", ":skull: " + Discord.clean(msg), null, null);
         });
@@ -177,6 +184,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
             if (s.snapshotter == null) return;
             s.snapshotter.recordTick((System.nanoTime() - tickStartNanos) / 1_000_000.0);
             safe("challenges", s.challenges::tick);
+            if (s.vault != null) safe("death backup", s.vault::tick);
             safe("trails", () -> s.trails.tick(server));
             safe("perf", () -> s.perf.tick(server, s.snapshotter.mspt(), s.snapshotter.tps()));
             safe("mobGuard", () -> s.mobGuard.tick(server, s.snapshotter.tps()));

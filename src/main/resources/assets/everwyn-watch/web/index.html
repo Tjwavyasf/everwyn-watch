@@ -1120,6 +1120,8 @@ async function openDeath(id) {
     </div>`;
   if (d.restored) h += `<div class="note warn">Already given back ${d.restored === 1 ? "once" : d.restored + " times"} (${ago(d.restoredAt)}). Doing it again gives them another copy.</div>`;
   if (d.keepInventory) h += `<div class="note warn">Keep Inventory was on when they died, so they probably kept these items.</div>`;
+  if (d.source === "backup") h += `<div class="note warn">Another mod moved their items right as they died, so these were copied from a moment before. Anything picked up in their last second may be missing.</div>`;
+  if (d.source === "none") h += `<div class="note bad">Their items couldn't be copied for this death, so there's nothing to give back. Check their grave.</div>`;
   if (d.yigd) {
     h += d.grave === "present" ? `<div class="note bad">Their YIGD grave is still near the death spot. If you give items back now, they could also loot the grave and get double.</div>`
       : d.grave === "gone" ? `<div class="note ok">No grave left near the death spot. Safe to give everything back.</div>`

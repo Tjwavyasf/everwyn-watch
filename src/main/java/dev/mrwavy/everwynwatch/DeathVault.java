@@ -50,6 +50,11 @@ final class DeathVault {
     private final Path file;
     private final List<JsonObject> deaths = new ArrayList<>(); // oldest first
     private final Map<UUID, JsonObject> pending = new HashMap<>();
+    /** A copy of each online player's inventory, refreshed every second, in case the copy taken at death is missed. */
+    private record Backup(long at, List<ItemStack> stacks, int xp) {}
+    private final Map<UUID, Backup> lastKnown = new HashMap<>();
+    private int backupTicks;
+    private static final long FRESH_MS = 10_000;
     private final ExecutorService saver = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "EverwynWatch-DeathSaver");
         t.setDaemon(true);
@@ -66,6 +71,31 @@ final class DeathVault {
     /** Called right before a player dies (their items are still on them). */
     void snapshot(ServerPlayerEntity p) {
         PlayerInventory inv = p.getInventory();
+        List<ItemStack> stacks = new ArrayList<>();
+        for (int i = 0; i < inv.size(); i++) stacks.add(inv.getStack(i));
+        JsonObject d = record(p, stacks, p.experienceLevel);
+        d.addProperty("capturedAt", System.currentTimeMillis());
+        pending.put(p.getUuid(), d);
+    }
+
+    /** Server tick: once a second, keep a fresh copy of every living online player's inventory. */
+    void tick() {
+        if (++backupTicks < 20) return;
+        backupTicks = 0;
+        long now = System.currentTimeMillis();
+        java.util.Set<UUID> online = new java.util.HashSet<>();
+        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+            online.add(p.getUuid());
+            if (!p.isAlive() || p.isSpectator()) continue;
+            PlayerInventory inv = p.getInventory();
+            List<ItemStack> copy = new ArrayList<>(inv.size());
+            for (int i = 0; i < inv.size(); i++) copy.add(inv.getStack(i).copy());
+            lastKnown.put(p.getUuid(), new Backup(now, copy, p.experienceLevel));
+        }
+        lastKnown.keySet().retainAll(online);
+    }
+
+    private JsonObject record(ServerPlayerEntity p, List<ItemStack> stacks, int xp) {
         JsonObject d = new JsonObject();
         d.addProperty("player", p.getGameProfile().getName());
         d.addProperty("uuid", p.getUuidAsString());
@@ -73,11 +103,10 @@ final class DeathVault {
         d.addProperty("x", (int) Math.floor(p.getX()));
         d.addProperty("y", (int) Math.floor(p.getY()));
         d.addProperty("z", (int) Math.floor(p.getZ()));
-        d.addProperty("xp", p.experienceLevel);
+        d.addProperty("xp", xp);
         JsonArray slots = new JsonArray();
         int count = 0;
-        for (int i = 0; i < inv.size(); i++) {
-            ItemStack s = inv.getStack(i);
+        for (ItemStack s : stacks) {
             if (s.isEmpty()) {
                 slots.add(JsonNull.INSTANCE);
             } else {
@@ -87,13 +116,30 @@ final class DeathVault {
         }
         d.add("slots", slots);
         d.addProperty("items", count);
-        pending.put(p.getUuid(), d);
+        return d;
     }
 
-    /** Called after the death really happened (not saved by a totem). */
+    /**
+     * Called after the death really happened. Never drops a death: uses the copy from the moment of
+     * death, else the copy from up to a second before (another mod emptied the inventory first, or the
+     * death skipped the "before death" event), else records the death without items.
+     */
     void commit(ServerPlayerEntity p, String message) {
+        long now = System.currentTimeMillis();
         JsonObject d = pending.remove(p.getUuid());
-        if (d == null) return;
+        if (d != null && now - d.get("capturedAt").getAsLong() > FRESH_MS) d = null; // left over from a totem save
+        Backup b = lastKnown.remove(p.getUuid());
+        boolean backupUsable = b != null && now - b.at() <= FRESH_MS && b.stacks().stream().anyMatch(s -> !s.isEmpty());
+        String source = "death";
+        if ((d == null || d.get("items").getAsInt() == 0) && backupUsable) {
+            d = record(p, b.stacks(), b.xp());
+            source = "backup";
+        } else if (d == null) {
+            d = record(p, List.of(), p.experienceLevel);
+            source = "none";
+        }
+        d.remove("capturedAt");
+        d.addProperty("source", source);
         d.addProperty("id", Long.toString(System.currentTimeMillis(), 36) + Integer.toString(p.getRandom().nextInt(1296), 36));
         d.addProperty("time", System.currentTimeMillis());
         d.addProperty("message", message);
@@ -103,6 +149,12 @@ final class DeathVault {
         int limit = Math.max(20, cfg.deathHistoryLimit);
         while (deaths.size() > limit) deaths.remove(0);
         save();
+        if (source.equals("none")) {
+            EverwynWatch.LOG.warn("Everwyn Watch: {} died but their items couldn't be copied (no copy from the moment of death or the second before)", p.getGameProfile().getName());
+        } else {
+            EverwynWatch.LOG.info("Everwyn Watch saved {}'s death: {} item stacks ({})", p.getGameProfile().getName(), d.get("items").getAsInt(),
+                    source.equals("death") ? "copied at death" : "copied a moment before death; another mod moved the items first");
+        }
     }
 
     /** Drops a stale snapshot if the player survived (e.g. totem of undying). */
@@ -116,7 +168,7 @@ final class DeathVault {
         for (int i = deaths.size() - 1; i >= 0; i--) {
             JsonObject d = deaths.get(i);
             JsonObject o = new JsonObject();
-            for (String k : new String[]{"id", "player", "uuid", "dim", "x", "y", "z", "xp", "items", "time", "message", "restored", "keepInventory"}) {
+            for (String k : new String[]{"id", "player", "uuid", "dim", "x", "y", "z", "xp", "items", "time", "message", "restored", "keepInventory", "source"}) {
                 if (d.has(k)) o.add(k, d.get(k));
             }
             out.add(o);

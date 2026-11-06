@@ -2,6 +2,13 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.9.3 — 2026-11-06 (branch `everwyn-1.9.2`)
+Fix: deaths sometimes missing from the Deaths tab, so items couldn't be given back.
+- Cause: a death was only saved if the inventory copy taken in Fabric's `ALLOW_DEATH` event existed; if another mod's handler ran first (emptying or cancelling), or the death skipped that event, the death was silently dropped. The death handler also updated the map marker and challenges before saving, so an error there could stop the save.
+- The inventory copy now runs in an early event phase (before other mods), and a copy of every online player's inventory is kept in memory, refreshed every second. If the copy from the moment of death is missing or empty, the one from up to a second before is used. A death is now always recorded (marked when items couldn't be copied), the vault is saved first, and each step has its own error handling. Copies older than 10 s (left from a totem save) are ignored.
+- Every death is written to the server log ("Everwyn Watch saved X's death: N item stacks …").
+- Deaths tab shows a note when items came from the backup copy or couldn't be copied. Death records gain a `source` field (`death` / `backup` / `none`); old records still load.
+
 ## 1.9.2 — 2026-11-06 (branch `everwyn-1.9.2`, not yet on main)
 Prepared in ChatGPT (imported unchanged as commit "Import the 1.9.2 source…"), then reviewed, fixed and built in Claude.
 - **Clear all hostile mobs** (Server tab, admins): removes unnamed, non-persistent, non-challenge hostile mobs from loaded chunks in every dimension. Never loads chunks.

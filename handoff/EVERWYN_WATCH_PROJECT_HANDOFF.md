@@ -75,7 +75,11 @@ Map (live players, Overworld/Nether/End, pinch zoom, whole explored world from s
 
 Removed on purpose: screen spectating (added in 6689045, dropped in 0988351).
 
-## 5a. Latest: version 1.9.2 (branch `everwyn-1.9.2`)
+## 5a. Latest: version 1.9.3 (branch `everwyn-1.9.2`)
+
+1.9.3 fixes deaths not being saved to the Deaths tab (see changelog). Not yet confirmed on the live server.
+
+### 1.9.2
 
 Branched from `claude/funny-feynman-ifcll1` (keeps the 3D map). Adds clear all hostile mobs, automatic mob protection (`MobGuard.java`), whitelist + unwhitelist, typed item quantities, owner mod JAR upload (`SingleModUpload.java`) and a guarded owner restart (`RestartController.java`, disabled until `hostRestartsOnStop` is true). Full list and fixes in the changelog; ChatGPT's own notes in `EVERWYN_WATCH_UPDATE_2026-11-06.md`. Not tested on the live server yet. Not merged into main.
 
