@@ -169,7 +169,7 @@ final class PerfMonitor {
         for (ServerWorld w : server.getWorlds()) {
             List<Entity> doomed = new ArrayList<>();
             for (Entity e : w.iterateEntities()) {
-                if (!(e instanceof Monster mob)) continue;
+                if (!(e instanceof Monster) || !(e instanceof MobEntity mob)) continue;
                 if (mob.hasCustomName() || mob.isPersistent() || e.getCommandTags().contains(Challenges.MOB_TAG)) continue;
                 doomed.add(e);
             }

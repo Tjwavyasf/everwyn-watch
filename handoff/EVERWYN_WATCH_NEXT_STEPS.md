@@ -2,6 +2,7 @@
 
 Only items already discussed or needed to finish existing work. Nothing here is approved for implementation unless the user says so.
 
+0. **Test 1.9.2 on the server** (branch `everwyn-1.9.2`): mob protection numbers and TPS, clear all hostiles, unwhitelist, item amounts, mod upload (with a harmless mod), and that the 3D map still works. Only turn on `hostRestartsOnStop` after confirming in Bisect that the server comes back by itself after a normal stop.
 1. **Reconcile the repository first (every new session).** Fetch, compare `claude/funny-feynman-ifcll1` (3167fd7) and `main` (f001b81 at handoff) and any newer commits against this handoff. Report differences before editing.
 2. **Get the 3D map into the release (needs user permission).** The `latest` download is built from main and lacks 3D. Option: merge `claude/funny-feynman-ifcll1` into main (a test merge was clean; main's extra commits are Warehouse Showdown + workflow edits that must be kept). Ask before merging or pushing to main.
 3. **Test 3D on the real server and a real phone.** Check: terrain loads, heights files appear next to tile PNGs, TPS stays fine, touch controls feel right, iPhone Safari loads three.js.

@@ -2,6 +2,18 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.9.2 — 2026-11-06 (branch `everwyn-1.9.2`, not yet on main)
+Prepared in ChatGPT (imported unchanged as commit "Import the 1.9.2 source…"), then reviewed, fixed and built in Claude.
+- **Clear all hostile mobs** (Server tab, admins): removes unnamed, non-persistent, non-challenge hostile mobs from loaded chunks in every dimension. Never loads chunks.
+- **Automatic mob protection** (`MobGuard`, Server tab, admins): every 200 ticks trims excess hostiles in loaded chunks, farthest from players first. Defaults: 16 per chunk, 200 per dimension, never within 48 blocks of a player, at most 25 removed per scan. Named, persistent, challenge, riding/ridden mobs are kept. After 60 s below the emergency TPS (default 14) the limits drop to 75% until TPS recovers (one ntfy/Discord alert per 30 min).
+- **Whitelist** list with **Unwhitelist** button (admins, with confirmation; does not kick or ban).
+- **Typed item quantities** with − / + buttons in the care package / give items builder.
+- **Upload mod JAR** (owner only): one Fabric server mod, max 50 MB, checks `fabric.mod.json`, refuses client-only mods and Everwyn Watch itself, backs up older JARs with the same mod id to `everwyn-mod-backups/`, saves it as `mods/ew-upload-<modid>.jar`. Takes effect after a restart; compatibility is not checked.
+- **Restart server** (owner only): 10-second in-game countdown, then a clean stop. **Off by default**: it only works after `"hostRestartsOnStop": true` is set in `config/everwyn-watch.json`, which should only be done once BisectHosting is confirmed to start the server again after a normal stop.
+- New config fields (added with defaults; old configs keep working): `mobGuardEnabled`, `mobGuardPerChunk`, `mobGuardPerDimension`, `mobGuardPlayerDistance`, `mobGuardMaxRemovedPerScan`, `mobGuardEmergencyTps`, `hostRestartsOnStop`.
+- New endpoints: `/api/mob-guard`, `/api/whitelist`, `/api/mod-upload` (POST), `/api/restart` (GET status / POST start). New actions: `mob_guard_settings`, `clear_all_hostiles`, `unwhitelist`.
+- Fixes made during review: `clearAllHostiles` and `MobGuard` called entity methods on the `Monster` interface (would not compile) — now use `MobEntity` filtered to hostiles, like the existing `clearHostiles`; the shared number popup had been limited to 0–9999 which broke negative/large teleport and waypoint coordinates — the − / + stepper now only applies to quantity fields; mob protection box could get stuck "loading" for non-admins; Unwhitelist button text was cut off.
+
 ## 1.9.0 — 2026-11-05 (branch `claude/funny-feynman-ifcll1`, not yet on main)
 - `3167fd7` **Map: Tabletop 3D and Free cam views of the real terrain.** Map tiles now also store top-block heights (saved as `<x>_<z>.heights` next to each tile PNG); new `/api/heights`; `/api/tile` serves the cached image even while rate-limited; web app gains Map / Tabletop 3D / Free cam modes (three.js 0.160.0 loaded on demand). README updated. Version 1.8.0 → 1.9.0.
 

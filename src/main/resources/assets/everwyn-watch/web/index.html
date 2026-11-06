@@ -1500,9 +1500,9 @@ $("#lagOut").addEventListener("click", async e => {
 let mobGuardData = null, mobGuardLastFetch = 0, mobGuardFetching = false;
 async function loadMobGuard(force = false) {
   if (!force && (mobGuardFetching || Date.now() - mobGuardLastFetch < 15000)) return;
+  if (!canAll()) { $("#mobGuardBox").textContent = "Mob protection settings require admin access."; return; }
   mobGuardFetching = true;
   mobGuardLastFetch = Date.now();
-  if (!canAll()) { $("#mobGuardBox").textContent = "Mob protection settings require admin access."; return; }
   try {
     const res = await api("/api/mob-guard");
     if (!res.ok) throw Error("Could not read protection settings");
@@ -1546,7 +1546,7 @@ async function refreshWhitelist() {
     const res = await api("/api/whitelist");
     if (!res.ok) throw Error("Whitelist unavailable");
     const names = await res.json();
-    el.innerHTML = names.length ? names.map(name => `<div class="mobrow"><span class="n">${esc(name)}</span><button class="btn small red" data-unwhite="${esc(name)}">Unwhitelist</button></div>`).join("")
+    el.innerHTML = names.length ? names.map(name => `<div class="mobrow"><span class="n">${esc(name)}</span><button class="btn small red" data-unwhite="${esc(name)}" style="width:auto;padding:0 10px">Unwhitelist</button></div>`).join("")
       : `<span class="sub">No whitelisted players.</span>`;
   } catch (e) { el.textContent = "Couldn't load whitelist."; }
 }
@@ -1910,9 +1910,9 @@ function ask(title, fields, confirmLabel, danger) {
         ? `<div class="swatches">${XAERO.map((c, i) => `<label style="background:${c}" title="${XAERO_NAMES[i]}"><input type="radio" name="${fl.name}" value="${i}"${i === fl.value ? " checked" : ""}><span></span></label>`).join("")}</div>`
       : fl.type === "select"
         ? `<select name="${fl.name}">${fl.options.map(([v,l]) => `<option value="${esc(v)}"${v === fl.value ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`
-        : fl.type === "number"
-          ? `<div class="topic"><button type="button" class="btn" data-step="-1" data-for="${esc(fl.name)}" aria-label="Decrease ${esc(fl.label)}">−</button><input name="${esc(fl.name)}" type="number" min="${fl.min ?? 0}" max="${fl.max ?? 9999}" step="1" inputmode="numeric" value="${esc(fl.value ?? 0)}" style="min-width:0;flex:1"><button type="button" class="btn" data-step="1" data-for="${esc(fl.name)}" aria-label="Increase ${esc(fl.label)}">+</button></div>`
-          : `<input name="${esc(fl.name)}" type="${fl.type || "text"}" value="${esc(fl.value ?? "")}" placeholder="${esc(fl.placeholder || "")}" maxlength="256">`
+        : fl.type === "number" && fl.min != null
+          ? `<div class="topic"><button type="button" class="btn" data-step="-1" data-for="${esc(fl.name)}" aria-label="Decrease ${esc(fl.label)}">−</button><input name="${esc(fl.name)}" type="number" min="${fl.min}"${fl.max != null ? ` max="${fl.max}"` : ""} step="1" inputmode="numeric" value="${esc(fl.value ?? fl.min)}" style="min-width:0;flex:1"><button type="button" class="btn" data-step="1" data-for="${esc(fl.name)}" aria-label="Increase ${esc(fl.label)}">+</button></div>`
+          : `<input name="${fl.name}" type="${fl.type === "number" ? "text" : (fl.type || "text")}" ${fl.type === "number" ? 'pattern="-?[0-9.]*"' : ""} value="${esc(fl.value ?? "")}" placeholder="${esc(fl.placeholder || "")}" maxlength="256">`
     }</div>`).join("") + `<div class="actions"><button type="button" class="btn" data-x>Cancel</button><button class="btn ${danger ? "red" : "green"}" type="submit">${esc(confirmLabel)}</button></div>`;
     $("#modal").classList.remove("hidden");
     const first = f.querySelector("input"); if (first && first.type === "text") setTimeout(() => first.focus(), 50);
@@ -1921,7 +1921,7 @@ function ask(title, fields, confirmLabel, danger) {
     f.querySelectorAll("[data-step]").forEach(b => b.onclick = () => {
       const inp = [...f.querySelectorAll('input[type="number"]')].find(i => i.name === b.dataset.for);
       if (!inp) return;
-      const min = Number(inp.min), max = Number(inp.max);
+      const min = inp.min === "" ? -Infinity : Number(inp.min), max = inp.max === "" ? Infinity : Number(inp.max);
       inp.value = String(Math.max(min, Math.min(max, (Number(inp.value) || 0) + Number(b.dataset.step))));
     });
     f.onsubmit = e => { e.preventDefault(); if (!f.reportValidity()) return; done(Object.fromEntries(new FormData(f).entries())); };

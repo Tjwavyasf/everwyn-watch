@@ -75,7 +75,11 @@ Map (live players, Overworld/Nether/End, pinch zoom, whole explored world from s
 
 Removed on purpose: screen spectating (added in 6689045, dropped in 0988351).
 
-## 5. Last completed task
+## 5a. Latest: version 1.9.2 (branch `everwyn-1.9.2`)
+
+Branched from `claude/funny-feynman-ifcll1` (keeps the 3D map). Adds clear all hostile mobs, automatic mob protection (`MobGuard.java`), whitelist + unwhitelist, typed item quantities, owner mod JAR upload (`SingleModUpload.java`) and a guarded owner restart (`RestartController.java`, disabled until `hostRestartsOnStop` is true). Full list and fixes in the changelog; ChatGPT's own notes in `EVERWYN_WATCH_UPDATE_2026-11-06.md`. Not tested on the live server yet. Not merged into main.
+
+## 5. Previous completed task (1.9.0)
 
 **Tabletop 3D + Free cam map views** (commit 3167fd7, pushed to `claude/funny-feynman-ifcll1`, CI green). Details:
 - Mode switch under the dimension picker: **Map / Tabletop 3D / Free cam**; last mode remembered (`localStorage ew_mapmode`).
