@@ -42,6 +42,15 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #hpBar i{background:#d8263e}
 #stBar{height:7px;width:82%}#stBar i{background:var(--stam)}
 #hpBar.low i{animation:pulse .35s steps(2) infinite}
+#xpBar{height:4px;width:60%}#xpBar i{background:#6cc8ff}
+#skMenu{max-height:calc(100vh - 28px);overflow:auto;width:min(100%,560px)}
+#skList{display:grid;gap:5px}
+.skh{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--vest);margin-top:4px}
+.sk{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 8px;border:1px solid rgba(255,255,255,.14);font-size:13px}
+.sk small{display:block;opacity:.7;font-size:11px}
+.sk .ghost{padding:6px 12px;flex:none}
+.sk.lock{opacity:.45}
+#skCls .row{display:flex;gap:6px;flex-wrap:wrap}
 @keyframes pulse{50%{filter:brightness(1.7)}}
 .hud-c{flex:1;min-width:0;text-align:center}
 #obj{display:inline-block;font-size:clamp(11px,2.2vmin,14px);font-weight:700;letter-spacing:.08em;background:rgba(5,7,11,.66);border:1px solid rgba(255,138,31,.55);padding:5px 10px;max-width:100%}
@@ -162,9 +171,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <div id="hud" hidden>
     <div class="hud-row">
       <div class="hud-l">
-        <div class="who">TEEJAY</div>
+        <div class="who" id="whoTxt">TEEJAY</div>
         <div class="bar" id="hpBar"><b id="hpLag"></b><i id="hpFill"></i></div>
         <div class="bar" id="stBar"><i id="stFill"></i></div>
+        <div class="bar" id="xpBar"><i id="xpFill"></i></div>
         <div id="pHud" hidden><div class="who" id="pWho">FRIEND</div><div class="bar" id="pBar"><i id="pFill"></i></div></div>
       </div>
       <div class="hud-c"><div id="obj" hidden></div><div id="deliv" hidden></div></div>
@@ -235,10 +245,20 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <div class="row">
       <button class="go" id="resumeBtn">RESUME</button>
       <button class="ghost" id="muteBtn">SOUND: ON</button>
+      <button class="ghost" id="skBtn">SKILLS</button>
       <button class="ghost" id="cpBtn">RESTART CHECKPOINT</button>
       <button class="ghost" id="flBtn" hidden>RESET FORKLIFT</button>
       <button class="ghost" id="quitBtn">QUIT TO TITLE</button>
     </div>
+  </div>
+</div>
+<div id="skills" class="screen" hidden>
+  <div class="menu" id="skMenu">
+    <h2>SKILLS</h2>
+    <p class="keys" id="skInfo"></p>
+    <div id="skCls"></div>
+    <div id="skList"></div>
+    <div class="row"><button class="go" id="skBack">BACK</button><button class="ghost" id="skReset">RESET SKILLS</button></div>
   </div>
 </div>
 <div id="end" class="screen" hidden>
@@ -1020,8 +1040,60 @@ let shake = 0, hitstop = 0, slow = 0, flashA = 0; const flashCol = new THREE.Col
 let companion = null, J = null, FL = null, alarm = false, alarmT = 0, flickerT = 0, beacons = [];
 const cam = { x: 10, z: 0 };
 const frozen = () => !!ui || transitioning || mode !== 'play';
-function newSave() { return { v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
+function newSave() { return { lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
 function saveGame() { if (S && !NETG) store('save', S); }
+/* ================= levels, skills, classes ================= */
+const SKILLS = [
+  { id: 'vit', br: 'SURVIVAL', n: 'Vitality', d: '+12 max HP', max: 5 },
+  { id: 'end', br: 'SURVIVAL', n: 'Endurance', d: '+10 max stamina', max: 5 },
+  { id: 'rec', br: 'SURVIVAL', n: 'Recovery', d: 'stamina refills 10% faster', max: 3 },
+  { id: 'pow', br: 'COMBAT', n: 'Power', d: '+8% damage', max: 5 },
+  { id: 'cmb', br: 'COMBAT', n: 'Combo Mastery', d: 'combo bonus stacks 2 higher (+3% damage per stack)', max: 5 },
+  { id: 'par', br: 'COMBAT', n: 'Parry Timing', d: 'parry window +0.02s', max: 3 },
+  { id: 'spr', br: 'MOVEMENT', n: 'Sprinter', d: '+5% run speed, sprint costs 8% less', max: 3 },
+  { id: 'dod', br: 'MOVEMENT', n: 'Slippery', d: 'dodge is 5% cheaper, +0.02s safe time', max: 3 },
+  { id: 'car', br: 'WORK', n: 'Strong Back', d: '+8% speed while carrying', max: 3 },
+  { id: 'hus', br: 'WORK', n: 'Hustle', d: '+10% XP from everything', max: 3 },
+  { id: 'titan', br: 'BOSS', n: 'Titan', d: '+20 max HP', max: 2, boss: 1 },
+  { id: 'blitz', br: 'BOSS', n: 'Blitz', d: '+8% attack speed', max: 2, boss: 1 },
+  { id: 'reaper', br: 'BOSS', n: 'Reaper', d: '+15% heavy attack damage', max: 2, boss: 1 },
+];
+const CLASSES = {
+  brawler: { n: 'Brawler', d: '+15% damage, +20 max HP' },
+  duelist: { n: 'Duelist', d: 'wider parry window, dodges cost 30% less' },
+  hauler: { n: 'Hauler', d: '+40 max HP, +20% carry speed, +10% XP' },
+};
+const PK0 = { hp: 0, st: 0, regen: 1, dmg: 1, par: 0, run: 1, drain: 1, iframe: 0, dodge: 1, carry: 0, xp: 1, atk: 1, heavy: 1, cmb: 3 };
+function prog() { if (S && S.lvl === undefined) Object.assign(S, { lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {} }); return S; }
+const SK = id => { const k = !NETG && S && S.sk; return k ? (k[id] | 0) : 0; };
+const xpNeed = l => 40 + 25 * l;
+function perks() {
+  const c = (!NETG && S && S.cls) || '';
+  return {
+    hp: 12 * SK('vit') + 20 * SK('titan') + (c === 'brawler' ? 20 : 0) + (c === 'hauler' ? 40 : 0), st: 10 * SK('end'), regen: 1 + 0.1 * SK('rec'),
+    dmg: (1 + 0.08 * SK('pow')) * (c === 'brawler' ? 1.15 : 1), par: 0.02 * SK('par') + (c === 'duelist' ? 0.05 : 0),
+    run: 1 + 0.05 * SK('spr'), drain: 1 - 0.08 * SK('spr'), iframe: 0.02 * SK('dod'), dodge: (1 - 0.05 * SK('dod')) * (c === 'duelist' ? 0.7 : 1),
+    carry: 0.08 * SK('car') + (c === 'hauler' ? 0.2 : 0), xp: 1 + 0.1 * SK('hus') + (c === 'hauler' ? 0.1 : 0),
+    atk: 1 + 0.08 * SK('blitz'), heavy: 1 + 0.15 * SK('reaper'), cmb: 3 + 2 * SK('cmb'),
+  };
+}
+function applyPerks() {
+  if (!P || NETG || !S) return; prog(); const pk = perks(); P.pk = pk;
+  const dh = 120 + pk.hp - P.maxHp, ds = 100 + pk.st - P.stMax;
+  P.maxHp += dh; P.hp = Math.min(P.maxHp, Math.max(1, P.hp + Math.max(0, dh))); P.stMax += ds; P.st = Math.min(P.stMax, P.st + Math.max(0, ds));
+}
+function gainXp(n, quiet) {
+  if (!S || NETG || S.lounge) return; prog();
+  const pk = P && P.pk || PK0, amt = Math.round(n * pk.xp); S.xp += amt;
+  let up = 0; while (S.xp >= xpNeed(S.lvl)) { S.xp -= xpNeed(S.lvl); S.lvl++; S.sp++; up++; }
+  if (P && !quiet) floatNum(P.x, 2.6, P.z, '+' + amt + ' XP', '#6cc8ff', 11);
+  if (up) { sfx('level'); if (!quiet) toast('LEVEL UP', `LV ${S.lvl} · ${S.sp} SKILL POINT${S.sp === 1 ? '' : 'S'} (PAUSE > SKILLS)`); }
+  saveGame();
+}
+let comboN = 0, comboT = 0;
+const comboMul = () => 1 + 0.03 * Math.min(comboN, (P.pk || PK0).cmb);
+function comboHit() { if (!P.pk) return; comboN++; comboT = 3; if (comboN >= 3) floatNum(P.x, 2.3, P.z, 'x' + comboN + ' COMBO', '#ffc23a', 12); }
+
 
 /* ================= script helpers ================= */
 let waits = [];
@@ -1052,6 +1124,7 @@ window.addEventListener('keydown', e => {
   if (ui === 'dialog') { if (['Enter', 'Space', 'KeyE', 'KeyJ'].includes(e.code)) { advanceDialog(); e.preventDefault(); } return; }
   if (ui === 'note') { if (['Enter', 'Escape', 'KeyE', 'Space'].includes(e.code)) closeUi(); e.preventDefault(); return; }
   if (ui === 'pause') { if (e.code === 'Escape' || e.code === 'KeyP') closeUi(); return; }
+  if (ui === 'skills') { if (e.code === 'Escape') $('skBack').click(); return; }
   if (ui === 'defeat') { if (e.code === 'Enter') retry(); return; }
   if (ui === 'custom') { if (e.code === 'Escape') closeCustom(); return; }
   if (ui === 'lobby') { if (e.code === 'Escape' && document.activeElement !== lb.input) $('lbBack').click(); return; }
@@ -1119,7 +1192,7 @@ const show = (id, on) => { $(id).hidden = !on; };
 function setControls() { ctrlEl.hidden = !(touchUI && mode === 'play' && !ui && !cine); }
 function openUi(name) { ui = name; for (const k in keys) keys[k] = false; stick.id = null; stick.x = stick.z = 0; knob.style.transform = ''; setControls(); }
 let interactLock = 0;
-function closeUi() { ['note', 'pause'].forEach(id => show(id, false)); ui = null; setControls(); interactLock = time + 0.35; ACTIONS.forEach(a => buf[a] = 0); }
+function closeUi() { ['note', 'pause', 'skills'].forEach(id => show(id, false)); ui = null; setControls(); interactLock = time + 0.35; ACTIONS.forEach(a => buf[a] = 0); }
 let toastT = 0, bannerT = 0, areaT = 0, paT = 0;
 function toast(a, b) { netEv('toast', a, b); $('toast').innerHTML = `<b>${a}</b>${b || ''}`; $('toast').classList.add('show'); toastT = 2.6; }
 function setBanner(big, small, t, col) { netEv('banner', big, small, t, col); $('bBig').textContent = big; $('bBig').style.color = col || ''; $('bSmall').textContent = small || ''; $('banner').classList.add('show'); bannerT = t || 2.2; }
@@ -1143,6 +1216,7 @@ function openPause() {
   openUi('pause'); show('pause', true);
   $('muteBtn').textContent = muted ? 'SOUND: OFF' : 'SOUND: ON';
   $('flBtn').hidden = !(ROOM && ROOM.id === 'bay' && FL && J && J.state !== 'FINAL_DEFEAT') || !!NETG;
+  prog(); $('skBtn').hidden = !!NETG || (ROOM && ROOM.id === 'lounge'); $('skBtn').textContent = 'SKILLS' + (S.sp ? ' (' + S.sp + ')' : '');
   $('cpBtn').textContent = 'RESTART AT: ' + CP_NAMES[S.cp.id].toUpperCase(); $('cpBtn').hidden = !!NETG || !!(ROOM && ROOM.id === 'lounge');
   $('quitBtn').textContent = NETG ? 'LEAVE CO-OP' : 'QUIT TO TITLE';
   $('pauseKeys').textContent = touchUI
@@ -1151,6 +1225,29 @@ function openPause() {
   if (NETH.on) $('pauseKeys').textContent += ' CO-OP: pausing freezes the game for your friend too.';
   if (NETG) $('pauseKeys').textContent += ' CO-OP: the host runs the story; you fight alongside.';
 }
+function renderSkills() {
+  prog(); $('skInfo').textContent = `LEVEL ${S.lvl} · XP ${S.xp}/${xpNeed(S.lvl)} · SKILL POINTS ${S.sp}`;
+  const cl = $('skCls'); cl.innerHTML = '';
+  if (!S.boss) cl.innerHTML = '<p class="keys">Beat the boss to unlock a class and the boss skills.</p>';
+  else if (S.cls) cl.innerHTML = `<p class="keys">CLASS: <b>${CLASSES[S.cls].n.toUpperCase()}</b> — ${CLASSES[S.cls].d}</p>`;
+  else {
+    cl.innerHTML = '<p class="keys">Pick a class (permanent):</p><div class="row"></div>';
+    for (const k in CLASSES) { const b = document.createElement('button'); b.className = 'ghost'; b.innerHTML = `${CLASSES[k].n.toUpperCase()}<br><small>${CLASSES[k].d}</small>`; b.onclick = () => { S.cls = k; applyPerks(); saveGame(); sfx('level'); renderSkills(); }; cl.lastChild.appendChild(b); }
+  }
+  const ls = $('skList'); ls.innerHTML = ''; let br = '';
+  for (const k of SKILLS) {
+    if (k.br !== br) { br = k.br; const h = document.createElement('div'); h.className = 'skh'; h.textContent = br; ls.appendChild(h); }
+    const r = S.sk[k.id] | 0, locked = k.boss && !S.boss, d = document.createElement('div'); d.className = 'sk' + (locked ? ' lock' : '');
+    d.innerHTML = `<span><b>${k.n}</b> ${r}/${k.max}<small>${locked ? 'Locked: beat the boss' : k.d}</small></span>`;
+    const b = document.createElement('button'); b.className = 'ghost'; b.textContent = r >= k.max ? 'MAX' : '+';
+    b.disabled = locked || r >= k.max || S.sp < 1;
+    b.onclick = () => { S.sk[k.id] = r + 1; S.sp--; applyPerks(); saveGame(); sfx('ui'); renderSkills(); };
+    d.appendChild(b); ls.appendChild(d);
+  }
+}
+$('skBtn').addEventListener('click', () => { closeUi(); openUi('skills'); show('skills', true); renderSkills(); });
+$('skBack').addEventListener('click', () => { show('skills', false); ui = null; openPause(); });
+$('skReset').addEventListener('click', () => { prog(); let n = 0; for (const k in S.sk) n += S.sk[k] | 0; S.sk = {}; S.sp += n; applyPerks(); saveGame(); renderSkills(); });
 $('pauseBtn').addEventListener('click', () => { if (mode === 'play' && !ui) openPause(); });
 $('resumeBtn').addEventListener('click', closeUi);
 $('muteBtn').addEventListener('click', () => { ensureAudio(); muted = !muted; store('muted', muted); if (master) master.gain.value = muted ? 0 : 0.55; $('muteBtn').textContent = muted ? 'SOUND: OFF' : 'SOUND: ON'; });
@@ -1211,7 +1308,11 @@ function toTitle() {
   S = sv || newSave();
   enterRoom('parking', { x: 10, z: 0 }, true);
 }
-$('newBtn').addEventListener('click', () => { ensureAudio(); sfx('ui'); S = newSave(); saveGame(); show('title', false); beginPlay(); });
+$('newBtn').addEventListener('click', () => {
+  ensureAudio(); sfx('ui'); const old = load('save', null); S = newSave();
+  const keep = !!(old && old.done && old.lvl); if (keep) Object.assign(S, { lvl: old.lvl, xp: old.xp, sp: old.sp, sk: old.sk || {}, cls: old.cls || null, boss: old.boss || 0 });
+  saveGame(); show('title', false); beginPlay(); if (keep) toast('PROGRESS KEPT', `LV ${S.lvl}${S.cls ? ' · ' + CLASSES[S.cls].n.toUpperCase() : ''}`);
+});
 $('contBtn').addEventListener('click', () => { ensureAudio(); sfx('ui'); S = load('save', null) || newSave(); show('title', false); beginPlay(); });
 function beginPlay() {
   netHostBegin();
@@ -1219,6 +1320,7 @@ function beginPlay() {
   if (P) P.remove();
   P = new Actor('teejay', 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
+  comboN = 0; applyPerks();
   setControls();
   loadCheckpoint();
 }
@@ -1229,6 +1331,7 @@ function loadCheckpoint() {
 }
 function checkpoint(id) {
   S.cp = { id, room: ROOM.id, x: P.x, z: P.z, step: S.step, delivered: S.delivered };
+  prog(); if (!S.xpCp[id]) { S.xpCp[id] = 1; gainXp(30, true); }
   saveGame(); toast('CHECKPOINT', CP_NAMES[id]);
 }
 function retry() { show('defeat', false); ui = null; fade(() => { loadCheckpoint(); setControls(); }); }
@@ -1638,7 +1741,7 @@ function putDown() {
   const inB = x > 32 && x < 37 && z > -1.3 && z < 2.5;
   if (inB && S.step === 6) {
     const sp = slotPos(S.delivered); b.x = sp.x; b.z = sp.z; b.placed = true; b.mesh.position.set(b.x, 0.21, b.z);
-    S.delivered++; setDeliv(`TILE DELIVERIES ${S.delivered}/4`); toast('DELIVERED', `${S.delivered}/4`); sfx('pickup');
+    S.delivered++; prog(); if (S.delivered > S.xpDel) { S.xpDel = S.delivered; gainXp(40); } setDeliv(`TILE DELIVERIES ${S.delivered}/4`); toast('DELIVERED', `${S.delivered}/4`); sfx('pickup');
     deliveryEvent(S.delivered);
   } else { b.x = x; b.z = z; b.ia.x = x; b.ia.z = z; b.mesh.position.set(x, 0.21, z); }
 }
@@ -1779,7 +1882,7 @@ function hitHostile(e, dmg, m, dir) {
   if (m.knock || e.hp <= 0) { e.state = 'down'; e.t = 0; e.lie = 0; e.vy = 5.5; e.vx = dir * (m.kb || 6); e.onGround = false; }
   else { e.state = 'hurt'; e.stun = m.stun || 0.4; e.vx = dir * (m.kb || 2.5); }
   hitFx(e.x - dir * 0.2, e.y + 1.0, e.z, dir, m.big);
-  if (e.hp <= 0) { e.defeated = true; sfx('ko'); floatNum(e.x, 2.3, e.z, 'DOWN', '#c8a0ff', 14); sparks(e.x, 1.2, e.z, 16, '#b060ff', 3, 0, 0.8, -1); }
+  if (e.hp <= 0) { e.defeated = true; gainXp(14); sfx('ko'); floatNum(e.x, 2.3, e.z, 'DOWN', '#c8a0ff', 14); sparks(e.x, 1.2, e.z, 16, '#b060ff', 3, 0, 0.8, -1); }
 }
 function hitFx(x, y, z, dir, big) {
   netEv('hitfx', x, y, z, dir, big); NETH.mute++;
@@ -1884,26 +1987,26 @@ function startAttack(key, ci) {
   const m = MOVES[key];
   if (!useSt((WEAPONS[P.wk] || WEAPONS.fists).st * (m.st || 1))) { sfx('deny'); floatNum(P.x, 2, P.z, 'NO STAMINA', '#9fd65a', 11); return false; }
   const mv = moveInput(); if (Math.abs(mv.x) > 0.2) P.face = mv.x > 0 ? 1 : -1;
-  Object.assign(P, { state: 'attack', move: m, mkey: key, ci: ci || 0, t: 0, hitSet: new Set(), lunged: false, mspd: (WEAPONS[P.wk] || WEAPONS.fists).speed, aseq: (P.aseq | 0) + 1, chargeT: 0, cm: 1 });
+  Object.assign(P, { state: 'attack', move: m, mkey: key, ci: ci || 0, t: 0, hitSet: new Set(), lunged: false, mspd: (WEAPONS[P.wk] || WEAPONS.fists).speed * (P.pk || PK0).atk, aseq: (P.aseq | 0) + 1, chargeT: 0, cm: 1 });
   return true;
 }
 /* Dodge: committed roll when you push a direction, short backstep when you don't. The invincible window is shorter than the whole move, so mistimed dodges get punished. */
 function startRoll(mv) {
   const still = mv.mag < 0.2;
-  if (!useSt(still ? 14 : 20)) { sfx('deny'); return; }
+  if (!useSt((still ? 14 : 20) * (P.pk || PK0).dodge)) { sfx('deny'); return; }
   let dx = mv.x, dz = mv.z; if (still) { dx = -P.face; dz = 0; }
   const m = Math.hypot(dx, dz) || 1; P.rollDir = [dx / m, dz / m]; if (!still && Math.abs(dx) > 0.2) P.face = dx > 0 ? 1 : -1;
   Object.assign(P, { state: 'roll', t: 0, rollKind: still ? 'step' : 'roll', rollDur: still ? 0.4 : 0.58, ifs: still ? 0.03 : 0.05, ife: still ? 0.22 : 0.3 });
   sfx('roll'); dust(P.x, P.z, 4, 2);
 }
-function rollInvuln() { return P.state === 'roll' && P.t > P.ifs && P.t < P.ife + (P.slack || 0); }
+function rollInvuln() { return P.state === 'roll' && P.t > P.ifs && P.t < P.ife + (P.slack || 0) + (P.pk || PK0).iframe; }
 /* Parry: tap to raise a guard; a strike that lands inside the short active window is turned aside, the attacker is left open, and your next hit is a riposte. */
 const PARRY_POSTURE = 20;
 function startParry() {
   if (!useSt(10)) { sfx('deny'); return; }
   Object.assign(P, { state: 'parry', t: 0, parried: false }); sfx('swing');
 }
-function parryActive() { return !!P && P.state === 'parry' && P.t > 0.04 && P.t < 0.27 + (P.slack || 0); }
+function parryActive() { return !!P && P.state === 'parry' && P.t > 0.04 && P.t < 0.27 + (P.slack || 0) + (P.pk || PK0).par; }
 function parryFx(x, y, z, dir) {
   netEv('parryfx', P === P2 ? 1 : 0, x, y, z, dir); NETH.mute++;
   P.parried = true; P.t = Math.max(P.t, 0.28);
@@ -1928,15 +2031,15 @@ function parryJose(A) {
 }
 function attackHits(m) {
   if (NETG) return;
-  const W = WEAPONS[P.wk] || WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), dmg = m.dmg * (P.mkey === 'heavy' ? (P.cm || 1) : 1);
+  const W = WEAPONS[P.wk] || WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), pk = P.pk || PK0, dmg = m.dmg * (P.mkey === 'heavy' ? (P.cm || 1) * pk.heavy : 1) * pk.dmg * (P.pk ? comboMul() : 1);
   for (const e of enemies) {
     if (e.defeated || P.hitSet.has(e) || (e.state === 'down' && e.y < 0.05)) continue;
     const fx = (e.x - P.x) * P.face;
-    if (fx > -0.25 && fx < reach + e.rad && Math.abs(e.z - P.z) < W.z && Math.abs(e.y - P.y) < 1.4) { P.hitSet.add(e); hitHostile(e, dmg, m, P.face); }
+    if (fx > -0.25 && fx < reach + e.rad && Math.abs(e.z - P.z) < W.z && Math.abs(e.y - P.y) < 1.4) { P.hitSet.add(e); hitHostile(e, dmg, m, P.face); comboHit(); }
   }
   if (J && J.a.mesh.visible && !P.hitSet.has(J)) {
     const a = J.a, fx = (a.x - P.x) * P.face;
-    if (fx > -0.3 && fx < reach + a.rad && Math.abs(a.z - P.z) < W.z + 0.2) { P.hitSet.add(J); joseHit(dmg, m, P.face); }
+    if (fx > -0.3 && fx < reach + a.rad && Math.abs(a.z - P.z) < W.z + 0.2) { P.hitSet.add(J); joseHit(dmg, m, P.face); comboHit(); }
   }
   for (const c of crates.slice()) {
     if (P.hitSet.has(c)) continue;
@@ -1952,10 +2055,11 @@ function attackHits(m) {
   }
 }
 function updatePlayer(dt) {
-  const p = P;
+  const p = P, pk = p.pk || PK0;
+  if (comboT > 0) { comboT -= dt; if (comboT <= 0) comboN = 0; }
   p.t += dt; p.inv = Math.max(0, p.inv - dt); p.hitT = Math.max(0, (p.hitT || 0) - dt);
   if (inLounge() && p.hp < p.maxHp && p.state !== 'dead') p.hp = Math.min(p.maxHp, p.hp + 8 * dt);
-  if (p.stDelay > 0) p.stDelay -= dt; else if (p.state !== 'roll' && p.state !== 'attack') p.st = Math.min(p.stMax, p.st + 48 * dt);
+  if (p.stDelay > 0) p.stDelay -= dt; else if (p.state !== 'roll' && p.state !== 'attack') p.st = Math.min(p.stMax, p.st + 48 * (p.pk || PK0).regen * dt);
   if (attackHoldT >= 0) { if (attackHeld()) { attackHoldT += dt; if (attackHoldT > 0.32 && !heavyFired) { heavyFired = true; buf.heavy = 0.25; } } else attackHoldT = -1; }
   if (p.riding) { driveForklift(dt); return; }
   const ctl = !cine && !p.goal;
@@ -1964,8 +2068,8 @@ function updatePlayer(dt) {
   if (p.runLock && p.st >= 25) p.runLock = false;
   const running = ctl && !p.carry && !p.runLock && p.st > 0 && mv.mag > 0.2 && (p.state === 'idle' || p.state === 'walk') && (keys.act_run || touchHeld.run > 0);
   p.running = running;
-  if (running) { p.st = Math.max(0, p.st - 13 * dt); p.stDelay = 0.5; if (p.st <= 0) p.runLock = true; if (rand() < 0.22) dust(p.x, p.z, 1, 1); }
-  const spd = 4.3 * (p.carry ? 0.6 : 1) * (running ? 1.55 : 1);
+  if (running) { p.st = Math.max(0, p.st - 13 * pk.drain * dt); p.stDelay = 0.5; if (p.st <= 0) p.runLock = true; if (rand() < 0.22) dust(p.x, p.z, 1, 1); }
+  const spd = 4.3 * (p.carry ? 0.6 + pk.carry : 1) * (running ? 1.55 * pk.run : 1);
   switch (p.state) {
     case 'idle': case 'walk':
       if (p.goal) goalStep(p, dt);
@@ -2034,7 +2138,7 @@ function damagePlayer(dmg, dir, knock, sh) {
   if (P === P2) { p2Damage(dmg, dir, knock, sh); return; }
   const p = P; if (p.state === 'dead' || cine) return;
   if (p.carry) putDown();
-  p.hp -= dmg; p.hitT = 0.1; if (inLounge()) p.hp = Math.max(1, p.hp);
+  comboN = 0; p.hp -= dmg; p.hitT = 0.1; if (inLounge()) p.hp = Math.max(1, p.hp);
   floatNum(p.x, p.y + 1.7, p.z, '-' + Math.round(dmg), '#ff5a6a', 15);
   addShake(sh || 0.25); hitstop = Math.max(hitstop, 0.06); flash('#ff2650', 0.15);
   sparks(p.x, p.y + 1, p.z, 10, '#ff2650', 3.5); sfx('hurt');
@@ -2350,13 +2454,13 @@ async function ending(ok) {
   alarm = true; sfx('slam'); await wait(0.5); if (!ok()) return; sfx('boom'); addShake(0.6);
   await wait(0.8); if (!ok()) return;
   await talk([['TeeJay', 'Nah, I ain’t getting paid enough for this.']]); if (!ok()) return;
-  S.step = 10; S.done = true; saveGame();
+  prog(); if (!S.boss) { S.boss = 1; gainXp(250, true); } S.step = 10; S.done = true; saveGame();
   $('fade').classList.add('on'); musicMode = 'off';
   await wait(1.2);
   $('fade').classList.remove('on');
   openUi('end'); show('end', true); show('hud', false);
   const m = Math.floor(S.time / 60), s = Math.floor(S.time % 60);
-  $('endStats').textContent = `Time ${m}:${String(s).padStart(2, '0')} · Written up ${S.deaths} time${S.deaths === 1 ? '' : 's'}`; netEv('end', $('endStats').textContent);
+  $('endStats').textContent = `Time ${m}:${String(s).padStart(2, '0')} · Written up ${S.deaths} time${S.deaths === 1 ? '' : 's'} · LEVEL ${S.lvl} · BOSS SKILLS & CLASSES UNLOCKED (start a new game to use them)`; netEv('end', $('endStats').textContent);
   const els = $('end').querySelectorAll('.wrap>*'); els.forEach(e => e.classList.remove('in'));
   els.forEach((e, i) => setTimeout(() => e.classList.add('in'), 400 + i * 900));
 }
@@ -2541,6 +2645,7 @@ function updateHud(dt) {
   $('hpFill').style.transform = `scaleX(${hf})`; P.hpLag = Math.max(hf, P.hpLag - dt * 0.4); $('hpLag').style.transform = `scaleX(${P.hpLag})`;
   $('hpBar').classList.toggle('low', hf < 0.25);
   $('stFill').style.transform = `scaleX(${Math.max(0, P.st / P.stMax)})`;
+  if (S && !NETG && S.lvl) { $('xpFill').style.transform = `scaleX(${Math.min(1, S.xp / xpNeed(S.lvl))})`; const wt = 'TEEJAY · LV ' + S.lvl + (S.sp ? ' ★' : ''); if ($('whoTxt').textContent !== wt) $('whoTxt').textContent = wt; }
   if (J && !$('bossBar').hidden) {
     const f = Math.max(0, J.hp / J.max); $('bFill').style.transform = `scaleX(${f})`; J.lag = Math.max(f, (J.lag == null ? 1 : J.lag) - dt * 0.3); $('bLag').style.transform = `scaleX(${J.lag})`;
     const pf = J.state === 'STAGGERED' || J.state === 'FORKLIFT_READY' ? Math.max(0, J.win / 12) : J.posture / J.pMax;
@@ -3245,12 +3350,13 @@ window.__ci = {
   advance() { if (ui === 'dialog') { advanceDialog(); return true; } return false; },
   tp(x, z) { if (P) { P.x = x; P.z = z; } },
   god() { P.maxHp = 9999; P.hp = 9999; },
+  gx(n, boss) { if (boss) S.boss = 1; gainXp(n); },
   hurt(n) { P.inv = 0; damagePlayer(n, 1, false); },
   boxes() { return boxes.map(b => ({ x: +b.x.toFixed(1), z: +b.z.toFixed(1), placed: b.placed, held: b.held })); },
   enemyPos() { const e = enemies.find(o => !o.defeated); return e ? { x: e.x, z: e.z } : null; },
   breakPosture() { if (J && inCombat()) { J.posture = J.pMax; postureBreak(); } },
   jose() { return J; }, fl() { return FL; },
-  dbg() { return { wk: P && P.wk, mk: P && P.mkey, cm: P && P.cm, ch: P && P.chargeT, pst: P && P.state, rk: P && P.rollKind, t: P && +P.t.toFixed(2), run: P && P.running, lock: P && P.runLock, parried: P && P.parried, vx: P && +P.vx.toFixed(2), en: enemies.map(e => ({ s: e.state, r: +(e.riposteT || 0).toFixed(2), hp: Math.round(e.hp), seq: e.seq ? e.seq[e.si].k : null, pt: +(e.pt || 0).toFixed(2), d: e.defeated, x: +e.x.toFixed(1), z: +e.z.toFixed(1) })), ri: !!P && rollInvuln(), jd: J && P ? +Math.hypot(J.a.x - P.x, J.a.z - P.z).toFixed(2) : null, atk: J && J.atk ? { k: J.atk.kind, st: J.atk.stage } : null, post: J ? Math.round(J.posture) : null }; },
+  dbg() { return { lv: S && S.lvl, xp: S && S.xp, sp: S && S.sp, mh: P && P.maxHp, sm: P && P.stMax, wk: P && P.wk, mk: P && P.mkey, cm: P && P.cm, ch: P && P.chargeT, pst: P && P.state, rk: P && P.rollKind, t: P && +P.t.toFixed(2), run: P && P.running, lock: P && P.runLock, parried: P && P.parried, vx: P && +P.vx.toFixed(2), en: enemies.map(e => ({ s: e.state, r: +(e.riposteT || 0).toFixed(2), hp: Math.round(e.hp), seq: e.seq ? e.seq[e.si].k : null, pt: +(e.pt || 0).toFixed(2), d: e.defeated, x: +e.x.toFixed(1), z: +e.z.toFixed(1) })), ri: !!P && rollInvuln(), jd: J && P ? +Math.hypot(J.a.x - P.x, J.a.z - P.z).toFixed(2) : null, atk: J && J.atk ? { k: J.atk.kind, st: J.atk.stage } : null, post: J ? Math.round(J.posture) : null }; },
   net: { attach: netAttach, recv: netRecv, get role() { return NET.role; }, get host() { return NETH.on; }, get guest() { return NETG && { started: NETG.started, rid: NETG.rid, room: NETG.room, ghosts: [...NETG.ghosts.keys()] }; }, p2() { return P2 && { x: P2.x, z: P2.z, hp: P2.hp, state: P2.state, live: P2.live, inv: P2.inv }; }, partner() { return NETG && NETG.partner; } },
   skipTo(cpId) { const map = { clockin: ['breakroom', 5, 0, 6, -2.5], tiles: ['floor', 7, 4, 30, 0.5], outbreak: ['floor', 8, 4, 22, 0], arena: ['bay', 9, 0, 12, -1] }; const m = map[cpId]; S.cp = { id: cpId, room: m[0], step: m[1], delivered: m[2], x: m[3], z: m[4] }; loadCheckpoint(); },
 };

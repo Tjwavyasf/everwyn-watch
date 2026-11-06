@@ -1,5 +1,12 @@
 # Changelog
 
+## Levels, skill tree, classes, combo bonus
+- XP from kills, deliveries (once each), checkpoints (once each); level-ups give 1 skill point.
+- Pause > SKILLS: 13 skills in Survival / Combat / Movement / Work / Boss branches, reset button.
+- Beating the boss unlocks boss skills and a permanent class (Brawler, Duelist, Hauler); a New Game after finishing keeps progress.
+- Combo counter: consecutive hits give +3% damage per stack (cap raised by Combo Mastery); resets when hit or after 3s.
+- Solo and co-op host only; the co-op guest and the break room use base stats.
+
 ## Box cutter + 3 new moves
 - TeeJay now starts with the Box Cutter equipped (solo and co-op).
 - Running attack: hold RUN and press ATTACK for a lunging slash.
