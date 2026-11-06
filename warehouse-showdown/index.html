@@ -158,6 +158,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media (orientation:portrait),(max-width:560px){.cbody{grid-template-columns:1fr}.cprev{grid-auto-flow:column;justify-content:center;align-items:center}#cPrev{width:110px;height:110px}.cprev .ghost{width:auto}}
 #lng{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:104px;display:flex;flex-direction:column;gap:4px;align-items:stretch;background:rgba(9,12,20,.82);border:1px solid rgba(255,138,31,.55);padding:5px 6px;pointer-events:auto;width:min(38vw,150px)}
 #lng span{font-size:10px;font-weight:700;letter-spacing:.05em;text-align:center;line-height:1.25}
+#lng #lngNet{font-weight:400;font-size:9px;max-width:150px;letter-spacing:0;text-align:left}
 #lng .go{font-size:12px;padding:3px 6px;transform:none;text-align:center}#lng .ghost{font-size:10px;padding:3px 6px;border-width:1px}
 #lng button:disabled{opacity:.4;cursor:default}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:28px;color:var(--vest);background:var(--night)}
@@ -186,7 +187,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="bar" id="bPost"><i id="pFill"></i></div>
     </div>
     <div id="prompt" hidden></div>
-    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngCopy" hidden>COPY LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
+    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngTest">TEST CONNECTION</button><span id="lngNet" hidden></span><button class="ghost" id="lngCopy" hidden>COPY LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
   </div>
   <div id="area"><small id="areaSub"></small><div id="areaName"></div></div>
   <div id="banner"><div class="big" id="bBig"></div><div class="small" id="bSmall"></div></div>
@@ -3280,8 +3281,9 @@ function openPeer(id) {
 const lb = { title: $('lbTitle'), msg: $('lbMsg'), code: $('lbCode'), joinRow: $('lbJoinRow'), input: $('lbInput'), go: $('lbGo'), copy: $('lbCopy'), back: $('lbBack'), leave: $('lbLeave') };
 /* Connection check: tells the player (and me) which part of co-op networking is failing on their phone. */
 let netTesting = false;
-async function netTest() {
-  if (netTesting) return; netTesting = true; $('lbTest').disabled = true; lb.msg.textContent = 'Testing your connection… (about 15 seconds)';
+async function netTest(out) {
+  out = out || (t => { lb.msg.textContent = t; });
+  if (netTesting) return; netTesting = true; $('lbTest').disabled = true; $('lngTest').disabled = true; out('Testing your connection… (about 15 seconds)');
   let broker = 'OK';
   try { await loadPeerLib(); const pr = await Promise.race([openPeer(), new Promise((_, r) => setTimeout(() => r(new Error('timed out')), 9000))]); try { pr.destroy(); } catch (e) {} }
   catch (e) { broker = 'FAILED (' + (e && e.message === 'peerjs load' ? 'could not load the co-op library' : ((e && (e.type || e.message)) || 'unknown')) + ')'; }
@@ -3294,10 +3296,11 @@ async function netTest() {
     pc.close();
   } catch (e) { ty.err = 1; }
   const verdict = broker !== 'OK' ? 'Cannot reach the matchmaking server. Try another network or browser.' : ty.err ? 'This browser blocked the connection test.' : !ty.relay ? 'No relay found: friends on different mobile networks may not connect.' : 'Looks good.';
-  lb.msg.textContent = `Matchmaking server: ${broker}. Direct route: ${ty.srflx ? 'yes' : 'no'}. Relay: ${ty.relay ? 'yes' : 'NO'}. ${verdict}`;
-  $('lbTest').disabled = false; netTesting = false;
+  out(`Matchmaking server: ${broker}. Direct route: ${ty.srflx ? 'yes' : 'no'}. Relay: ${ty.relay ? 'yes' : 'NO'}. ${verdict}`);
+  $('lbTest').disabled = false; $('lngTest').disabled = false; netTesting = false;
 }
-$('lbTest').addEventListener('click', netTest);
+$('lbTest').addEventListener('click', () => netTest());
+$('lngTest').addEventListener('click', () => netTest(t => { const el = $('lngNet'); el.hidden = false; el.textContent = t; }));
 function lobbyOpen() { ui = 'lobby'; show('title', false); show('lobby', true); }
 function lobbyHide() { show('lobby', false); if (ui === 'lobby') ui = null; }
 function lobbyClose() { lobbyHide(); if (mode === 'title') show('title', true); }
