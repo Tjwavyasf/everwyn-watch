@@ -1,10 +1,22 @@
+# CLOCKED IN — Chapter 1: You're Late
+
+The current game (`index.html`): TeeJay shows up late to the warehouse on the worst possible day. Clock in, move the tile, survive the first outbreak, and beat Jose, the Floor Enforcer, by ramming him with a forklift five times. Landscape is best. Open the file in a browser; no install needed.
+
+**Controls:** left stick / WASD to move · ATTACK / J (hold or K = heavy) · DODGE / Space · USE / E to pick up, put down, talk, read, drive and exit the forklift · Pause / Esc. In the forklift, the stick steers and drives; RESET / R if it gets stuck.
+
+See [GAME_STATE.md](GAME_STATE.md) for how everything works and [CHANGELOG.md](CHANGELOG.md) for history.
+
+---
+
+Earlier games in this folder: [`long-shift/`](long-shift/index.html), [`v2/`](v2/index.html), [`v1/`](v1/index.html). The Long Shift's guide follows.
+
 # Warehouse Showdown: The Long Shift
 
 A story-driven action RPG for phones, in an HD-2D pixel style. Depot 9 never closes, and nobody who clocked in has ever clocked out. You're the new hire. Explore the warehouse, beat the bosses who run it, and reach the Foreman's office.
 
 Open `index.html` in a phone or desktop browser. No install or build step. It loads three.js r128 from cdnjs, so the first load needs a connection. Progress saves automatically in the browser.
 
-Earlier versions are kept in [`v1/`](v1/index.html) (side-scroller) and [`v2/`](v2/index.html) (arcade waves with classes and upgrades).
+Its file is now `long-shift/index.html`.
 
 ## How it plays
 
