@@ -65,7 +65,7 @@ final class AdminActions {
                 String name = str(req, "player").trim();
                 if (!name.matches("[A-Za-z0-9_]{3,16}")) throw new IllegalArgumentException("Enter a valid Minecraft player name");
                 GameProfile profile = profileByName(server, name);
-                if (profile == null || !server.getPlayerManager().getWhitelist().contains(profile))
+                if (profile == null || !server.getPlayerManager().isWhitelisted(profile))
                     throw new IllegalArgumentException(name + " isn't on the whitelist or couldn't be resolved");
                 server.getPlayerManager().getWhitelist().remove(profile);
                 yield "Removed " + profile.getName() + " from the whitelist";
