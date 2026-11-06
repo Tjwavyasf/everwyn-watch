@@ -147,10 +147,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .sw button.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,194,58,.35)}
 .sw button.opt.on{background:var(--vest);border-color:var(--vest);color:#120a04;box-shadow:none}
 @media (orientation:portrait),(max-width:560px){.cbody{grid-template-columns:1fr}.cprev{grid-auto-flow:column;justify-content:center;align-items:center}#cPrev{width:110px;height:110px}.cprev .ghost{width:auto}}
-#lng{position:absolute;left:50%;bottom:calc(8px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;background:rgba(9,12,20,.82);border:1px solid rgba(255,138,31,.55);padding:5px 8px;pointer-events:auto;width:max-content;max-width:min(96%,460px)}
-@media (orientation:landscape){#lng{max-width:44vw}}
-#lng span{flex:1 0 100%;font-size:11px;font-weight:700;letter-spacing:.06em;text-align:center;line-height:1.25}
-#lng .go{font-size:13px;padding:3px 12px;transform:none}#lng .ghost{font-size:11px;padding:4px 9px;border-width:1px}
+#lng{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:104px;display:flex;flex-direction:column;gap:4px;align-items:stretch;background:rgba(9,12,20,.82);border:1px solid rgba(255,138,31,.55);padding:5px 6px;pointer-events:auto;width:min(38vw,150px)}
+#lng span{font-size:10px;font-weight:700;letter-spacing:.05em;text-align:center;line-height:1.25}
+#lng .go{font-size:12px;padding:3px 6px;transform:none;text-align:center}#lng .ghost{font-size:10px;padding:3px 6px;border-width:1px}
 #lng button:disabled{opacity:.4;cursor:default}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:28px;color:var(--vest);background:var(--night)}
 </style>
@@ -177,7 +176,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="bar" id="bPost"><i id="pFill"></i></div>
     </div>
     <div id="prompt" hidden></div>
-    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngCopy" hidden>COPY INVITE LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
+    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngCopy" hidden>COPY LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
   </div>
   <div id="area"><small id="areaSub"></small><div id="areaName"></div></div>
   <div id="banner"><div class="big" id="bBig"></div><div class="small" id="bSmall"></div></div>
@@ -3024,7 +3023,7 @@ function updateLounge() {
 $('lngReady').addEventListener('click', () => { if (!NETG || !NETG.started || !inLounge()) return; ensureAudio(); sfx('ui'); NETG.ready = !NETG.ready; netSend({ t: 'ready', r: NETG.ready ? 1 : 0 }); });
 $('lngCopy').addEventListener('click', () => {
   const link = location.origin + location.pathname + '?join=' + NET.code, b = $('lngCopy');
-  const done = ok => { b.textContent = ok ? 'LINK COPIED' : 'COPY FAILED'; setTimeout(() => { b.textContent = 'COPY INVITE LINK'; }, 1800); };
+  const done = ok => { b.textContent = ok ? 'LINK COPIED' : 'COPY FAILED'; setTimeout(() => { b.textContent = 'COPY LINK'; }, 1800); };
   try { navigator.clipboard.writeText(link).then(() => done(true), () => done(false)); } catch (e) { done(false); }
 });
 $('lngNew').addEventListener('click', () => loungeStart(false));
