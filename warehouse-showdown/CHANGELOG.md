@@ -1,5 +1,14 @@
 # Changelog
 
+## Clocked In — controls and co-op update (2026-11-06)
+- Added **RUN** (hold Shift / RUN button): sprint with stamina drain and an empty-stamina lockout.
+- Reworked **dodge** (Elden-style): committed roll with a shorter invincible window, or a quick backstep when standing still. Dodge is Space or the DODGE button; Shift is now run.
+- Added **PARRY** (L / Q / PARRY button) with a stagger and a RIPOSTE for big damage. Parrying Jose's Clock-In Rush now adds 20 posture. This is a new rule on the boss; HP gating and the five-ram finish are unchanged.
+- Added **CUSTOMIZE** on the title screen (skin, hair and style, beard, shades, top, accent, pants, boots, build), saved on the device.
+- Added **online co-op for 2 players** with a 5-letter room code (PeerJS): HOST CO-OP / JOIN CO-OP on the title, a lobby screen, invite link (`?join=CODE`), a friend who fights alongside TeeJay with their own look, partner health bar and name tags, down/revive, shared defeat and retry, disconnect handling.
+- Touch layout: PARRY and RUN buttons added without overlapping USE (circle gaps checked on five viewports).
+- Pause help text updated. Solo play is unchanged apart from the above; the full Chapter 1 regression passes.
+
 ## Clocked In — Chapter 1 "You're Late" (2026-11-06)
 - New game in `index.html`: a complete Chapter 1 from the parking-lot arrival to Jose's defeat and the Mandatory Overtime cliffhanger.
 - Added: arrival cutscene, order desk scene with a readable mystery work order, time clock glitch, coworker companion AI, reusable tile carry/placement system with four scripted delivery events, first outbreak fight (3 hostiles), loading dock intro with PA and shockwave.
