@@ -176,7 +176,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="bar" id="bPost"><i id="pFill"></i></div>
     </div>
     <div id="prompt" hidden></div>
-    <div id="lng" hidden><span id="lngTxt"></span><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START NEW GAME</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
+    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngCopy" hidden>COPY INVITE LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START NEW GAME</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
   </div>
   <div id="area"><small id="areaSub"></small><div id="areaName"></div></div>
   <div id="banner"><div class="big" id="bBig"></div><div class="small" id="bSmall"></div></div>
@@ -3013,13 +3013,19 @@ function updateLounge() {
   const el = $('lng'), host = NET.role === 'host';
   if (!(mode === 'play' && inLounge() && (host || (NETG && NETG.started)))) { if (!el.hidden) el.hidden = true; lngKey = ''; return; }
   const conn = host ? !!NETH.on : true, ready = host ? !!NETH.gReady : !!(NETG && NETG.ready), can = host && conn && ready, sv = host && NETH.hasSave;
-  const key = [host, conn, ready, sv, NET.code].join();
+  const key = [host, conn, ready, sv, NET.code, canLink()].join();
   if (key === lngKey) return; lngKey = key; el.hidden = false;
   $('lngTxt').textContent = host ? (!conn ? 'WAITING FOR A FRIEND · ROOM ' + NET.code : ready ? 'FRIEND IS READY · START WHEN YOU ARE' : 'FRIEND IS NOT READY · FIGHT UNTIL THEY ARE') : (ready ? 'YOU ARE READY · WAITING FOR THE HOST TO START' : 'FIGHT UNTIL YOU ARE READY');
+  $('lngCopy').hidden = !(host && !conn && canLink());
   $('lngReady').hidden = host; $('lngReady').textContent = ready ? 'NOT READY' : 'READY UP';
   $('lngNew').hidden = !host; $('lngNew').disabled = !can; $('lngCont').hidden = !sv; $('lngCont').disabled = !can;
 }
 $('lngReady').addEventListener('click', () => { if (!NETG || !NETG.started || !inLounge()) return; ensureAudio(); sfx('ui'); NETG.ready = !NETG.ready; netSend({ t: 'ready', r: NETG.ready ? 1 : 0 }); });
+$('lngCopy').addEventListener('click', () => {
+  const link = location.origin + location.pathname + '?join=' + NET.code, b = $('lngCopy');
+  const done = ok => { b.textContent = ok ? 'LINK COPIED' : 'COPY FAILED'; setTimeout(() => { b.textContent = 'COPY INVITE LINK'; }, 1800); };
+  try { navigator.clipboard.writeText(link).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+});
 $('lngNew').addEventListener('click', () => loungeStart(false));
 $('lngCont').addEventListener('click', () => loungeStart(true));
 
@@ -3148,7 +3154,7 @@ function coopInfoUpdate() {
 }
 async function hostOpen() {
   ensureAudio(); sfx('ui');
-  if (NET.role === 'host' && NET.code) { lobbyOpen(); lobbyView({ title: 'CO-OP HOST', msg: NETH.on ? 'Friend connected. Go back and start the game (NEW GAME or CONTINUE).' : 'Share this code. Your friend taps JOIN CO-OP and types it.', code: NET.code, copy: canLink(), back: true, leave: true }); return; }
+  if (NET.role === 'host' && NET.code) { enterLounge(); return; }
   netLeave(); lobbyOpen(); lobbyView({ title: 'CO-OP HOST', msg: 'Setting up your room…', busy: true, back: true });
   try { await loadPeerLib(); } catch (e) { lobbyView({ title: 'CO-OP HOST', msg: 'Could not load the online co-op service. Check your connection and try again.', back: true }); return; }
   let peer = null, code = '';
@@ -3170,7 +3176,7 @@ async function hostOpen() {
     conn.on('error', () => { if (NET.conn === conn) netLost('Connection error.'); });
   });
   coopInfoUpdate();
-  lobbyView({ title: 'CO-OP HOST', msg: 'Share this code. Your friend taps JOIN CO-OP and types it.', code, copy: canLink(), back: true, leave: true });
+  enterLounge();   // you wait for your friend inside the room (the code is shown there)
 }
 function joinOpen(prefill) {
   ensureAudio(); sfx('ui');

@@ -27,3 +27,4 @@
 - The friend taps READY UP; then the host's START NEW GAME (or CONTINUE) button unlocks and moves both into the game.
 - Co-op protocol version bumped to 2, so both players must have the same build (the host is told if not).
 - Internal room id is `lounge`; it reuses the break room build.
+- HOST CO-OP now drops the host straight into the break room; the room code (and a COPY INVITE LINK button) show on the panel while waiting for a friend.
