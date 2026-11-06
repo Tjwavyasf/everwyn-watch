@@ -2978,7 +2978,7 @@ function hostRecv(m) {
       break;
     }
     case 'pose': if (NETH.on) hostOnPose(m); break;
-    case 'bye': netLost('Your friend left.'); break;
+    case 'bye': netLost('Your friend left (they chose to leave).'); break;
   }
 }
 function guestRecv(m) {
@@ -3001,7 +3001,7 @@ function netLost(why) {
     try { if (NET.conn) NET.conn.close(); } catch (e) {} NET.conn = null; NET.send = null;
     if (mode === 'play') toast('CO-OP', 'Friend disconnected');
     coopInfoUpdate();
-    if (ui === 'lobby') lobbyView({ title: 'CO-OP HOST', msg: 'Your friend left. Share the code again to let them back in.', code: NET.code, copy: canLink(), back: true, leave: true });
+    if (ui === 'lobby') lobbyView({ title: 'CO-OP HOST', msg: (why || 'Your friend left.') + ' Share the code again to let them back in.', code: NET.code, copy: canLink(), back: true, leave: true });
     if (!NET.peer) NET.role = null;
   } else if (NET.role === 'guest') {
     const started = NETG && NETG.started;
@@ -3067,6 +3067,8 @@ function lobbyView(o) {
   lb.joinRow.hidden = !o.join; lb.copy.hidden = !o.copy; lb.back.hidden = o.back === false; lb.leave.hidden = !o.leave;
   lb.go.disabled = !!o.busy; lb.input.disabled = !!o.busy;
 }
+function watchIce(c) { try { const pc = c.peerConnection; if (pc) pc.addEventListener('iceconnectionstatechange', () => { if (pc.iceConnectionState !== 'closed') c._ice = pc.iceConnectionState; }); } catch (e) {} }
+function iceState(c) { return (c && c._ice) || 'no ice info'; }
 const canLink = () => location.protocol === 'http:' || location.protocol === 'https:';
 function coopInfoUpdate() {
   const el = $('coopInfo'); if (!el) return;
@@ -3090,9 +3092,9 @@ async function hostOpen() {
   peer.on('connection', conn => {
     if (NET.conn && NET.conn.open) { conn.on('open', () => { try { conn.send({ t: 'reject', why: 'This room already has two players.' }); } catch (e) {} setTimeout(() => { try { conn.close(); } catch (e) {} }, 400); }); return; }
     NET.conn = conn;
-    conn.on('open', () => { netAttach('host', o => { if (conn.open) conn.send(o); }); });
+    conn.on('open', () => { watchIce(conn); netAttach('host', o => { if (conn.open) conn.send(o); }); });
     conn.on('data', netRecv);
-    conn.on('close', () => { if (NET.conn === conn) netLost('Your friend left.'); });
+    conn.on('close', () => { if (NET.conn === conn) netLost('Your friend left (connection dropped: ' + iceState(conn) + ').'); });
     conn.on('error', () => { if (NET.conn === conn) netLost('Connection error.'); });
   });
   coopInfoUpdate();
@@ -3104,27 +3106,29 @@ function joinOpen(prefill) {
   lobbyOpen(); lobbyView({ title: 'JOIN CO-OP', msg: 'Type the 5-letter code your friend sees on their screen.', join: true, back: true });
   if (prefill) lb.input.value = String(prefill).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5);
 }
+let joining = false;
 async function joinGo() {
+  if (joining) return;
   const code = lb.input.value.toUpperCase().replace(/[^A-Z]/g, '');
   if (code.length !== 5) { lobbyView({ title: 'JOIN CO-OP', msg: 'The code is 5 letters.', join: true, back: true }); return; }
-  ensureAudio(); sfx('ui');
+  ensureAudio(); sfx('ui'); joining = true; setTimeout(() => { joining = false; }, 25000);
   lobbyView({ title: 'JOIN CO-OP', msg: 'Connecting…', join: true, busy: true, back: true });
-  try { await loadPeerLib(); } catch (e) { lobbyView({ title: 'JOIN CO-OP', msg: 'Could not load the online co-op service. Check your connection.', join: true, back: true }); return; }
+  try { await loadPeerLib(); } catch (e) { lobbyView({ title: 'JOIN CO-OP', msg: 'Could not load the online co-op service. Check your connection.', join: true, back: true }); joining = false; return; }
   let peer;
-  try { peer = await openPeer(null); } catch (err) { lobbyView({ title: 'JOIN CO-OP', msg: 'Could not reach the matchmaking service (' + ((err && err.type) || 'error') + ').', join: true, back: true }); return; }
+  try { peer = await openPeer(null); } catch (err) { lobbyView({ title: 'JOIN CO-OP', msg: 'Could not reach the matchmaking service (' + ((err && err.type) || 'error') + ').', join: true, back: true }); joining = false; return; }
   let opened = false;
-  const fail = msg => { if (opened) return; try { peer.destroy(); } catch (e) {} if (ui === 'lobby') lobbyView({ title: 'JOIN CO-OP', msg, join: true, back: true }); };
+  const fail = msg => { joining = false; if (opened) return; try { peer.destroy(); } catch (e) {} if (ui === 'lobby') lobbyView({ title: 'JOIN CO-OP', msg, join: true, back: true }); };
   peer.on('error', err => fail(err && err.type === 'peer-unavailable' ? 'No room with that code. Check it and try again.' : 'Connection problem (' + ((err && err.type) || 'error') + ').'));
   const conn = peer.connect('ci1-' + code, { reliable: true, serialization: 'json' });
   const to = setTimeout(() => fail('Could not connect. The host may have left, or your networks block direct connections.'), 20000);
   conn.on('open', () => {
-    opened = true; clearTimeout(to);
+    opened = true; joining = false; clearTimeout(to); watchIce(conn);
     NET.peer = peer; NET.conn = conn; NET.code = code;
     netAttach('guest', o => { if (conn.open) conn.send(o); });
     lobbyView({ title: 'CO-OP', msg: 'Connected. Waiting for the host…', leave: true });
   });
   conn.on('data', netRecv);
-  conn.on('close', () => { if (NET.conn === conn) netLost('The host left.'); });
+  conn.on('close', () => { if (NET.conn === conn) netLost('The host left (connection dropped: ' + iceState(conn) + ').'); });
   conn.on('error', () => { if (NET.conn === conn) netLost('Connection error.'); });
 }
 $('hostBtn').addEventListener('click', hostOpen);
