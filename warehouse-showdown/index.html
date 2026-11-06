@@ -3045,7 +3045,12 @@ function loadPeerLib() {
 function peerOpts() {
   const q = new URLSearchParams(location.search), h = q.get('peerhost');
   if (h === 'localhost' || h === '127.0.0.1') return { host: h, port: +q.get('peerport') || 9000, path: q.get('peerpath') || '/', secure: false, debug: 0 };   // dev/test only, never a remote host
-  return { debug: 0 };
+  // Phones on mobile data usually cannot connect directly, so list relay servers too (PeerJS's own plus a public TCP/443 one that carrier networks rarely block).
+  return { debug: 0, config: { iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
+    { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turns:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }
+  ], sdpSemantics: 'unified-plan' } };
 }
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 function randCode() { const b = new Uint32Array(5); crypto.getRandomValues(b); return Array.from(b, v => CODE_CHARS[v % CODE_CHARS.length]).join(''); }
