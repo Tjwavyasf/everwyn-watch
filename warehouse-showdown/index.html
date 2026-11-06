@@ -147,9 +147,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .sw button.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,194,58,.35)}
 .sw button.opt.on{background:var(--vest);border-color:var(--vest);color:#120a04;box-shadow:none}
 @media (orientation:portrait),(max-width:560px){.cbody{grid-template-columns:1fr}.cprev{grid-auto-flow:column;justify-content:center;align-items:center}#cPrev{width:110px;height:110px}.cprev .ghost{width:auto}}
-#lng{position:absolute;left:50%;top:max(66px,calc(env(safe-area-inset-top,0px) + 56px));transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;background:var(--panel);border:1px solid rgba(255,138,31,.55);padding:7px 12px;pointer-events:auto;max-width:min(94%,620px)}
-#lng span{font-size:12px;font-weight:700;letter-spacing:.08em;text-align:center}
-#lng .go{font-size:16px;padding:5px 16px}#lng .ghost{padding:6px 12px}
+#lng{position:absolute;left:50%;bottom:calc(8px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;background:rgba(9,12,20,.82);border:1px solid rgba(255,138,31,.55);padding:5px 8px;pointer-events:auto;width:max-content;max-width:min(96%,460px)}
+@media (orientation:landscape){#lng{max-width:44vw}}
+#lng span{flex:1 0 100%;font-size:11px;font-weight:700;letter-spacing:.06em;text-align:center;line-height:1.25}
+#lng .go{font-size:13px;padding:3px 12px;transform:none}#lng .ghost{font-size:11px;padding:4px 9px;border-width:1px}
 #lng button:disabled{opacity:.4;cursor:default}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:28px;color:var(--vest);background:var(--night)}
 </style>
@@ -176,7 +177,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="bar" id="bPost"><i id="pFill"></i></div>
     </div>
     <div id="prompt" hidden></div>
-    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngCopy" hidden>COPY INVITE LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START NEW GAME</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
+    <div id="lng" hidden><span id="lngTxt"></span><button class="ghost" id="lngCopy" hidden>COPY INVITE LINK</button><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
   </div>
   <div id="area"><small id="areaSub"></small><div id="areaName"></div></div>
   <div id="banner"><div class="big" id="bBig"></div><div class="small" id="bSmall"></div></div>
@@ -2977,7 +2978,7 @@ function netTags() {
 function inLounge() { return !!(ROOM && ROOM.id === 'lounge'); }
 ROOMS.lounge = { name: 'Break Room', sub: 'Co-op Waiting Room', theme: 'break', w: 18, entry: { x: 6, z: 0 }, exit: null };
 BUILD.lounge = function (Rm) { BUILD.breakroom(Rm); sign3d('WAITING ROOM', 12.5, 3.1, -7.3, 3.6, '#ffc23a'); };   // the same break room (lockers, vending machine, time clock)
-SETUP.lounge = function () { setObj('Waiting room: fight it out, then the friend readies up and the host starts'); };
+SETUP.lounge = function () { setObj('Fight it out, then ready up'); };
 function pvpHit(me, foe, m) {
   const dir = me.face;
   asPlayer(foe, () => {
@@ -3015,7 +3016,7 @@ function updateLounge() {
   const conn = host ? !!NETH.on : true, ready = host ? !!NETH.gReady : !!(NETG && NETG.ready), can = host && conn && ready, sv = host && NETH.hasSave;
   const key = [host, conn, ready, sv, NET.code, canLink()].join();
   if (key === lngKey) return; lngKey = key; el.hidden = false;
-  $('lngTxt').textContent = host ? (!conn ? 'WAITING FOR A FRIEND · ROOM ' + NET.code : ready ? 'FRIEND IS READY · START WHEN YOU ARE' : 'FRIEND IS NOT READY · FIGHT UNTIL THEY ARE') : (ready ? 'YOU ARE READY · WAITING FOR THE HOST TO START' : 'FIGHT UNTIL YOU ARE READY');
+  $('lngTxt').textContent = host ? (!conn ? 'WAITING FOR A FRIEND · ROOM ' + NET.code : ready ? 'FRIEND IS READY' : 'FRIEND IS NOT READY YET') : (ready ? 'READY · WAITING FOR THE HOST' : 'FIGHT UNTIL YOU ARE READY');
   $('lngCopy').hidden = !(host && !conn && canLink());
   $('lngReady').hidden = host; $('lngReady').textContent = ready ? 'NOT READY' : 'READY UP';
   $('lngNew').hidden = !host; $('lngNew').disabled = !can; $('lngCont').hidden = !sv; $('lngCont').disabled = !can;
