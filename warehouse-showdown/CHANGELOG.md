@@ -20,3 +20,10 @@
 ## Warehouse Showdown: The Long Shift (2026-11-05) — now in `long-shift/`
 ## Warehouse Showdown v2 (2026-11-05) — `v2/`
 ## Warehouse Showdown v1 (2026-11-05) — `v1/`
+
+## Co-op waiting room (break room)
+- When a friend joins, both players start in the Break Room (the same room as the story one) instead of the title screen.
+- The two players can fight each other there. No one can be knocked out and health slowly comes back.
+- The friend taps READY UP; then the host's START NEW GAME (or CONTINUE) button unlocks and moves both into the game.
+- Co-op protocol version bumped to 2, so both players must have the same build (the host is told if not).
+- Internal room id is `lounge`; it reuses the break room build.

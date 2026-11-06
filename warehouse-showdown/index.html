@@ -147,6 +147,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .sw button.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,194,58,.35)}
 .sw button.opt.on{background:var(--vest);border-color:var(--vest);color:#120a04;box-shadow:none}
 @media (orientation:portrait),(max-width:560px){.cbody{grid-template-columns:1fr}.cprev{grid-auto-flow:column;justify-content:center;align-items:center}#cPrev{width:110px;height:110px}.cprev .ghost{width:auto}}
+#lng{position:absolute;left:50%;top:max(66px,calc(env(safe-area-inset-top,0px) + 56px));transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;background:var(--panel);border:1px solid rgba(255,138,31,.55);padding:7px 12px;pointer-events:auto;max-width:min(94%,620px)}
+#lng span{font-size:12px;font-weight:700;letter-spacing:.08em;text-align:center}
+#lng .go{font-size:16px;padding:5px 16px}#lng .ghost{padding:6px 12px}
+#lng button:disabled{opacity:.4;cursor:default}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:28px;color:var(--vest);background:var(--night)}
 </style>
 </head>
@@ -172,6 +176,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="bar" id="bPost"><i id="pFill"></i></div>
     </div>
     <div id="prompt" hidden></div>
+    <div id="lng" hidden><span id="lngTxt"></span><button class="go" id="lngReady">READY UP</button><button class="go" id="lngNew" hidden>START NEW GAME</button><button class="ghost" id="lngCont" hidden>CONTINUE</button></div>
   </div>
   <div id="area"><small id="areaSub"></small><div id="areaName"></div></div>
   <div id="banner"><div class="big" id="bBig"></div><div class="small" id="bSmall"></div></div>
@@ -270,7 +275,7 @@ const fmt = n => Math.round(n).toLocaleString('en-US');
 
 /* ================= co-op state (see the co-op section near the end) ================= */
 /* NETH: this device is the host (owns the world). NETG: this device is the guest (renders the host's world, runs its own character). */
-const NETH = { on: false, q: [], mute: 0, obj: null, dv: null, p2DeadT: 0 };
+const NETH = { on: false, q: [], mute: 0, obj: null, dv: null, p2DeadT: 0, gReady: false, hasSave: false, real: null };
 let NETG = null;
 function netEv(k, a, b, c, d, e, f, g, h, i) { if (NETH.on && !NETH.mute) NETH.q.push([k, a, b, c, d, e, f, g, h, i]); }
 
@@ -1136,7 +1141,7 @@ function openPause() {
   openUi('pause'); show('pause', true);
   $('muteBtn').textContent = muted ? 'SOUND: OFF' : 'SOUND: ON';
   $('flBtn').hidden = !(ROOM && ROOM.id === 'bay' && FL && J && J.state !== 'FINAL_DEFEAT') || !!NETG;
-  $('cpBtn').textContent = 'RESTART AT: ' + CP_NAMES[S.cp.id].toUpperCase(); $('cpBtn').hidden = !!NETG;
+  $('cpBtn').textContent = 'RESTART AT: ' + CP_NAMES[S.cp.id].toUpperCase(); $('cpBtn').hidden = !!NETG || !!(ROOM && ROOM.id === 'lounge');
   $('quitBtn').textContent = NETG ? 'LEAVE CO-OP' : 'QUIT TO TITLE';
   $('pauseKeys').textContent = touchUI
     ? 'Left stick moves. Hold RUN to sprint (uses stamina). ATTACK for a three-hit combo, hold it for a heavy punch. DODGE rolls through attacks (standing still, it is a quick backstep). PARRY: tap it just as a swing lands to turn it aside, then hit back for a riposte. USE appears when you can pick up, talk or drive. In the forklift, the stick steers and drives.'
@@ -1936,10 +1941,18 @@ function attackHits(m) {
     const fx = (c.x - P.x) * P.face;
     if (fx > -0.2 && fx < reach + 0.45 && Math.abs(c.z - P.z) < W.z + 0.3) { P.hitSet.add(c); c.hp -= dmg; sfx('crate'); if (c.hp <= 0) breakCrate(c); }
   }
+  if (NETH.on && P2 && inLounge()) {   // waiting room: the two players can fight each other
+    const me = P, foe = me === P2 ? NETH.real : P2;
+    if (foe && foe !== me && foe.state !== 'dead' && (foe !== P2 || P2.live) && !me.hitSet.has(foe)) {
+      const fx = (foe.x - me.x) * me.face;
+      if (fx > -0.25 && fx < reach + foe.rad && Math.abs(foe.z - me.z) < W.z && Math.abs((foe.y || 0) - (me.y || 0)) < 1.4) { me.hitSet.add(foe); pvpHit(me, foe, m); }
+    }
+  }
 }
 function updatePlayer(dt) {
   const p = P;
   p.t += dt; p.inv = Math.max(0, p.inv - dt); p.hitT = Math.max(0, (p.hitT || 0) - dt);
+  if (inLounge() && p.hp < p.maxHp && p.state !== 'dead') p.hp = Math.min(p.maxHp, p.hp + 8 * dt);
   if (p.stDelay > 0) p.stDelay -= dt; else if (p.state !== 'roll' && p.state !== 'attack') p.st = Math.min(p.stMax, p.st + 48 * dt);
   if (attackHoldT >= 0) { if (attackHeld()) { attackHoldT += dt; if (attackHoldT > 0.32 && !heavyFired) { heavyFired = true; buf.heavy = 0.25; } } else attackHoldT = -1; }
   if (p.riding) { driveForklift(dt); return; }
@@ -2014,7 +2027,7 @@ function damagePlayer(dmg, dir, knock, sh) {
   if (P === P2) { p2Damage(dmg, dir, knock, sh); return; }
   const p = P; if (p.state === 'dead' || cine) return;
   if (p.carry) putDown();
-  p.hp -= dmg; p.hitT = 0.1;
+  p.hp -= dmg; p.hitT = 0.1; if (inLounge()) p.hp = Math.max(1, p.hp);
   floatNum(p.x, p.y + 1.7, p.z, '-' + Math.round(dmg), '#ff5a6a', 15);
   addShake(sh || 0.25); hitstop = Math.max(hitstop, 0.06); flash('#ff2650', 0.15);
   sparks(p.x, p.y + 1, p.z, 10, '#ff2650', 3.5); sfx('hurt');
@@ -2526,6 +2539,7 @@ function updateHud(dt) {
     const pf = J.state === 'STAGGERED' || J.state === 'FORKLIFT_READY' ? Math.max(0, J.win / 12) : J.posture / J.pMax;
     $('pFill').style.transform = `scaleX(${pf})`; $('bPost').classList.toggle('full', J.state === 'FORKLIFT_READY');
   }
+  updateLounge();
   findInteract();
   const pr = $('prompt');
   let label = null;
@@ -2596,7 +2610,7 @@ function frame(now) {
    GUEST runs its own character locally (so controls feel instant), draws the host's world from snapshots, and cannot save, change rooms or touch story objects. */
 let P2 = null;
 const NET = { role: null, peer: null, conn: null, send: null, code: '', lastRx: 0, warnT: 0 };
-const NET_V = 1;
+const NET_V = 2;
 const PEER_URLS = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 const PEER_SRI = 'sha384-nlUQ8ZqCbvStErob+biJNzSgltf6urV3VGqhfIfzhmg9RXmpeRm76ELw0pYnKlTR';
 const POSE_STATES = new Set(['idle', 'walk', 'attack', 'roll', 'parry', 'hurt', 'down', 'getup', 'flung', 'dead']);
@@ -2651,7 +2665,7 @@ function hostOnPose(m) {
 function updateP2(dt) {
   const p = P2; if (!NETH.on || !p || !p.live) return;
   p.t += dt; p.inv = Math.max(0, p.inv - dt); if (p.hpLock > 0) p.hpLock -= dt;
-  if (p.state === 'attack' && p.move) { const m = p.move, w = m.w / p.mspd; if (p.t >= w && p.t <= w + m.a + 0.02) asPlayer(p, () => attackHits(m)); }
+  if (p.state === 'attack' && p.move) { const m = p.move, w = m.w / p.mspd; if (p.t >= w && p.t <= w + m.a + 0.02) { const real = P; asPlayer(p, () => { NETH.real = real; attackHits(m); }); } }
   if (p.state === 'dead' && P && P.state !== 'dead') { NETH.p2DeadT += dt; if (NETH.p2DeadT > 8) { NETH.p2DeadT = 0; netSend({ t: 'revive' }); } } else if (p.state !== 'dead') NETH.p2DeadT = 0;
 }
 function renderP2(dt) {
@@ -2669,7 +2683,7 @@ function renderP2(dt) {
 /* Damage to the friend is decided here, applied on their device. */
 function p2Damage(dmg, dir, knock, sh) {
   const p = P2; if (!p || p.state === 'dead' || cine) return;
-  p.inv = knock ? 1.4 : 0.45; p.hp = Math.max(0, p.hp - dmg); p.hpLock = 0.5;
+  p.inv = knock ? 1.4 : 0.45; p.hp = Math.max(inLounge() ? 1 : 0, p.hp - dmg); p.hpLock = 0.5;
   netSend({ t: 'dmg', dmg, dir, knock: knock ? 1 : 0, sh: sh || 0 });
   NETH.mute++; floatNum(p.x, p.y + 1.7, p.z, '-' + Math.round(dmg), '#ff5a6a', 15); sparks(p.x, p.y + 1, p.z, 10, '#ff2650', 3.5); sfx('hurt'); NETH.mute--;
 }
@@ -2723,7 +2737,7 @@ function netOnTitle() {
 }
 
 /* ---------- guest: draw the host's world, run my own character ---------- */
-function newGuest() { return { started: false, rid: -1, room: null, ghosts: new Map(), qk: [], tl: [], sh: [], tk: 0, frozen: false, partner: null, obj: undefined, dv: undefined, hideSelf: false, dlg: null, lastSnap: 0 }; }
+function newGuest() { return { ready: false, started: false, rid: -1, room: null, ghosts: new Map(), qk: [], tl: [], sh: [], tk: 0, frozen: false, partner: null, obj: undefined, dv: undefined, hideSelf: false, dlg: null, lastSnap: 0 }; }
 function guestStart() {
   const G = NETG; if (!G || G.started) return;
   G.started = true;
@@ -2741,7 +2755,7 @@ function guestRoom(m) {
   const G = NETG; if (!G) return;
   if (!G.started) guestStart();
   if (!ROOMS[m.id]) return;
-  G.rid = -1;           // ignore snapshots until the new room is built
+  G.rid = -1; G.ready = false;           // ignore snapshots until the new room is built
   fade(() => {
     if (!NETG) return;
     clearRoom(); guestClear();
@@ -2958,6 +2972,57 @@ function netTags() {
   if (g) tagFor('host', 'HOST', g.a, g.a.mesh.visible); else if (TAGS.host) tagFor('host', '', null, false);
 }
 
+
+/* ---------- waiting room: both players fight (no one can be knocked out) until the friend readies up and the host starts ---------- */
+function inLounge() { return !!(ROOM && ROOM.id === 'lounge'); }
+ROOMS.lounge = { name: 'Break Room', sub: 'Co-op Waiting Room', theme: 'break', w: 18, entry: { x: 6, z: 0 }, exit: null };
+BUILD.lounge = function (Rm) { BUILD.breakroom(Rm); sign3d('WAITING ROOM', 12.5, 3.1, -7.3, 3.6, '#ffc23a'); };   // the same break room (lockers, vending machine, time clock)
+SETUP.lounge = function () { setObj('Waiting room: fight it out, then the friend readies up and the host starts'); };
+function pvpHit(me, foe, m) {
+  const dir = me.face;
+  asPlayer(foe, () => {
+    if (parryActive()) {
+      parryFx((me.x + foe.x) / 2, 1.2, foe.z, -dir); floatNum(foe.x, 2.4, foe.z, 'PARRIED', '#ffe27a', 15);
+      if (me !== P2) { me.state = 'hurt'; me.t = 0; me.vx = -dir * 3; }
+      return;
+    }
+    if (P.inv <= 0 && !rollInvuln()) { hitFx(foe.x - dir * 0.2, (foe.y || 0) + 1.0, foe.z, dir, m.big); damagePlayer(m.dmg, dir, !!m.knock, m.big ? 0.22 : 0.1); }
+    else if (rollInvuln()) floatNum(P.x, 2, P.z, 'DODGED', '#9fd65a', 11);
+  });
+}
+function enterLounge() {
+  lobbyHide(); show('title', false);
+  S = Object.assign(newSave(), { lounge: true });        // a throwaway state: the real save is untouched
+  NETH.hasSave = (() => { const sv = load('save', null); return !!sv && !sv.done; })(); NETH.gReady = false;
+  mode = 'play'; ui = null; show('hud', true);
+  if (P) P.remove();
+  P = new Actor('teejay', 'fists');
+  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
+  netHostBegin(); setControls();
+  enterRoom('lounge', { x: 6, z: 0 });
+}
+function loungeStart(cont) {
+  if (NET.role !== 'host' || !NETH.on || !NETH.gReady || !inLounge()) return;
+  ensureAudio(); sfx('ui');
+  S = cont ? (load('save', null) || newSave()) : newSave(); if (!cont) saveGame();
+  NETH.gReady = false;
+  beginPlay();
+}
+let lngKey = '';
+function updateLounge() {
+  const el = $('lng'), host = NET.role === 'host';
+  if (!(mode === 'play' && inLounge() && (host || (NETG && NETG.started)))) { if (!el.hidden) el.hidden = true; lngKey = ''; return; }
+  const conn = host ? !!NETH.on : true, ready = host ? !!NETH.gReady : !!(NETG && NETG.ready), can = host && conn && ready, sv = host && NETH.hasSave;
+  const key = [host, conn, ready, sv, NET.code].join();
+  if (key === lngKey) return; lngKey = key; el.hidden = false;
+  $('lngTxt').textContent = host ? (!conn ? 'WAITING FOR A FRIEND · ROOM ' + NET.code : ready ? 'FRIEND IS READY · START WHEN YOU ARE' : 'FRIEND IS NOT READY · FIGHT UNTIL THEY ARE') : (ready ? 'YOU ARE READY · WAITING FOR THE HOST TO START' : 'FIGHT UNTIL YOU ARE READY');
+  $('lngReady').hidden = host; $('lngReady').textContent = ready ? 'NOT READY' : 'READY UP';
+  $('lngNew').hidden = !host; $('lngNew').disabled = !can; $('lngCont').hidden = !sv; $('lngCont').disabled = !can;
+}
+$('lngReady').addEventListener('click', () => { if (!NETG || !NETG.started || !inLounge()) return; ensureAudio(); sfx('ui'); NETG.ready = !NETG.ready; netSend({ t: 'ready', r: NETG.ready ? 1 : 0 }); });
+$('lngNew').addEventListener('click', () => loungeStart(false));
+$('lngCont').addEventListener('click', () => loungeStart(true));
+
 /* ---------- messages ---------- */
 function netRecv(m) {
   if (!m || typeof m !== 'object' || typeof m.t !== 'string') return;
@@ -2970,14 +3035,16 @@ function hostRecv(m) {
       if (m.v !== NET_V) { netSend({ t: 'reject', why: 'Different game version. Both players need the same file.' }); return; }
       bakeLook('coop', cleanLook(m.look));
       if (P2) P2.setWeapon('fists');
-      NETH.on = true; NETH.q.length = 0; NETH.tk = 0;
+      NETH.on = true; NETH.q.length = 0; NETH.tk = 0; NETH.gReady = false;
       netSend({ t: 'welcome', v: NET_V, look: LOOK });
       if (mode === 'play') { hostSpawnP2(); netSend({ t: 'start' }); netRoom({}); toast('CO-OP', 'Friend joined'); }
       coopInfoUpdate();
-      if (ui === 'lobby') lobbyView({ title: 'CO-OP HOST', msg: 'Friend connected. Go back and start the game (NEW GAME or CONTINUE).', code: NET.code, back: true, leave: true });
+      if (mode === 'title' && (ui === 'lobby' || !ui)) enterLounge();
+      else if (ui === 'lobby') lobbyView({ title: 'CO-OP HOST', msg: 'Friend connected. Go back and start the game (NEW GAME or CONTINUE).', code: NET.code, back: true, leave: true });
       break;
     }
     case 'pose': if (NETH.on) hostOnPose(m); break;
+    case 'ready': if (NETH.on && inLounge()) { const r = !!m.r; if (r !== !!NETH.gReady) { NETH.gReady = r; toast('CO-OP', r ? 'Friend is READY' : 'Friend is not ready'); sfx('ui'); } } break;
     case 'bye': netLost('Your friend left (they chose to leave).'); break;
   }
 }
@@ -2997,7 +3064,7 @@ function guestRecv(m) {
 }
 function netLost(why) {
   if (NET.role === 'host') {
-    NETH.on = false; NETH.q.length = 0; if (P2) { P2.remove(); P2 = null; } tagsClear();
+    NETH.on = false; NETH.q.length = 0; NETH.gReady = false; if (P2) { P2.remove(); P2 = null; } tagsClear();
     try { if (NET.conn) NET.conn.close(); } catch (e) {} NET.conn = null; NET.send = null;
     if (mode === 'play') toast('CO-OP', 'Friend disconnected');
     coopInfoUpdate();

@@ -62,3 +62,6 @@ Saves happen only at the four checkpoints (localStorage `ci1_save`), never durin
 - Debug hooks live on `window.__ci` (skipTo, breakPosture, god, hurt, dbg, net). They're harmless, but remove them before release.
 - **Co-op is tested only in headless Chromium**: two pages bridged in-page (with 0 and 120 ms round-trip), a full Chapter 1 playthrough with a connected friend, and two pages connected over real WebRTC through a **local** PeerJS broker. It has **not** been tested against PeerJS's public broker, across two real networks, or on phones. Some mobile carriers and strict networks block peer-to-peer; PeerJS's public relay is a free service with no guarantee.
 - The host trusts the friend's reported position and pose (fine for friends, not for strangers).
+
+### Co-op waiting room
+On friend join the host enters room `lounge` (the break room, throwaway save state, real save untouched). PvP uses the normal attack code with `pvpHit`; hits never kill in this room and HP regenerates. Guest sends `{t:'ready'}`; host shows START buttons once ready. `loungeStart()` then runs the normal `beginPlay()`.
