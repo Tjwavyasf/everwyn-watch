@@ -199,6 +199,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
   <button class="b big" data-b="attack">ATTACK</button>
   <button class="b" data-b="dodge">DODGE</button>
+  <button class="b" data-b="jump">JUMP</button>
   <button class="b" data-b="parry">PARRY</button>
   <button class="b" data-b="run">RUN</button>
   <button class="b act" data-b="interact" hidden>USE</button>
@@ -232,7 +233,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <p class="keys" id="lbMsg"></p>
     <div id="lbCode" hidden></div>
     <div class="row" id="lbJoinRow" hidden><input id="lbInput" maxlength="5" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Room code"><button class="go" id="lbGo">JOIN</button></div>
-    <div class="row"><button class="ghost" id="lbCopy" hidden>COPY INVITE LINK</button><button class="ghost" id="lbBack">BACK</button><button class="ghost" id="lbLeave" hidden>LEAVE CO-OP</button></div>
+    <div class="row"><button class="ghost" id="lbCopy" hidden>COPY INVITE LINK</button><button class="ghost" id="lbTest">TEST CONNECTION</button><button class="ghost" id="lbBack">BACK</button><button class="ghost" id="lbLeave" hidden>LEAVE CO-OP</button></div>
   </div>
 </div>
 <div id="dialog" hidden><div class="who" id="dWho"></div><div class="say" id="dSay"></div><div class="more" id="dMore"></div></div>
@@ -1110,14 +1111,14 @@ function setObj(t) { NETH.obj = t || null; const o = $('obj'); if (!t) { o.hidde
 function setDeliv(t) { NETH.dv = t || null; const d = $('deliv'); d.hidden = !t; d.textContent = t || ''; }
 
 /* ================= input ================= */
-const ACTIONS = ['attack', 'heavy', 'dodge', 'parry', 'interact', 'reset'];
+const ACTIONS = ['attack', 'heavy', 'dodge', 'parry', 'interact', 'reset', 'jump'];
 const buf = {}; ACTIONS.forEach(a => buf[a] = 0);
 const keys = {}, touchHeld = {};
 const stick = { x: 0, z: 0, id: null, ox: 0, oy: 0 };
 let attackHoldT = -1, heavyFired = false;
 function press(n) { if (n in buf) buf[n] = 0.18; if (n === 'attack') { attackHoldT = 0; heavyFired = false; } }
 function take(n) { if (buf[n] > 0) { buf[n] = 0; return true; } return false; }
-const KEYMAP = { KeyJ: 'attack', KeyZ: 'attack', KeyK: 'heavy', KeyX: 'heavy', Space: 'dodge', ShiftLeft: 'run', ShiftRight: 'run', KeyL: 'parry', KeyQ: 'parry', KeyE: 'interact', Enter: 'interact', KeyR: 'reset' };
+const KEYMAP = { KeyJ: 'attack', KeyZ: 'attack', KeyK: 'heavy', KeyX: 'heavy', Space: 'dodge', ShiftLeft: 'run', ShiftRight: 'run', KeyL: 'parry', KeyQ: 'parry', KeyE: 'interact', Enter: 'interact', KeyR: 'reset', KeyV: 'jump', KeyB: 'jump' };
 const MOVEKEYS = { KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0], KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1] };
 window.addEventListener('keydown', e => {
   ensureAudio();
@@ -1156,6 +1157,7 @@ function layoutControls() {
   const d = u * 1.45, r = u * 0.48, fs = Math.round(u * 0.17);
   put(BTNS.attack, A.x, A.y, u * 0.72, Math.round(u * 0.2));
   put(BTNS.dodge, ...at(178, d), r, fs);
+  put(BTNS.jump, ...at(172, d * 1.8), r, fs);
   put(BTNS.parry, ...at(138, d * 1.75), r, fs);
   put(BTNS.run, ...at(86, d * 1.75), r, fs);
   put(BTNS.interact, ...at(112, d * 1.05), r * 1.08, fs);
@@ -1220,8 +1222,8 @@ function openPause() {
   $('cpBtn').textContent = 'RESTART AT: ' + CP_NAMES[S.cp.id].toUpperCase(); $('cpBtn').hidden = !!NETG || !!(ROOM && ROOM.id === 'lounge');
   $('quitBtn').textContent = NETG ? 'LEAVE CO-OP' : 'QUIT TO TITLE';
   $('pauseKeys').textContent = touchUI
-    ? 'Left stick moves. Hold RUN to sprint (uses stamina). ATTACK for a three-hit combo. Hold it for a heavy strike and keep holding to charge it. Attack while running for a running slash, or dodge standing still then attack for a backstep slash. DODGE rolls through attacks (standing still, it is a quick backstep). PARRY: tap it just as a swing lands to turn it aside, then hit back for a riposte. USE appears when you can pick up, talk or drive. In the forklift, the stick steers and drives.'
-    : 'WASD move · Shift run · J attack (hold = heavy, keep holding = charge) · attack while running = running slash · dodge standing still then attack = backstep slash · K heavy · Space dodge (no direction = backstep) · L / Q parry · E use / pick up / drive / exit · R reset a stuck forklift · Esc pause';
+    ? 'Left stick moves. Hold RUN to sprint (uses stamina). ATTACK for a three-hit combo. Hold it for a heavy strike and keep holding to charge it. Attack while running for a running slash, or dodge standing still then attack for a backstep slash. JUMP hops; tap it again in the air to double jump, then ATTACK to slam down and hit everything around you. DODGE rolls through attacks (standing still, it is a quick backstep). PARRY: tap it just as a swing lands to turn it aside, then hit back for a riposte. USE appears when you can pick up, talk or drive. In the forklift, the stick steers and drives.'
+    : 'WASD move · Shift run · J attack (hold = heavy, keep holding = charge) · attack while running = running slash · dodge standing still then attack = backstep slash · K heavy · V jump (again = double jump, then J = slam) · Space dodge (no direction = backstep) · L / Q parry · E use / pick up / drive / exit · R reset a stuck forklift · Esc pause';
   if (NETH.on) $('pauseKeys').textContent += ' CO-OP: pausing freezes the game for your friend too.';
   if (NETG) $('pauseKeys').textContent += ' CO-OP: the host runs the story; you fight alongside.';
 }
@@ -1983,6 +1985,20 @@ function deadTick(p) {
 function reviveSelf(p) { p.hp = Math.round(p.maxHp * 0.5); p.state = 'getup'; p.t = 0; p.inv = 2; p.deadT = 0; p.vy = 0; p.vx = p.vz = 0; sfx('level'); floatNum(p.x, 2, p.z, 'BACK UP', '#7cf0b0', 15); }
 function useSt(n) { if (P.st <= 0) return false; P.st -= n; P.stDelay = 0.6; return true; }
 const COMBO = ['a1', 'a2', 'a3'];
+function startJump() {
+  if (!useSt(6)) { sfx('deny'); return; }
+  Object.assign(P, { state: 'air', t: 0, jumps: 1, onGround: false, vy: 8.2, slamming: false }); sfx('roll'); dust(P.x, P.z, 3, 2);
+}
+/* The slam: land from the air after an attack press and everything close around you takes a heavy hit. After a double jump it hits harder and wider. */
+function slamImpact() {
+  const p = P, big = (p.jumps | 0) >= 2, R = big ? 2.7 : 2.1, dmg = (big ? 30 : 22) * (p.pk || PK0).dmg, m = { big: true, knock: true, kb: 7.5, stun: 0.8 };
+  p.slc = (p.slc | 0) + 1; addShake(big ? 0.8 : 0.55); sfx('slam'); dust(p.x, p.z, 16, 5); sparks(p.x, 0.3, p.z, 14, '#ffd8a0', 5, 0, 0.5, 6);
+  if (NETG) return;
+  const near = (x, z, rad) => Math.hypot(x - p.x, (z - p.z) * 1.4) < R + rad;
+  for (const e of enemies) { if (e.defeated || (e.state === 'down' && e.y < 0.05)) continue; if (e.y < 1.4 && near(e.x, e.z, e.rad)) { hitHostile(e, dmg, m, Math.sign(e.x - p.x) || p.face); comboHit(); } }
+  if (J && J.a.mesh.visible && near(J.a.x, J.a.z, J.a.rad)) { joseHit(dmg, m, Math.sign(J.a.x - p.x) || p.face); comboHit(); }
+  for (const c of crates.slice()) if (near(c.x, c.z, 0.45)) { c.hp -= dmg; sfx('crate'); if (c.hp <= 0) breakCrate(c); }
+}
 function startAttack(key, ci) {
   const m = MOVES[key];
   if (!useSt((WEAPONS[P.wk] || WEAPONS.fists).st * (m.st || 1))) { sfx('deny'); floatNum(P.x, 2, P.z, 'NO STAMINA', '#9fd65a', 11); return false; }
@@ -2077,7 +2093,8 @@ function updatePlayer(dt) {
       else { p.vx = approach(p.vx, 0, 30 * dt); p.vz = approach(p.vz, 0, 30 * dt); }
       if (ctl) {
         if (take('interact')) { if (p.carry && !nearAct) putDown(); else doInteract(); }
-        else if (p.carry) { if (take('attack') || take('heavy') || take('dodge') || take('parry')) { floatNum(p.x, 2, p.z, 'HANDS FULL', '#ffc23a', 11); } }
+        else if (p.carry) { if (take('attack') || take('heavy') || take('dodge') || take('parry') || take('jump')) { floatNum(p.x, 2, p.z, 'HANDS FULL', '#ffc23a', 11); } }
+        else if (take('jump')) startJump();
         else if (take('dodge')) startRoll(mv);
         else if (take('parry')) startParry();
         else if (buf.heavy > 0) { buf.heavy = 0; buf.attack = 0; startAttack('heavy'); }
@@ -2085,6 +2102,17 @@ function updatePlayer(dt) {
       }
       if (p.state === 'idle' || p.state === 'walk') p.state = Math.hypot(p.vx, p.vz) > 0.5 ? 'walk' : 'idle';
       break;
+    case 'air': {
+      if (!p.slamming) {
+        if (mv.mag > 0) { p.vx = approach(p.vx, mv.x * spd * 0.9, 25 * dt); p.vz = approach(p.vz, mv.z * spd * 0.72, 25 * dt); if (Math.abs(mv.x) > 0.15) p.face = mv.x > 0 ? 1 : -1; }
+        if (ctl) {
+          if (p.jumps < 2 && take('jump')) { if (useSt(6)) { p.jumps = 2; p.vy = 7.6; sfx('roll'); dust(p.x, p.z, 6, 3); floatNum(p.x, p.y + 2.2, p.z, 'DOUBLE JUMP', '#ffffff', 10); } }
+          else if (take('attack') || take('heavy')) { if (useSt(10)) { p.slamming = true; p.vy = -18; p.vx *= 0.2; p.vz *= 0.2; sfx('swing', true); } }
+        }
+      }
+      if (p.onGround && p.t > 0.06) { p.vx *= 0.3; p.vz *= 0.3; p.state = 'idle'; p.t = 0; if (p.slamming) slamImpact(); else { dust(p.x, p.z, 3, 2); sfx('thud'); } p.slamming = false; }
+      break;
+    }
     case 'attack': {
       const m = p.move, w = m.w / p.mspd, a = m.a, r = m.r / p.mspd;
       p.vx = approach(p.vx, 0, 22 * dt); p.vz = approach(p.vz, 0, 22 * dt);
@@ -2508,12 +2536,12 @@ function syncForklift() {
 function enterForklift() {
   if (!J || J.state !== 'FORKLIFT_READY' || J.ramUsed) return;
   P.riding = true; P.state = 'idle'; P.vx = P.vz = 0; FL.speed = 0; FL.stuckT = 0; sfx('engine');
-  BTNS.attack.hidden = true; BTNS.dodge.hidden = true; BTNS.parry.hidden = true; BTNS.run.hidden = true;
+  BTNS.attack.hidden = true; BTNS.jump.hidden = true; BTNS.dodge.hidden = true; BTNS.parry.hidden = true; BTNS.run.hidden = true;
   toast('FORKLIFT', touchUI ? 'Stick steers and drives · EXIT to hop off' : 'WASD steer and drive · E to hop off');
 }
 function exitForklift(forced) {
   if (!P.riding) return;
-  P.riding = false; P.y = 0; BTNS.attack.hidden = false; BTNS.dodge.hidden = false; BTNS.parry.hidden = false; BTNS.run.hidden = false; BTNS.reset.hidden = true;
+  P.riding = false; P.y = 0; BTNS.attack.hidden = false; BTNS.jump.hidden = false; BTNS.dodge.hidden = false; BTNS.parry.hidden = false; BTNS.run.hidden = false; BTNS.reset.hidden = true;
   if (!forced) { P.x = clamp(FL.x - Math.sin(FL.h) * 1.1, X0, X1); P.z = clamp(FL.z + Math.cos(FL.h) * 1.0, Z0, Z1); collide(P); }
 }
 function wrapA(a) { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; }
@@ -2565,6 +2593,7 @@ function animatePlayer(dt) {
     case 'walk': p.walkPh += Math.hypot(p.vx, p.vz) * dt * 2.3; an = p.carry ? 'carrywalk' : 'walk'; fi = Math.floor(p.walkPh) % 6; break;
     case 'attack': { const m = p.move, w = m.w / p.mspd; an = m.anim; fi = attackFrame((p.sheet.map[an] || []).length, p.t, w, m.a); break; }
     case 'roll': if (p.rollKind === 'step') { an = 'step'; fi = 0; } else { an = 'roll'; fi = Math.min(3, Math.floor(p.t / p.rollDur * 4.4)); } break;
+    case 'air': if (p.slamming) { an = 'heavy'; fi = Math.min(1, ((p.sheet.map.heavy || []).length || 1) - 1); } else { an = 'walk'; fi = p.vy > 0 ? 1 : 4; } break;
     case 'parry': an = 'parry'; fi = 0; break;
     case 'hurt': an = 'hurt'; break;
     case 'down': case 'dead': an = p.onGround && p.t > 0.12 ? 'down' : 'knock'; fi = 0; break;
@@ -2725,7 +2754,7 @@ const NET = { role: null, peer: null, conn: null, send: null, code: '', lastRx: 
 const NET_V = 2;
 const PEER_URLS = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 const PEER_SRI = 'sha384-nlUQ8ZqCbvStErob+biJNzSgltf6urV3VGqhfIfzhmg9RXmpeRm76ELw0pYnKlTR';
-const POSE_STATES = new Set(['idle', 'walk', 'attack', 'roll', 'parry', 'hurt', 'down', 'getup', 'flung', 'dead']);
+const POSE_STATES = new Set(['air', 'idle', 'walk', 'attack', 'roll', 'parry', 'hurt', 'down', 'getup', 'flung', 'dead']);
 const rd2 = v => Math.round(v * 100) / 100;
 const num = (v, lo, hi, d) => (typeof v === 'number' && isFinite(v)) ? clamp(v, lo, hi) : d;
 const str = (v, d, max) => typeof v === 'string' ? v.slice(0, max || 80) : d;
@@ -2769,6 +2798,7 @@ function hostOnPose(m) {
   p.state = POSE_STATES.has(m.s) ? m.s : 'idle'; p.t = num(m.pt, 0, 60, 0);
   if (MOVES[m.mk]) { p.mkey = m.mk; p.move = MOVES[m.mk]; }
   p.rollKind = m.rk === 'step' ? 'step' : 'roll'; p.ifs = num(m.ifs, 0, 1, 0.05); p.ife = num(m.ife, 0, 1, 0.3); p.parried = !!m.pd; p.cm = num(m.cm, 1, 2, 1);
+  { const sc = num(m.slc, 0, 1e9, 0); if (sc !== (p.slc | 0)) { p.slc = sc; p.jumps = num(m.sj, 0, 2, 1); p.x = p.tx; p.z = p.tz; const real = P; asPlayer(p, () => { NETH.real = real; slamImpact(); }); } }
   if (!(p.hpLock > 0)) p.hp = num(m.hp, 0, 9999, p.hp);   // a pose sent before the friend learned about a hit would otherwise undo it
   p.maxHp = num(m.mhp, 1, 9999, 120); p.st = num(m.st, 0, 9999, p.st); p.stMax = num(m.mst, 1, 9999, 100);
   p.an = str(m.an, 'idle', 24); p.fi = num(m.fi, 0, 30, 0); p.vis = !!m.vis; p.flick = !!m.inv; p.hit = !!m.ht; p.gl = num(m.gl, 0, 3, 0);
@@ -3041,7 +3071,7 @@ function tickGuest(dt) {
 }
 function guestPose() {
   const p = P;
-  netSend({ t: 'pose', x: rd2(p.x), y: rd2(p.y), z: rd2(p.z), f: p.face, an: p._an || 'idle', fi: p._fi | 0, vis: NETG.hideSelf ? 0 : 1, inv: p.inv > 0 && (p.state === 'idle' || p.state === 'walk') ? 1 : 0, ht: p.hitT > 0 ? 1 : 0, gl: rd2(p.glow || 0), hp: Math.round(p.hp), mhp: p.maxHp, st: Math.round(p.st), mst: p.stMax, s: p.state, pt: rd2(p.t), mk: p.mkey || '', rk: p.rollKind || '', ifs: p.ifs || 0, ife: p.ife || 0, pd: p.parried ? 1 : 0, as: p.aseq | 0, cm: rd2(p.cm || 1) });
+  netSend({ t: 'pose', slc: p.slc | 0, sj: p.jumps | 0, x: rd2(p.x), y: rd2(p.y), z: rd2(p.z), f: p.face, an: p._an || 'idle', fi: p._fi | 0, vis: NETG.hideSelf ? 0 : 1, inv: p.inv > 0 && (p.state === 'idle' || p.state === 'walk') ? 1 : 0, ht: p.hitT > 0 ? 1 : 0, gl: rd2(p.glow || 0), hp: Math.round(p.hp), mhp: p.maxHp, st: Math.round(p.st), mst: p.stMax, s: p.state, pt: rd2(p.t), mk: p.mkey || '', rk: p.rollKind || '', ifs: p.ifs || 0, ife: p.ife || 0, pd: p.parried ? 1 : 0, as: p.aseq | 0, cm: rd2(p.cm || 1) });
 }
 function guestRender(dt) {
   const G = NETG; if (!G) return;
@@ -3248,6 +3278,26 @@ function openPeer(id) {
   });
 }
 const lb = { title: $('lbTitle'), msg: $('lbMsg'), code: $('lbCode'), joinRow: $('lbJoinRow'), input: $('lbInput'), go: $('lbGo'), copy: $('lbCopy'), back: $('lbBack'), leave: $('lbLeave') };
+/* Connection check: tells the player (and me) which part of co-op networking is failing on their phone. */
+let netTesting = false;
+async function netTest() {
+  if (netTesting) return; netTesting = true; $('lbTest').disabled = true; lb.msg.textContent = 'Testing your connection… (about 15 seconds)';
+  let broker = 'OK';
+  try { await loadPeerLib(); const pr = await Promise.race([openPeer(), new Promise((_, r) => setTimeout(() => r(new Error('timed out')), 9000))]); try { pr.destroy(); } catch (e) {} }
+  catch (e) { broker = 'FAILED (' + (e && e.message === 'peerjs load' ? 'could not load the co-op library' : ((e && (e.type || e.message)) || 'unknown')) + ')'; }
+  const ty = {};
+  try {
+    const pc = new RTCPeerConnection(peerOpts().config || {}); pc.createDataChannel('t');
+    pc.onicecandidate = e => { if (e.candidate) { const m = / typ (\w+)/.exec(e.candidate.candidate); if (m) ty[m[1]] = (ty[m[1]] | 0) + 1; } };
+    await pc.setLocalDescription(await pc.createOffer());
+    await new Promise(r => { const t = setTimeout(r, 8000); pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } }; });
+    pc.close();
+  } catch (e) { ty.err = 1; }
+  const verdict = broker !== 'OK' ? 'Cannot reach the matchmaking server. Try another network or browser.' : ty.err ? 'This browser blocked the connection test.' : !ty.relay ? 'No relay found: friends on different mobile networks may not connect.' : 'Looks good.';
+  lb.msg.textContent = `Matchmaking server: ${broker}. Direct route: ${ty.srflx ? 'yes' : 'no'}. Relay: ${ty.relay ? 'yes' : 'NO'}. ${verdict}`;
+  $('lbTest').disabled = false; netTesting = false;
+}
+$('lbTest').addEventListener('click', netTest);
 function lobbyOpen() { ui = 'lobby'; show('title', false); show('lobby', true); }
 function lobbyHide() { show('lobby', false); if (ui === 'lobby') ui = null; }
 function lobbyClose() { lobbyHide(); if (mode === 'title') show('title', true); }
@@ -3350,13 +3400,15 @@ window.__ci = {
   advance() { if (ui === 'dialog') { advanceDialog(); return true; } return false; },
   tp(x, z) { if (P) { P.x = x; P.z = z; } },
   god() { P.maxHp = 9999; P.hp = 9999; },
+  foe() { return enemies.map(e => ({ hp: e.hp, d: e.defeated, x: e.x, z: e.z })); },
+  spawnFoe(x, z) { spawnHostile('hostile', x, z); },
   gx(n, boss) { if (boss) S.boss = 1; gainXp(n); },
   hurt(n) { P.inv = 0; damagePlayer(n, 1, false); },
   boxes() { return boxes.map(b => ({ x: +b.x.toFixed(1), z: +b.z.toFixed(1), placed: b.placed, held: b.held })); },
   enemyPos() { const e = enemies.find(o => !o.defeated); return e ? { x: e.x, z: e.z } : null; },
   breakPosture() { if (J && inCombat()) { J.posture = J.pMax; postureBreak(); } },
   jose() { return J; }, fl() { return FL; },
-  dbg() { return { lv: S && S.lvl, xp: S && S.xp, sp: S && S.sp, mh: P && P.maxHp, sm: P && P.stMax, wk: P && P.wk, mk: P && P.mkey, cm: P && P.cm, ch: P && P.chargeT, pst: P && P.state, rk: P && P.rollKind, t: P && +P.t.toFixed(2), run: P && P.running, lock: P && P.runLock, parried: P && P.parried, vx: P && +P.vx.toFixed(2), en: enemies.map(e => ({ s: e.state, r: +(e.riposteT || 0).toFixed(2), hp: Math.round(e.hp), seq: e.seq ? e.seq[e.si].k : null, pt: +(e.pt || 0).toFixed(2), d: e.defeated, x: +e.x.toFixed(1), z: +e.z.toFixed(1) })), ri: !!P && rollInvuln(), jd: J && P ? +Math.hypot(J.a.x - P.x, J.a.z - P.z).toFixed(2) : null, atk: J && J.atk ? { k: J.atk.kind, st: J.atk.stage } : null, post: J ? Math.round(J.posture) : null }; },
+  dbg() { return { y: P && +P.y.toFixed(2), jm: P && P.jumps, sl: P && P.slamming, lv: S && S.lvl, xp: S && S.xp, sp: S && S.sp, mh: P && P.maxHp, sm: P && P.stMax, wk: P && P.wk, mk: P && P.mkey, cm: P && P.cm, ch: P && P.chargeT, pst: P && P.state, rk: P && P.rollKind, t: P && +P.t.toFixed(2), run: P && P.running, lock: P && P.runLock, parried: P && P.parried, vx: P && +P.vx.toFixed(2), en: enemies.map(e => ({ s: e.state, r: +(e.riposteT || 0).toFixed(2), hp: Math.round(e.hp), seq: e.seq ? e.seq[e.si].k : null, pt: +(e.pt || 0).toFixed(2), d: e.defeated, x: +e.x.toFixed(1), z: +e.z.toFixed(1) })), ri: !!P && rollInvuln(), jd: J && P ? +Math.hypot(J.a.x - P.x, J.a.z - P.z).toFixed(2) : null, atk: J && J.atk ? { k: J.atk.kind, st: J.atk.stage } : null, post: J ? Math.round(J.posture) : null }; },
   net: { attach: netAttach, recv: netRecv, get role() { return NET.role; }, get host() { return NETH.on; }, get guest() { return NETG && { started: NETG.started, rid: NETG.rid, room: NETG.room, ghosts: [...NETG.ghosts.keys()] }; }, p2() { return P2 && { x: P2.x, z: P2.z, hp: P2.hp, state: P2.state, live: P2.live, inv: P2.inv }; }, partner() { return NETG && NETG.partner; } },
   skipTo(cpId) { const map = { clockin: ['breakroom', 5, 0, 6, -2.5], tiles: ['floor', 7, 4, 30, 0.5], outbreak: ['floor', 8, 4, 22, 0], arena: ['bay', 9, 0, 12, -1] }; const m = map[cpId]; S.cp = { id: cpId, room: m[0], step: m[1], delivered: m[2], x: m[3], z: m[4] }; loadCheckpoint(); },
 };

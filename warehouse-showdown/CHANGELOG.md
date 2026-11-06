@@ -1,5 +1,10 @@
 # Changelog
 
+## Jump, double jump, slam; connection test
+- JUMP button (V / B on keyboard). Press again in the air to double jump.
+- Attack in the air = slam dive that hits everything around the landing spot (harder and wider after a double jump). Works in co-op.
+- Co-op lobby: TEST CONNECTION button reports whether the matchmaking server and relay servers are reachable.
+
 ## Levels, skill tree, classes, combo bonus
 - XP from kills, deliveries (once each), checkpoints (once each); level-ups give 1 skill point.
 - Pause > SKILLS: 13 skills in Survival / Combat / Movement / Work / Boss branches, reset button.
