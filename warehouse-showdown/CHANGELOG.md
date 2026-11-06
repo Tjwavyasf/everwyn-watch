@@ -1,5 +1,11 @@
 # Changelog
 
+## Box cutter + 3 new moves
+- TeeJay now starts with the Box Cutter equipped (solo and co-op).
+- Running attack: hold RUN and press ATTACK for a lunging slash.
+- Backstep attack: dodge while standing still, then attack.
+- Charged heavy: hold ATTACK to charge (up to 1.7x damage, drains stamina).
+
 ## Clocked In — controls and co-op update (2026-11-06)
 - Added **RUN** (hold Shift / RUN button): sprint with stamina drain and an empty-stamina lockout.
 - Reworked **dodge** (Elden-style): committed roll with a shorter invincible window, or a quick backstep when standing still. Dodge is Space or the DODGE button; Shift is now run.

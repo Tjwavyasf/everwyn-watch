@@ -985,12 +985,14 @@ const _dw = drawWeapon;
 drawWeapon = function (px, wk, h, ang, s) { if (wk === 'slab') { const d = dirv(ang), n = [-d[1], d[0]]; const P = (k, m) => [h[0] + d[0] * k * s + n[0] * m * s, h[1] + d[1] * k * s + n[1] * m * s]; group(px, [[P(1, -5), P(1, 5), 2.2 * s, WPAL.slab]]); return; } return _dw(px, wk, h, ang, s); };
 
 /* ================= data ================= */
-const WEAPONS = { fists: { name: 'Fists', cat: 'fist', dmg: 1, reach: 0.95, speed: 1.15, z: 0.55, st: 9 } };
+const WEAPONS = { fists: { name: 'Fists', cat: 'fist', dmg: 1, reach: 0.95, speed: 1.15, z: 0.55, st: 9 }, cutter: { name: 'Box Cutter', cat: 'blade', dmg: 1, reach: 1.2, speed: 1.15, z: 0.6, st: 9 } };
 const MOVES = {
   a1: { anim: 'a1', w: 0.08, a: 0.07, r: 0.17, dmg: 10, kb: 2.5, stun: 0.4, post: 12 },
   a2: { anim: 'a2', w: 0.08, a: 0.07, r: 0.17, dmg: 11, kb: 2.5, stun: 0.4, post: 12 },
   a3: { anim: 'a3', w: 0.1, a: 0.08, r: 0.24, dmg: 16, kb: 6.5, stun: 0.6, knock: true, big: true, post: 20 },
   heavy: { anim: 'heavy', w: 0.32, a: 0.09, r: 0.28, dmg: 24, kb: 8, knock: true, big: true, st: 2.2, post: 30 },
+  runAtk: { anim: 'a3', w: 0.1, a: 0.1, r: 0.3, dmg: 18, kb: 6.5, stun: 0.6, knock: true, lunge: 6.5, big: true, st: 1.5, post: 24 },
+  stepAtk: { anim: 'a3', w: 0.08, a: 0.1, r: 0.26, dmg: 17, kb: 6, stun: 0.6, knock: true, lunge: 7.5, big: true, st: 1.3, post: 22 },
   rollAtk: { anim: 'a3', w: 0.05, a: 0.1, r: 0.22, dmg: 14, kb: 6, knock: true, lunge: 5, big: true, post: 16 },
 };
 const CP_NAMES = { start: 'Parking lot', clockin: 'Clocked in', tiles: 'Tile assignment done', outbreak: 'First outbreak survived', arena: 'Loading dock' };
@@ -1144,8 +1146,8 @@ function openPause() {
   $('cpBtn').textContent = 'RESTART AT: ' + CP_NAMES[S.cp.id].toUpperCase(); $('cpBtn').hidden = !!NETG || !!(ROOM && ROOM.id === 'lounge');
   $('quitBtn').textContent = NETG ? 'LEAVE CO-OP' : 'QUIT TO TITLE';
   $('pauseKeys').textContent = touchUI
-    ? 'Left stick moves. Hold RUN to sprint (uses stamina). ATTACK for a three-hit combo, hold it for a heavy punch. DODGE rolls through attacks (standing still, it is a quick backstep). PARRY: tap it just as a swing lands to turn it aside, then hit back for a riposte. USE appears when you can pick up, talk or drive. In the forklift, the stick steers and drives.'
-    : 'WASD move · Shift run · J attack (hold = heavy) · K heavy · Space dodge (no direction = backstep) · L / Q parry · E use / pick up / drive / exit · R reset a stuck forklift · Esc pause';
+    ? 'Left stick moves. Hold RUN to sprint (uses stamina). ATTACK for a three-hit combo. Hold it for a heavy strike and keep holding to charge it. Attack while running for a running slash, or dodge standing still then attack for a backstep slash. DODGE rolls through attacks (standing still, it is a quick backstep). PARRY: tap it just as a swing lands to turn it aside, then hit back for a riposte. USE appears when you can pick up, talk or drive. In the forklift, the stick steers and drives.'
+    : 'WASD move · Shift run · J attack (hold = heavy, keep holding = charge) · attack while running = running slash · dodge standing still then attack = backstep slash · K heavy · Space dodge (no direction = backstep) · L / Q parry · E use / pick up / drive / exit · R reset a stuck forklift · Esc pause';
   if (NETH.on) $('pauseKeys').textContent += ' CO-OP: pausing freezes the game for your friend too.';
   if (NETG) $('pauseKeys').textContent += ' CO-OP: the host runs the story; you fight alongside.';
 }
@@ -1164,7 +1166,7 @@ $('keysHelp').textContent = touchUI ? 'Best played in landscape. Left stick move
 let cuFrame = 0, cuWalk = false, cuTimer = null;
 function drawPreview() {
   const cv = $('cPrev'), c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.clearRect(0, 0, cv.width, cv.height);
-  const sh = getSheet('teejay', 'fists'), arr = sh.map[cuWalk ? 'walk' : 'idle'], idx = arr[cuFrame % arr.length];
+  const sh = getSheet('teejay', 'cutter'), arr = sh.map[cuWalk ? 'walk' : 'idle'], idx = arr[cuFrame % arr.length];
   c.drawImage(sh.cv, (idx % sh.cols) * sh.fw, Math.floor(idx / sh.cols) * sh.fh, sh.fw, sh.fh, 0, 0, cv.width, cv.height);
 }
 function refreshLookUi() { document.querySelectorAll('#cOpts button[data-k]').forEach(b => b.classList.toggle('on', String(LOOK[b.dataset.k]) === b.dataset.v)); }
@@ -1215,7 +1217,7 @@ function beginPlay() {
   netHostBegin();
   mode = 'play'; ui = null; show('hud', true);
   if (P) P.remove();
-  P = new Actor('teejay', 'fists');
+  P = new Actor('teejay', 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
   setControls();
   loadCheckpoint();
@@ -1880,9 +1882,9 @@ function useSt(n) { if (P.st <= 0) return false; P.st -= n; P.stDelay = 0.6; ret
 const COMBO = ['a1', 'a2', 'a3'];
 function startAttack(key, ci) {
   const m = MOVES[key];
-  if (!useSt(WEAPONS.fists.st * (m.st || 1))) { sfx('deny'); floatNum(P.x, 2, P.z, 'NO STAMINA', '#9fd65a', 11); return false; }
+  if (!useSt((WEAPONS[P.wk] || WEAPONS.fists).st * (m.st || 1))) { sfx('deny'); floatNum(P.x, 2, P.z, 'NO STAMINA', '#9fd65a', 11); return false; }
   const mv = moveInput(); if (Math.abs(mv.x) > 0.2) P.face = mv.x > 0 ? 1 : -1;
-  Object.assign(P, { state: 'attack', move: m, mkey: key, ci: ci || 0, t: 0, hitSet: new Set(), lunged: false, mspd: WEAPONS.fists.speed, aseq: (P.aseq | 0) + 1 });
+  Object.assign(P, { state: 'attack', move: m, mkey: key, ci: ci || 0, t: 0, hitSet: new Set(), lunged: false, mspd: (WEAPONS[P.wk] || WEAPONS.fists).speed, aseq: (P.aseq | 0) + 1, chargeT: 0, cm: 1 });
   return true;
 }
 /* Dodge: committed roll when you push a direction, short backstep when you don't. The invincible window is shorter than the whole move, so mistimed dodges get punished. */
@@ -1926,7 +1928,7 @@ function parryJose(A) {
 }
 function attackHits(m) {
   if (NETG) return;
-  const W = WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), dmg = m.dmg;
+  const W = WEAPONS[P.wk] || WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), dmg = m.dmg * (P.mkey === 'heavy' ? (P.cm || 1) : 1);
   for (const e of enemies) {
     if (e.defeated || P.hitSet.has(e) || (e.state === 'down' && e.y < 0.05)) continue;
     const fx = (e.x - P.x) * P.face;
@@ -1975,17 +1977,22 @@ function updatePlayer(dt) {
         else if (take('dodge')) startRoll(mv);
         else if (take('parry')) startParry();
         else if (buf.heavy > 0) { buf.heavy = 0; buf.attack = 0; startAttack('heavy'); }
-        else if (take('attack')) startAttack('a1', 0);
+        else if (take('attack')) startAttack(p.running ? 'runAtk' : 'a1', 0);
       }
       if (p.state === 'idle' || p.state === 'walk') p.state = Math.hypot(p.vx, p.vz) > 0.5 ? 'walk' : 'idle';
       break;
     case 'attack': {
       const m = p.move, w = m.w / p.mspd, a = m.a, r = m.r / p.mspd;
       p.vx = approach(p.vx, 0, 22 * dt); p.vz = approach(p.vz, 0, 22 * dt);
-      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * (m.lunge || (m.big ? 3.6 : 1.8)); sfx('punch'); }
+      /* Charged heavy: keep holding during the wind-up and it powers up (up to 1.7x damage). */
+      if (p.mkey === 'heavy' && !p.lunged && p.t >= w * 0.9 && ctl && (attackHeld() || keys.act_heavy) && (p.chargeT || 0) < 0.7 && p.st > 0) {
+        p.t = w * 0.9; const was = p.chargeT || 0; p.chargeT = was + dt; p.cm = 1 + Math.min(1, p.chargeT / 0.7) * 0.7; p.st = Math.max(0, p.st - 14 * dt); p.stDelay = 0.5;
+        if (was < 0.7 && p.chargeT >= 0.7) { floatNum(p.x, 2.1, p.z, 'CHARGED', '#ffc23a', 13); sfx('level'); }
+      }
+      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * (m.lunge || (m.big ? 3.6 : 1.8)); if (p.wk === 'fists') sfx('punch'); else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } }
       if (p.t >= w && p.t <= w + a + 0.02) attackHits(m);
       if (p.t >= w + a * 0.6 && ctl) {
-        if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
+        if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk' && p.mkey !== 'runAtk' && p.mkey !== 'stepAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
         else if (buf.heavy > 0 && p.mkey !== 'heavy') { buf.heavy = 0; startAttack('heavy'); }
         else if (buf.dodge > 0) { buf.dodge = 0; startRoll(moveInput()); }
       }
@@ -1996,7 +2003,7 @@ function updatePlayer(dt) {
       const stp = p.rollKind === 'step', burst = stp ? 0.24 : 0.36;
       const k = p.t < burst ? 1 - 0.3 * p.t / burst : Math.max(0, 0.7 * (1 - (p.t - burst) / 0.14));
       p.vx = p.rollDir[0] * (stp ? 6.2 : 7.2) * k; p.vz = p.rollDir[1] * (stp ? 4.6 : 5.6) * k;
-      if (p.t > burst - 0.02 && buf.attack > 0 && ctl) { buf.attack = 0; startAttack('rollAtk'); }
+      if (p.t > burst - 0.02 && buf.attack > 0 && ctl) { buf.attack = 0; startAttack(stp ? 'stepAtk' : 'rollAtk'); }
       else if (p.t >= p.rollDur) p.state = 'idle';
       break;
     }
@@ -2462,7 +2469,7 @@ function animatePlayer(dt) {
   }
   p.show(an, fi);
   p.shadow.visible = !p.riding;
-  p.glow = parryActive() ? 0.55 : p.state === 'attack' && p.mkey === 'heavy' && p.t < p.move.w / p.mspd ? 0.4 : 0; p.glowCol = [1.2, 0.8, 0.3];
+  p.glow = parryActive() ? 0.55 : p.state === 'attack' && p.mkey === 'heavy' && p.t < p.move.w / p.mspd ? 0.4 + (p.chargeT || 0) * 1.1 : 0; p.glowCol = [1.2, 0.8, 0.3];
   if (p.mesh.visible || !cine) p.mesh.visible = !(p.inv > 0 && (p.state === 'idle' || p.state === 'walk') && !p.riding && !cine && Math.floor(time * 24) % 2);
   p.sync();
 }
@@ -2642,8 +2649,8 @@ function netSend(o) { if (NET.send) { try { NET.send(o); } catch (e) {} } }
 function hostSpawnP2() {
   if (P2) { P2.remove(); P2 = null; }
   if (!NETH.on) return;
-  P2 = new Actor('coop', 'fists');
-  Object.assign(P2, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, carry: null, live: false, seen: false, slack: 0.12, tx: 0, tz: 0, ty: 0, mspd: WEAPONS.fists.speed, an: 'idle', fi: 0, vis: false });
+  P2 = new Actor('coop', 'cutter');
+  Object.assign(P2, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, carry: null, live: false, seen: false, slack: 0.12, tx: 0, tz: 0, ty: 0, mspd: WEAPONS.cutter.speed, an: 'idle', fi: 0, vis: false });
   P2.mesh.visible = false; P2.shadow.visible = false;
   NETH.p2DeadT = 0;
 }
@@ -2656,7 +2663,7 @@ function hostOnPose(m) {
   p.face = m.f < 0 ? -1 : 1;
   p.state = POSE_STATES.has(m.s) ? m.s : 'idle'; p.t = num(m.pt, 0, 60, 0);
   if (MOVES[m.mk]) { p.mkey = m.mk; p.move = MOVES[m.mk]; }
-  p.rollKind = m.rk === 'step' ? 'step' : 'roll'; p.ifs = num(m.ifs, 0, 1, 0.05); p.ife = num(m.ife, 0, 1, 0.3); p.parried = !!m.pd;
+  p.rollKind = m.rk === 'step' ? 'step' : 'roll'; p.ifs = num(m.ifs, 0, 1, 0.05); p.ife = num(m.ife, 0, 1, 0.3); p.parried = !!m.pd; p.cm = num(m.cm, 1, 2, 1);
   if (!(p.hpLock > 0)) p.hp = num(m.hp, 0, 9999, p.hp);   // a pose sent before the friend learned about a hit would otherwise undo it
   p.maxHp = num(m.mhp, 1, 9999, 120); p.st = num(m.st, 0, 9999, p.st); p.stMax = num(m.mst, 1, 9999, 100);
   p.an = str(m.an, 'idle', 24); p.fi = num(m.fi, 0, 30, 0); p.vis = !!m.vis; p.flick = !!m.inv; p.hit = !!m.ht; p.gl = num(m.gl, 0, 3, 0);
@@ -2746,7 +2753,7 @@ function guestStart() {
   mode = 'play'; ui = null; paused = false; show('hud', true);
   S = { v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, wave: 0, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } };
   if (P) P.remove();
-  P = new Actor('teejay', 'fists');
+  P = new Actor('teejay', 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
   $('retryBtn').hidden = true;
   setControls();
@@ -2802,7 +2809,7 @@ function guestApplySnap(m) {
     if (!Array.isArray(e) || !CHARS[e[1]] || e[1] === 'teejay' && e[0] !== 'P') return;
     seen.add(e[0]);
     let g = G.ghosts.get(e[0]);
-    if (!g || g.a.ck !== e[1]) { if (g) g.a.remove(); g = { a: new Actor(e[1], 'fists'), e, first: true }; g.a.rad = 0.35; G.ghosts.set(e[0], g); }
+    if (!g || g.a.ck !== e[1]) { if (g) g.a.remove(); g = { a: new Actor(e[1], e[1] === 'coop' ? 'cutter' : 'fists'), e, first: true }; g.a.rad = 0.35; G.ghosts.set(e[0], g); }
     g.e = e;
     if (g.first) { g.a.x = num(e[2], -50, 200, 0); g.a.y = num(e[3], -5, 20, 0); g.a.z = num(e[4], -20, 20, 0); g.first = false; }
   };
@@ -2929,7 +2936,7 @@ function tickGuest(dt) {
 }
 function guestPose() {
   const p = P;
-  netSend({ t: 'pose', x: rd2(p.x), y: rd2(p.y), z: rd2(p.z), f: p.face, an: p._an || 'idle', fi: p._fi | 0, vis: NETG.hideSelf ? 0 : 1, inv: p.inv > 0 && (p.state === 'idle' || p.state === 'walk') ? 1 : 0, ht: p.hitT > 0 ? 1 : 0, gl: rd2(p.glow || 0), hp: Math.round(p.hp), mhp: p.maxHp, st: Math.round(p.st), mst: p.stMax, s: p.state, pt: rd2(p.t), mk: p.mkey || '', rk: p.rollKind || '', ifs: p.ifs || 0, ife: p.ife || 0, pd: p.parried ? 1 : 0, as: p.aseq | 0 });
+  netSend({ t: 'pose', x: rd2(p.x), y: rd2(p.y), z: rd2(p.z), f: p.face, an: p._an || 'idle', fi: p._fi | 0, vis: NETG.hideSelf ? 0 : 1, inv: p.inv > 0 && (p.state === 'idle' || p.state === 'walk') ? 1 : 0, ht: p.hitT > 0 ? 1 : 0, gl: rd2(p.glow || 0), hp: Math.round(p.hp), mhp: p.maxHp, st: Math.round(p.st), mst: p.stMax, s: p.state, pt: rd2(p.t), mk: p.mkey || '', rk: p.rollKind || '', ifs: p.ifs || 0, ife: p.ife || 0, pd: p.parried ? 1 : 0, as: p.aseq | 0, cm: rd2(p.cm || 1) });
 }
 function guestRender(dt) {
   const G = NETG; if (!G) return;
@@ -2986,7 +2993,7 @@ function pvpHit(me, foe, m) {
       if (me !== P2) { me.state = 'hurt'; me.t = 0; me.vx = -dir * 3; }
       return;
     }
-    if (P.inv <= 0 && !rollInvuln()) { hitFx(foe.x - dir * 0.2, (foe.y || 0) + 1.0, foe.z, dir, m.big); damagePlayer(m.dmg, dir, !!m.knock, m.big ? 0.22 : 0.1); }
+    if (P.inv <= 0 && !rollInvuln()) { hitFx(foe.x - dir * 0.2, (foe.y || 0) + 1.0, foe.z, dir, m.big); damagePlayer(m.dmg * (me.mkey === 'heavy' ? (me.cm || 1) : 1), dir, !!m.knock, m.big ? 0.22 : 0.1); }
     else if (rollInvuln()) floatNum(P.x, 2, P.z, 'DODGED', '#9fd65a', 11);
   });
 }
@@ -2996,7 +3003,7 @@ function enterLounge() {
   NETH.hasSave = (() => { const sv = load('save', null); return !!sv && !sv.done; })(); NETH.gReady = false;
   mode = 'play'; ui = null; show('hud', true);
   if (P) P.remove();
-  P = new Actor('teejay', 'fists');
+  P = new Actor('teejay', 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
   netHostBegin(); setControls();
   enterRoom('lounge', { x: 6, z: 0 });
@@ -3040,7 +3047,7 @@ function hostRecv(m) {
     case 'hello': {
       if (m.v !== NET_V) { netSend({ t: 'reject', why: 'Different game version. Both players need the same file.' }); return; }
       bakeLook('coop', cleanLook(m.look));
-      if (P2) P2.setWeapon('fists');
+      if (P2) P2.setWeapon('cutter');
       NETH.on = true; NETH.q.length = 0; NETH.tk = 0; NETH.gReady = false;
       netSend({ t: 'welcome', v: NET_V, look: LOOK });
       if (mode === 'play') { hostSpawnP2(); netSend({ t: 'start' }); netRoom({}); toast('CO-OP', 'Friend joined'); }
@@ -3057,7 +3064,7 @@ function hostRecv(m) {
 function guestRecv(m) {
   const G = NETG; if (!G) return;
   switch (m.t) {
-    case 'welcome': bakeLook('coop', cleanLook(m.look)); for (const g of G.ghosts.values()) if (g.a.ck === 'coop') g.a.setWeapon('fists'); lobbyView({ title: 'CO-OP', msg: 'Connected. Waiting for the host to start the game…', leave: true }); break;
+    case 'welcome': bakeLook('coop', cleanLook(m.look)); for (const g of G.ghosts.values()) if (g.a.ck === 'coop') g.a.setWeapon('cutter'); lobbyView({ title: 'CO-OP', msg: 'Connected. Waiting for the host to start the game…', leave: true }); break;
     case 'reject': netLeave(); lobbyOpen(); lobbyView({ title: 'CO-OP', msg: str(m.why, 'The host refused the connection.', 120), join: true, back: true }); break;
     case 'start': guestStart(); break;
     case 'room': guestRoom(m); break;
@@ -3243,7 +3250,7 @@ window.__ci = {
   enemyPos() { const e = enemies.find(o => !o.defeated); return e ? { x: e.x, z: e.z } : null; },
   breakPosture() { if (J && inCombat()) { J.posture = J.pMax; postureBreak(); } },
   jose() { return J; }, fl() { return FL; },
-  dbg() { return { pst: P && P.state, rk: P && P.rollKind, t: P && +P.t.toFixed(2), run: P && P.running, lock: P && P.runLock, parried: P && P.parried, vx: P && +P.vx.toFixed(2), en: enemies.map(e => ({ s: e.state, r: +(e.riposteT || 0).toFixed(2), hp: Math.round(e.hp), seq: e.seq ? e.seq[e.si].k : null, pt: +(e.pt || 0).toFixed(2), d: e.defeated, x: +e.x.toFixed(1), z: +e.z.toFixed(1) })), ri: !!P && rollInvuln(), jd: J && P ? +Math.hypot(J.a.x - P.x, J.a.z - P.z).toFixed(2) : null, atk: J && J.atk ? { k: J.atk.kind, st: J.atk.stage } : null, post: J ? Math.round(J.posture) : null }; },
+  dbg() { return { wk: P && P.wk, mk: P && P.mkey, cm: P && P.cm, ch: P && P.chargeT, pst: P && P.state, rk: P && P.rollKind, t: P && +P.t.toFixed(2), run: P && P.running, lock: P && P.runLock, parried: P && P.parried, vx: P && +P.vx.toFixed(2), en: enemies.map(e => ({ s: e.state, r: +(e.riposteT || 0).toFixed(2), hp: Math.round(e.hp), seq: e.seq ? e.seq[e.si].k : null, pt: +(e.pt || 0).toFixed(2), d: e.defeated, x: +e.x.toFixed(1), z: +e.z.toFixed(1) })), ri: !!P && rollInvuln(), jd: J && P ? +Math.hypot(J.a.x - P.x, J.a.z - P.z).toFixed(2) : null, atk: J && J.atk ? { k: J.atk.kind, st: J.atk.stage } : null, post: J ? Math.round(J.posture) : null }; },
   net: { attach: netAttach, recv: netRecv, get role() { return NET.role; }, get host() { return NETH.on; }, get guest() { return NETG && { started: NETG.started, rid: NETG.rid, room: NETG.room, ghosts: [...NETG.ghosts.keys()] }; }, p2() { return P2 && { x: P2.x, z: P2.z, hp: P2.hp, state: P2.state, live: P2.live, inv: P2.inv }; }, partner() { return NETG && NETG.partner; } },
   skipTo(cpId) { const map = { clockin: ['breakroom', 5, 0, 6, -2.5], tiles: ['floor', 7, 4, 30, 0.5], outbreak: ['floor', 8, 4, 22, 0], arena: ['bay', 9, 0, 12, -1] }; const m = map[cpId]; S.cp = { id: cpId, room: m[0], step: m[1], delivered: m[2], x: m[3], z: m[4] }; loadCheckpoint(); },
 };
