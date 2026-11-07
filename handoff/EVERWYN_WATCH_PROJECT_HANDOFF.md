@@ -75,7 +75,11 @@ Map (live players, Overworld/Nether/End, pinch zoom, whole explored world from s
 
 Removed on purpose: screen spectating (added in 6689045, dropped in 0988351).
 
-## 5a. Latest: version 1.9.3 (branch `everwyn-1.9.2`)
+## 5a-0. Latest: version 1.10.0 (branch `everwyn-real-blocks`)
+
+Real blocks + live players in 3D, and the See inside slice. See changelog. Tested with a mock server and the real 1.20.1 textures; not yet on the live server.
+
+## 5a. Version 1.9.3 (branch `everwyn-1.9.2`)
 
 1.9.3 fixes deaths not being saved to the Deaths tab (see changelog). Not yet confirmed on the live server.
 

@@ -272,6 +272,16 @@ final class IconRenderer {
         }
     }
 
+    /**
+     * A block model, blockstate or texture for the 3D view: "minecraft/blockstates/stone.json",
+     * "create/textures/block/cogwheel.png"... Only those three folders, no "..". Null if missing.
+     */
+    static byte[] asset(String p) {
+        if (p == null || p.length() > 200 || p.contains("..") || !p.matches("[a-z0-9_.\\-]+/(blockstates|models|textures)/[a-z0-9_./\\-]+\\.(json|png|mcmeta)")) return null;
+        int slash = p.indexOf('/');
+        return read(p.substring(0, slash), p.substring(slash + 1));
+    }
+
     /** Reads assets/<ns>/<path> from mod jars first, then the vanilla client jar. */
     private static byte[] read(String ns, String path) {
         List<Path> roots = NS_ROOTS.get(ns);

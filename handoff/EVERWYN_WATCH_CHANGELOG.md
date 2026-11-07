@@ -2,6 +2,16 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.10.0 — 2026-11-07 (branch `everwyn-real-blocks`, based on 1.9.3)
+Real blocks in the 3D view ("look at the world like a god"):
+- Server: `ChunkExport` + `/api/chunk` (every block of a chunk, palette + base64 indexes, gzipped, plus surface biome per 4x4 column with temperature/downfall/colors). Loaded chunks: sections copied on the server thread, encoded on a web thread; others read from region files. Never loads chunks; 40 chunk reads/s max, short cache.
+- Server: `/api/asset?p=<ns>/(blockstates|models|textures)/...` serves vanilla + mod assets from the same sources as the item icons (`IconRenderer.asset`).
+- Server: `Live` + `/api/live` (players with pose, sneaking, swimming, sleeping, elytra, arm swing, slim arms; mobs near the view with size and spawn-egg colors). `/skin?u=` serves the whole skin (`Faces.skin`), and slim-arm skins are remembered.
+- App: block models resolved in the browser (blockstates variants/multipart, parents, element rotation, face UV/rotation, cullface, tint), texture atlas, Minecraft face shading + ambient occlusion, water/lava, biome tints, glass/leaves culling. Chunks within 5 of the view in full detail; height map elsewhere, with a shader mask hiding it under real chunks.
+- App: player models with skins and outer layer (walk, sneak, swim, elytra, sleep, arm swing), mobs as boxes, smoothed between 5 updates/s. Players above the slice are hidden (names stay).
+- App: **See inside** slider (and ▲/▼) slices the world at a height to look into builds and caves; the Nether is sliced under the roof automatically. **Real/Simple** button.
+- Known limits: blocks Minecraft draws with code (signs, banners, skulls, chests, beds) are missing or plain stand-in shapes; no block lighting (caves are fully lit); mobs are boxes, not their real models; animated textures show their first frame.
+
 ## 1.9.3 — 2026-11-06 (branch `everwyn-1.9.2`)
 Fix: deaths sometimes missing from the Deaths tab, so items couldn't be given back.
 - Cause: a death was only saved if the inventory copy taken in Fabric's `ALLOW_DEATH` event existed; if another mod's handler ran first (emptying or cancelling), or the death skipped that event, the death was silently dropped. The death handler also updated the map marker and challenges before saving, so an error there could stop the save.

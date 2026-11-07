@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 final class Faces {
     private static final Map<String, String> SKIN_URLS = new ConcurrentHashMap<>();
     private static final Map<String, byte[]> CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, byte[]> SKINS = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> SLIM = ConcurrentHashMap.newKeySet();
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(8)).build();
 
@@ -40,13 +42,46 @@ final class Faces {
             for (Property prop : p.getGameProfile().getProperties().get("textures")) {
                 String json = new String(Base64.getDecoder().decode(prop.getValue()), StandardCharsets.UTF_8);
                 JsonObject tex = JsonParser.parseString(json).getAsJsonObject().getAsJsonObject("textures");
-                if (tex != null && tex.has("SKIN")) url = tex.getAsJsonObject("SKIN").get("url").getAsString();
+                if (tex != null && tex.has("SKIN")) {
+                    JsonObject skin = tex.getAsJsonObject("SKIN");
+                    url = skin.get("url").getAsString();
+                    if (skin.has("metadata") && skin.getAsJsonObject("metadata").has("model")
+                            && "slim".equals(skin.getAsJsonObject("metadata").get("model").getAsString())) SLIM.add(uuid);
+                }
             }
         } catch (Exception ignored) {
             // no skin info (offline mode)
         }
         SKIN_URLS.put(uuid, url);
         return !url.isEmpty();
+    }
+
+    /** True if the player's skin uses the thin (Alex-style) arms. */
+    static boolean slim(String uuid) {
+        return SLIM.contains(uuid);
+    }
+
+    /** The player's whole skin PNG (for the 3D view), or null. Runs on a web thread. */
+    static byte[] skin(String uuid) {
+        byte[] cached = SKINS.get(uuid);
+        if (cached != null) return cached.length == 0 ? null : cached;
+        String url = SKIN_URLS.get(uuid);
+        if (url == null || url.isEmpty()) return null;
+        try {
+            URI uri = URI.create(url);
+            if (uri.getHost() == null || !uri.getHost().endsWith("minecraft.net")) return null;
+            HttpResponse<byte[]> res = HTTP.send(HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(10)).build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            if (res.statusCode() != 200) return null;
+            BufferedImage img = ImageIO.read(new ByteArrayInputStream(res.body()));
+            if (img == null || img.getWidth() < 64) return null;
+            if (SKINS.size() > 500) SKINS.clear();
+            SKINS.put(uuid, res.body());
+            return res.body();
+        } catch (Exception e) {
+            EverwynWatch.LOG.debug("Couldn't fetch skin for {}", uuid, e);
+            return null;
+        }
     }
 
     /** 32x32 PNG of the player's face, or null. Runs on a web thread. */

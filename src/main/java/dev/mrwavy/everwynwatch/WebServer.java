@@ -67,6 +67,9 @@ public final class WebServer {
             boolean get = "GET".equals(ex.getRequestMethod());
             if (path.equals("/icon") && get) {
                 sendImage(ex, IconRenderer.icon(query(ex).getOrDefault("id", "")), 604800);
+            } else if (path.equals("/skin") && get) {
+                String u = query(ex).getOrDefault("u", "");
+                sendImage(ex, u.matches("[0-9a-fA-F-]{32,36}") ? Faces.skin(u) : null, 3600);
             } else if (path.equals("/face") && get) {
                 String u = query(ex).getOrDefault("u", "");
                 sendImage(ex, u.matches("[0-9a-fA-F-]{32,36}") ? Faces.face(u) : null, 3600);
@@ -169,6 +172,44 @@ public final class WebServer {
                     ex.getResponseHeaders().set("Content-Encoding", "gzip");
                     send(ex, 200, "application/octet-stream", bos.toByteArray());
                 }
+            }
+            case "/api/chunk" -> {
+                // Every block of one chunk for the "real blocks" 3D view (gzipped JSON, see ChunkExport)
+                String dim = q.getOrDefault("dim", "minecraft:overworld");
+                try {
+                    byte[] gz = ChunkExport.get(s.server, dim, (int) parseLong(q.get("x"), 0), (int) parseLong(q.get("z"), 0));
+                    if (gz == null) {
+                        ex.getResponseHeaders().set("Cache-Control", "no-store");
+                        ex.sendResponseHeaders(204, -1);
+                    } else {
+                        ex.getResponseHeaders().set("Content-Encoding", "gzip");
+                        send(ex, 200, "application/json; charset=utf-8", gz);
+                    }
+                } catch (ChunkExport.Busy b) {
+                    sendJson(ex, 503, error("busy"));
+                }
+            }
+            case "/api/asset" -> {
+                // Block models, blockstates and textures (vanilla + mods) for the 3D view
+                String p = q.getOrDefault("p", "");
+                byte[] data = IconRenderer.asset(p);
+                if (data == null) {
+                    ex.getResponseHeaders().set("Cache-Control", "public, max-age=600");
+                    ex.sendResponseHeaders(404, -1);
+                } else {
+                    ex.getResponseHeaders().set("Content-Type", p.endsWith(".png") ? "image/png" : "application/json; charset=utf-8");
+                    ex.getResponseHeaders().set("Cache-Control", "private, max-age=86400");
+                    ex.sendResponseHeaders(200, data.length);
+                    try (OutputStream os = ex.getResponseBody()) {
+                        os.write(data);
+                    }
+                }
+            }
+            case "/api/live" -> {
+                String dim = q.getOrDefault("dim", "minecraft:overworld");
+                double x = parseLong(q.get("x"), 0), z = parseLong(q.get("z"), 0);
+                int r = (int) parseLong(q.get("r"), 64);
+                sendJson(ex, 200, onServer(() -> Live.json(s.server, dim, x, z, r), 5));
             }
             case "/api/mobs" -> {
                 String dim = q.getOrDefault("dim", "minecraft:overworld");
