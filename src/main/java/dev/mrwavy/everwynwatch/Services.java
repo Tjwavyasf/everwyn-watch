@@ -21,4 +21,5 @@ final class Services {
     RestartController restart;
     LedgerBridge ledger;
     CrashReports crashes;
+    final SchematicPlacer schematics = new SchematicPlacer();
 }

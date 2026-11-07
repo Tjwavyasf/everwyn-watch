@@ -200,6 +200,18 @@ public final class WebServer {
                     sendJson(ex, 503, error("busy"));
                 }
             }
+            case "/api/schematic" -> {
+                // upload a .nbt structure (POST, body = the file) or ask what's ready (GET)
+                if (!admin) { sendJson(ex, 403, error("Only admins can place schematics")); return; }
+                if ("POST".equals(ex.getRequestMethod())) {
+                    if (!s.cfg.allowAdminActions) { sendJson(ex, 403, error("Admin actions are turned off in the config")); return; }
+                    JsonObject info = s.schematics.upload(ex.getRequestBody(), ex.getRequestHeaders().getFirst("X-File-Name"));
+                    s.accounts.record(me, "schematic_upload", "Uploaded " + info.get("name").getAsString());
+                    sendJson(ex, 200, info.toString());
+                } else {
+                    sendJson(ex, 200, s.schematics.status().toString());
+                }
+            }
             case "/api/crashes" -> {
                 if (!staff) { sendJson(ex, 403, error("Only staff can see crash reports")); return; }
                 JsonObject o = new JsonObject();

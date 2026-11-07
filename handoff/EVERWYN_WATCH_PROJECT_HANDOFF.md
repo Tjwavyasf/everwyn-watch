@@ -75,7 +75,11 @@ Map (live players, Overworld/Nether/End, pinch zoom, whole explored world from s
 
 Removed on purpose: screen spectating (added in 6689045, dropped in 0988351).
 
-## 5a-00. Latest: version 1.11.0 (branch `everwyn-crash-reports`)
+## 5a-000. Latest: version 1.12.0 (branch `everwyn-follow-cam`)
+
+Follow camera (Behind/Front/Side/Top/Free, close/far), underground viewing, and the .nbt schematic placer. See changelog.
+
+## 5a-00. Version 1.11.0 (branch `everwyn-crash-reports`)
 
 Crash reports from players' modpacks: new `crash-reporter/` subproject (a second, client-side mod for the modpack) plus Crash reports in the Server tab. The repo now builds two jars. See changelog.
 

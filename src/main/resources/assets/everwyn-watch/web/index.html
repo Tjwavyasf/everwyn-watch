@@ -78,6 +78,12 @@ nav .ico{width:22px;height:22px;background:var(--line);-webkit-mask-size:contain
 .map-modes button{border:0;background:var(--panel);font-family:var(--pix);font-size:11px;padding:8px 10px;cursor:pointer;min-height:34px}
 .map-modes button + button{border-left:2px solid #0b0e0c}
 .map-modes button.on{background:var(--grass-d)}
+.followbar{position:absolute;left:10px;right:10px;top:104px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:rgba(20,25,21,.9);box-shadow:0 0 0 2px #0b0e0c;border-radius:2px;padding:6px 8px;font-family:var(--pix);font-size:11px}
+.followbar .fname{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--grass)}
+.followbar button{background:var(--panel2);border:0;box-shadow:0 0 0 2px #0b0e0c;font-family:var(--pix);font-size:10px;padding:6px 7px;min-height:30px;cursor:pointer;border-radius:2px}
+.followbar button.on{background:var(--grass-d)}
+.followbar .row{display:flex;gap:6px;width:100%}
+.followbar .row button{flex:1}
 .cutbar{position:absolute;left:10px;right:66px;bottom:52px;display:flex;align-items:center;gap:8px;background:rgba(20,25,21,.88);box-shadow:0 0 0 2px #0b0e0c;border-radius:2px;padding:4px 8px;font-family:var(--pix);font-size:11px}
 .cutbar input{flex:1;min-width:0;accent-color:var(--grass)}
 .cutbar b{color:var(--teal);font-weight:normal;min-width:44px;text-align:right}
@@ -246,6 +252,10 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
       </div>
       <div class="map-modes" id="mapModes">
         <button data-mode="2d" class="on">Map</button><button data-mode="table">Tabletop 3D</button><button data-mode="free">Free cam</button>
+      </div>
+      <div class="followbar only-3d hidden" id="followBar">
+        <span class="fname" id="followName"></span><button data-fz="1.6" aria-label="Farther">−</button><button data-fz="0.62" aria-label="Closer">+</button><button data-fx aria-label="Stop following">✕</button>
+        <div class="row"><button data-fp="behind">Behind</button><button data-fp="front">Front</button><button data-fp="side">Side</button><button data-fp="top">Top</button><button data-fp="free">Free</button></div>
       </div>
       <div class="cutbar only-3d hidden" id="cutBar"><span>See inside</span><button id="cutDown" aria-label="Slice lower">▼</button><input type="range" id="cutRange" min="-64" max="320" step="1" value="320" aria-label="See inside: slice height"><button id="cutUp" aria-label="Slice higher">▲</button><b id="cutVal">Off</b></div>
       <div class="map-info" id="mapInfo"></div>
@@ -1251,15 +1261,61 @@ const enderGrid = items => { const slots = {}; for (const it of items || []) slo
 /* ---------- long-press on the map ---------- */
 async function mapSpotMenu(dim, x, y, z) {
   const buttons = [];
+  let schem = null;
+  if (canAll()) { try { const r = await api("/api/schematic"); if (r.ok) schem = await r.json(); } catch (e) {} }
   if (canDo("waypoint_add")) buttons.push({ key: "wp", label: "Drop a waypoint here", cls: "green" });
   if (isStaff()) buttons.push({ key: "ledger", label: "Who changed this area? (Ledger)" });
   if (canAll()) { buttons.push({ key: "pkg", label: "Care package here" }); buttons.push({ key: "wave", label: "Mob wave challenge here" }); }
+  if (schem) { buttons.push({ key: "schem", label: "Place schematic here" }); if (schem.undo) buttons.push({ key: "schemUndo", label: "Undo last schematic", cls: "red" }); }
   if (!buttons.length) return;
   const k = await choose(`${dimName(dim)} · ${x}, ${z}`, "", buttons);
   if (k === "wp") addWaypoint(dim, x, y, z, "");
   else if (k === "ledger") openLedger(dim, x, y, z);
   else if (k === "pkg") openBuilder("package", { name: "Care package", dim, x, y, z });
   else if (k === "wave") openBuilder("wave", { name: "", dim, x, y, z });
+  else if (k === "schem") placeSchematic(dim, x, y, z, schem);
+  else if (k === "schemUndo") {
+    if (await choose("Undo the last schematic?", "Puts back the blocks that were there before.", [{ key: "yes", label: "Undo", cls: "red" }]) === "yes") action({ action: "schematic_undo" });
+  }
+}
+
+/* ---------- schematic placer (.nbt structure files) ---------- */
+function pickFile(accept) { // must be called straight from a tap
+  return new Promise(resolve => {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = accept; inp.style.display = "none";
+    inp.onchange = () => { resolve(inp.files[0] || null); inp.remove(); };
+    document.body.appendChild(inp); inp.click();
+  });
+}
+async function placeSchematic(dim, x, y, z, status) {
+  let info = null;
+  if (status?.ready) {
+    const k = await choose("Place a schematic", `Ready: ${status.name}`, [{ key: "use", label: "Use " + status.name, cls: "green" }, { key: "new", label: "Upload a different .nbt file" }]);
+    if (!k) return;
+    if (k === "use") info = { name: status.name };
+  }
+  if (!info) {
+    if (!status?.ready) {
+      const k = await choose("Place a schematic", "Pick a .nbt structure file (from a structure block, Create, or a build site). .schem and .litematic files aren't supported.", [{ key: "go", label: "Choose .nbt file…", cls: "green" }]);
+      if (!k) return;
+    }
+    const file = await pickFile(".nbt,application/octet-stream");
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { toast("That file is over 8 MB"); return; }
+    toast("Uploading…");
+    try {
+      const res = await fetch("/api/schematic", { method: "POST", headers: { "X-Watch-Token": TOKEN, "X-File-Name": file.name }, body: file });
+      const d = await res.json();
+      if (!res.ok) { toast(d.error || "Couldn't read that file"); return; }
+      info = d;
+    } catch (e) { toast("Upload failed"); return; }
+  }
+  const size = info.x ? ` · ${info.x}×${info.y}×${info.z}${info.blocks ? ", " + info.blocks.toLocaleString() + " blocks" : ""}` : "";
+  const rot = await choose(`Place ${info.name}`, `Its corner goes at ${x}, ${y}, ${z}${size}. Blocks there now get replaced (you can undo).`,
+    [{ key: "0", label: "Place it", cls: "green" }, { key: "90", label: "Turned 90°" }, { key: "180", label: "Turned 180°" }, { key: "270", label: "Turned 270°" }]);
+  if (rot == null || rot === "") return;
+  action({ action: "schematic_place", dim, x, y, z, rot: +rot });
 }
 
 /* ---------- Ledger: who changed this area ---------- */
@@ -2383,7 +2439,8 @@ const M3 = {
   table: { tx: 0, ty: 64, tz: 0, dist: 160, yaw: 0, pitch: 0.96, spin: 0, pitchTo: null },
   free: { x: 0, y: 100, z: 0, yaw: 0, pitch: -0.5, speed: 1 },
   syncedX: null, syncedZ: null, syncedDim: null, followName: null, followLast: null,
-  keys: new Set(), joy: null, vert: 0, markers: new Map(), hint: {}
+  keys: new Set(), joy: null, vert: 0, markers: new Map(), hint: {},
+  fol: { preset: "behind", dist: 6, yawOff: 0, pitch: 0.3 }, under: false, underY: 0
 };
 const readCanvas = document.createElement("canvas"); readCanvas.width = readCanvas.height = TILE;
 const readCtx = readCanvas.getContext("2d", { willReadFrequently: true });
@@ -2449,6 +2506,7 @@ async function setMapMode(m) {
       : "Left thumb: move · drag on the right: look around · ▲▼ fly up/down (WASD + mouse on a computer)");
   }
   rbApplyToggle();
+  renderFollowBar();
   resize3d();
 }
 $("#mapModes").addEventListener("click", e => { const b = e.target.closest("[data-mode]"); if (b) setMapMode(b.dataset.mode); });
@@ -2469,10 +2527,16 @@ function kick3d() {
 /** The 2D code moved the map (spawn chip, "show on map", dimension pick…): move the 3D camera there too. */
 function sync3dFromView() {
   if (!M3.renderer) return;
-  if (follow !== M3.followName) { // a player was just picked to follow
+  if (follow !== M3.followName) { // a player was just picked to follow (or let go)
+    const was = M3.followName;
     M3.followName = follow; M3.followLast = null;
     const p = follow && findPlayer(follow);
-    if (p) { if (p.dim !== view.dim) setDim(p.dim); jump3d(p.x, p.z, p.y); }
+    if (p) {
+      if (p.dim !== view.dim) setDim(p.dim);
+      M3.fol = { preset: "behind", dist: 6, yawOff: 0, pitch: 0.3 }; // a new player: start behind them
+      M3.table.tx = p.x; M3.table.tz = p.z; M3.table.ty = p.y + 1.5;
+    } else if (was) endFollow3d();
+    renderFollowBar();
   } else if (!follow && (view.cx !== M3.syncedX || view.cz !== M3.syncedZ || view.dim !== M3.syncedDim)) {
     jump3d(view.cx, view.cz);
   }
@@ -2532,7 +2596,7 @@ function groundAhead() {
 }
 function updateCamera3d() {
   const c = M3.camera;
-  if (mapMode === "table") {
+  if (mapMode === "table" || follow) {
     const p = tablePose(), t = M3.table;
     c.position.set(p.x, p.y, p.z); c.lookAt(t.tx, t.ty, t.tz);
   } else {
@@ -2542,7 +2606,7 @@ function updateCamera3d() {
 }
 /** The point the view is centered on, used to pick which tiles to load. */
 function focus3d() {
-  if (mapMode === "table") {
+  if (mapMode === "table" || follow) {
     const t = M3.table;
     return { x: t.tx, z: t.tz, radius: Math.min(900, Math.max(300, t.dist * 2.4)), near: Math.min(240, Math.max(110, t.dist * 0.9)) };
   }
@@ -2558,8 +2622,18 @@ function frame3d(ts) {
   if (mapMode === "2d" || currentView !== "map" || !M3.renderer) return;
   const dt = M3.last ? Math.min(0.1, (ts - M3.last) / 1000) : 0.016; M3.last = ts;
   let moving = controls3d(dt);
-  moving = follow3d() || moving;
+  moving = followCam3d(dt) || moving;
   updateCamera3d();
+  // underground? (the camera in Free cam, or the player being followed)
+  {
+    const c = M3.camera.position, ux = follow ? M3.table.tx : c.x, uz = follow ? M3.table.tz : c.z, uy = follow ? M3.table.ty - 1.5 : c.y;
+    const g = groundY(ux, uz);
+    const under = (follow || mapMode === "free") && g != null && uy < g - 3;
+    if (under !== M3.under || (under && Math.abs(uy - M3.underY) > 1)) { M3.dirty = true; }
+    M3.under = under; M3.underY = uy;
+    RB.band = under ? Math.round(uy / 8) * 8 : null;
+    if (!RB.on || !RB.group) M3.terrain.visible = !under;
+  }
   const fc = focus3d();
   tiles3d(fc);
   rb3d(fc);
@@ -2567,13 +2641,13 @@ function frame3d(ts) {
   moving = rbFigures(dt) || moving;
   moving = markers3d(dt) || moving;
   // keep the 2D map in step, so switching back shows the same place
-  const cx = mapMode === "table" ? M3.table.tx : fc.x, cz = mapMode === "table" ? M3.table.tz : fc.z;
+  const cx = mapMode === "table" || follow ? M3.table.tx : fc.x, cz = mapMode === "table" || follow ? M3.table.tz : fc.z;
   M3.syncedX = view.cx = cx; M3.syncedZ = view.cz = cz;
   if (M3.dirty || moving) {
-    const sky = view.dim.includes("nether") ? 0x2b0f0c : view.dim.includes("end") ? 0x14111c : mapMode === "free" ? 0x9cc2ea : 0x0f1310;
+    const sky = M3.under ? 0x0b0d0c : view.dim.includes("nether") ? 0x2b0f0c : view.dim.includes("end") ? 0x14111c : mapMode === "free" ? 0x9cc2ea : 0x0f1310;
     M3.scene.background = new M3.T.Color(sky);
     M3.scene.fog.color.setHex(sky);
-    const camDist = mapMode === "table" ? M3.table.dist : 0;
+    const camDist = mapMode === "table" || follow ? M3.table.dist : 0;
     M3.scene.fog.near = camDist + fc.radius * 0.55; M3.scene.fog.far = camDist + fc.radius * 1.05;
     M3.camera.far = camDist + fc.radius * 1.6; M3.camera.updateProjectionMatrix();
     M3.renderer.render(M3.scene, M3.camera);
@@ -2608,14 +2682,14 @@ function controls3d(dt) {
     if (has("Space") || has("KeyE")) my += 1;
     if (has("ShiftLeft") || has("ShiftRight") || has("KeyQ")) my -= 1;
     if (M3.joy) { mx += M3.joy.vx; mz += M3.joy.vy; }
+    if ((mx || mz || my) && follow) { follow = null; renderChips(); drawMap(); } // flying off on your own
     if (mx || mz || my) {
       const sp = 24 * f.speed * dt * (has("ControlLeft") ? 3 : 1);
       const s = Math.sin(f.yaw), c = Math.cos(f.yaw);
       f.x += (-s * mz + c * mx) * sp; f.z += (-c * mz - s * mx) * sp; f.y = Math.min(800, f.y + my * sp);
       moved = true;
     }
-    const g = groundY(f.x, f.z);
-    if (g != null && f.y < g + 1.6) { f.y = g + 1.6; moved = true; }
+    if (f.y < -80) { f.y = -80; moved = true; } // free to go underground, just not out of the world
   } else {
     const t = M3.table;
     let px = 0, pz = 0, rot = 0;
@@ -2625,6 +2699,7 @@ function controls3d(dt) {
     if (has("KeyA") || has("ArrowLeft")) px -= 1;
     if (has("KeyQ")) rot += 1;
     if (has("KeyE")) rot -= 1;
+    if ((px || pz) && follow) { follow = null; renderChips(); drawMap(); }
     if (px || pz) { pan3d(px * t.dist * dt * 1.2, pz * t.dist * dt * 1.2, true); moved = true; }
     if (rot) { t.yaw += rot * dt * 1.6; moved = true; }
     if (t.spin) { // the ⟲ ⟳ buttons turn smoothly
@@ -2636,7 +2711,7 @@ function controls3d(dt) {
       t.pitch += step; if (Math.abs(d) < 1e-3) t.pitchTo = null; moved = true;
     }
     const g = groundY(t.tx, t.tz);
-    if (g != null && Math.abs(g - t.ty) > 0.05) { t.ty += (g - t.ty) * Math.min(1, dt * 6); moved = true; }
+    if (!follow && g != null && Math.abs(g - t.ty) > 0.05) { t.ty += (g - t.ty) * Math.min(1, dt * 6); moved = true; }
   }
   return moved;
 }
@@ -2646,7 +2721,61 @@ function pan3d(dx, dz, flat) {
   if (!flat) dz /= Math.max(0.35, Math.sin(t.pitch)); // ground looks squashed when tilted
   t.tx += c * dx + s * dz; t.tz += -s * dx + c * dz;
 }
-function zoom3d(factor) { const t = M3.table; t.dist = Math.min(900, Math.max(8, t.dist * factor)); kick3d(); }
+function zoom3d(factor) {
+  if (follow) { M3.fol.dist = Math.min(80, Math.max(1.5, M3.fol.dist * factor)); kick3d(); return; }
+  const t = M3.table; t.dist = Math.min(900, Math.max(8, t.dist * factor)); kick3d();
+}
+
+/** Where the followed player is right now (smooth live position when real blocks are on). */
+function followTarget() {
+  const e = RB.on && RB.live.ents.get("p:" + follow), pose = e && rbPose(e);
+  if (pose) return { x: pose.x, y: pose.y, z: pose.z, body: pose.body };
+  const p = findPlayer(follow), m = M3.markers.get("p:" + follow);
+  if (!p || p.dim !== view.dim) return null;
+  return m ? { x: m.cur.x, y: m.cur.y - 1.9, z: m.cur.z, body: p.yaw || 0 } : { x: p.x, y: p.y, z: p.z, body: p.yaw || 0 };
+}
+const FOLLOW_YAW = { behind: Math.PI, front: 0, side: Math.PI / 2, top: Math.PI };
+/** The follow camera: orbits the player, turning with them unless it's on Free. */
+function followCam3d(dt) {
+  if (!follow) return false;
+  const p = followTarget();
+  if (!p) return false;
+  const t = M3.table, f = M3.fol;
+  t.tx = p.x; t.tz = p.z; t.ty = p.y + 1.5;
+  t.dist = f.dist;
+  const want = (f.preset === "free" ? 0 : FOLLOW_YAW[f.preset] - p.body * Math.PI / 180) + f.yawOff;
+  let d = ((want - t.yaw) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+  t.yaw += d * Math.min(1, dt * 6);
+  const pitch = f.preset === "top" ? Math.min(1.53, 1.45 + f.pitch - 0.3) : f.pitch;
+  t.pitch += (pitch - t.pitch) * Math.min(1, dt * 6);
+  return true;
+}
+/** Stopped following: Free cam carries on from where the follow camera was. */
+function endFollow3d() {
+  if (mapMode === "free" && M3.camera) {
+    const c = M3.camera.position, f = M3.free, t = M3.table;
+    f.x = c.x; f.y = c.y; f.z = c.z; f.yaw = t.yaw; f.pitch = -Math.min(1.4, t.pitch);
+  }
+}
+function renderFollowBar() {
+  const on = !!follow && mapMode !== "2d";
+  $("#followBar").classList.toggle("hidden", !on);
+  if (!on) return;
+  $("#followName").textContent = "Following " + follow;
+  document.querySelectorAll("#followBar [data-fp]").forEach(b => b.classList.toggle("on", b.dataset.fp === M3.fol.preset));
+}
+$("#followBar").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const f = M3.fol;
+  if (b.dataset.fp) {
+    f.preset = b.dataset.fp; f.yawOff = 0;
+    f.pitch = f.preset === "top" ? 0.3 : 0.3;
+    if (f.preset === "top" && f.dist < 10) f.dist = 14;
+    if (f.preset === "free") f.yawOff = M3.table.yaw; // stay where the camera is now
+  } else if (b.dataset.fz) f.dist = Math.min(80, Math.max(1.5, f.dist * +b.dataset.fz));
+  else if (b.dataset.fx != null) { follow = null; renderChips(); drawMap(); return; }
+  renderFollowBar(); kick3d();
+});
 
 /** Keep a followed player in view: the camera moves along with them. */
 function follow3d() {
@@ -2952,7 +3081,7 @@ const RB = {
   assets: new Map(), assetQueue: [], assetBusy: 0, states: new Map(), group: null, figures: new Map(),
   atlas: null, actx: null, atex: null, slots: new Map(), nextSlot: 0, atlasDirtyAt: 0, mats: null,
   live: { at: 0, busy: false, ents: new Map() }, maskU: null, maskData: null, maskN: 0, colormaps: null,
-  center: null, loadedCount: 0, wantedCount: 0, skinTex: new Map()
+  center: null, loadedCount: 0, wantedCount: 0, skinTex: new Map(), band: null
 };
 const RB_AIR = new Set(["minecraft:air", "minecraft:cave_air", "minecraft:void_air"]);
 const RB_SLOT = 18, RB_ATLAS = 2048, RB_PER_ROW = Math.floor(RB_ATLAS / RB_SLOT);
@@ -3300,7 +3429,7 @@ function rb3d(fc) {
   rbInit();
   const now = Date.now(), R = RB.radius;
   let fx = fc.x, fz = fc.z;
-  if (mapMode === "free") { // keep the detailed area around the camera, a little ahead of it
+  if (mapMode === "free" && !follow) { // keep the detailed area around the camera, a little ahead of it
     const f = M3.free, d = freeForward(), hor = Math.hypot(d.x, d.z) || 1;
     fx = f.x + d.x / hor * 24; fz = f.z + d.z / hor * 24;
   }
@@ -3334,7 +3463,7 @@ function rb3d(fc) {
       const n = RB.chunks.get(c.dim + "|" + (c.cx + dx) + "|" + (c.cz + dz));
       return n && n.wanted && n.at === 0;
     })) continue;
-    const key = c.ver + ":" + c.nb + ":" + RB.cutVer;
+    const key = c.ver + ":" + c.nb + ":" + RB.cutVer + ":" + RB.band;
     if (c.built === key) continue;
     rbBuild(c); c.built = key; M3.dirty = true;
   }
@@ -3351,7 +3480,7 @@ function rb3d(fc) {
   }
   if (changed) { RB.center = ccx + "," + ccz; RB.maskU.rbOrigin.value.set(ox, oz); RB.maskU.rbMask.value.needsUpdate = true; M3.dirty = true; }
   RB.maskU.rbOn.value = 1;
-  M3.terrain.visible = RB.cut == null; // with the slice on, only the real blocks show
+  M3.terrain.visible = RB.cut == null && !M3.under; // with the slice on, or underground, only the real blocks show
 }
 function rbDropMeshes(c) {
   for (const m of c.meshes) { RB.group.remove(m); m.geometry.dispose(); }
@@ -3429,9 +3558,14 @@ const RB_AO = [1, 0.82, 0.67, 0.52];
 
 function rbBuild(c) {
   rbDropMeshes(c);
-  const cut = rbCut(c.dim), surf = rbSurface(c, cut);
-  const yHi = surf.hi;
-  const yLo = Math.max(c.bottom, surf.lo - (cut != null ? 2 : 24));
+  const cut = rbCut(c.dim);
+  let yHi, yLo;
+  if (RB.band != null) { // underground: the blocks around that height, so caves and tunnels show
+    yHi = Math.min(c.top, RB.band + 20, cut ?? 1e9); yLo = Math.max(c.bottom, RB.band - 36);
+  } else {
+    const surf = rbSurface(c, cut);
+    yHi = surf.hi; yLo = Math.max(c.bottom, surf.lo - (cut != null ? 2 : 24));
+  }
   if (yHi < yLo) return;
   const nbs = {}; // neighbour chunks, for faces along the edges
   for (const [k, dx, dz] of [["w", -1, 0], ["e", 1, 0], ["n", 0, -1], ["s", 0, 1]]) {
@@ -3823,7 +3957,7 @@ canvas3.addEventListener("pointerdown", e => {
       const hit = terrainAt(g.sx, g.sy);
       if (hit) mapSpotMenu(view.dim, Math.floor(hit.x - 1e-3), Math.round(hit.y), Math.floor(hit.z - 1e-3));
     }, 550);
-  } else if (drags.length === 2 && mapMode === "table") g3 = { two: twoInfo(), moved: 99 };
+  } else if (drags.length === 2 && (mapMode === "table" || follow)) g3 = { two: twoInfo(), moved: 99 };
   else g3 = { moved: 99 };
 });
 canvas3.addEventListener("pointermove", e => {
@@ -3841,7 +3975,18 @@ canvas3.addEventListener("pointermove", e => {
   const drags = [...p3.values()].filter(p => p.role === "drag");
   if (g3 && !g3.two) g3.moved += Math.abs(dx) + Math.abs(dy);
   if (g3 && g3.moved <= 6) return;
-  if (mapMode === "table") {
+  if (follow) { // orbit the followed player
+    const fo = M3.fol;
+    if (drags.length === 2 && g3?.two) {
+      const now = twoInfo(), was = g3.two;
+      fo.dist = Math.min(80, Math.max(1.5, fo.dist * was.d / now.d));
+      let da = now.ang - was.ang; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
+      fo.yawOff += da; g3.two = now;
+    } else if (drags.length === 1) {
+      fo.yawOff += dx * 0.008;
+      fo.pitch = Math.min(1.45, Math.max(-0.6, fo.pitch + dy * 0.006));
+    }
+  } else if (mapMode === "table") {
     const t = M3.table;
     if (drags.length === 2 && g3?.two) {
       const now = twoInfo(), was = g3.two;

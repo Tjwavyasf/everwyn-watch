@@ -58,6 +58,12 @@ final class AdminActions {
                 yield "Automatic mob protection settings saved";
             }
             case "crash_delete" -> s.crashes.delete(str(req, "id"));
+            case "schematic_place" -> {
+                ServerWorld w = world(server, str(req, "dim"));
+                if (w == null) throw new IllegalArgumentException("Unknown world");
+                yield s.schematics.place(w, (int) num(req, "x"), (int) num(req, "y"), (int) num(req, "z"), (int) num(req, "rot"));
+            }
+            case "schematic_undo" -> s.schematics.undoLast();
             case "crash_new_key" -> {
                 s.cfg.crashKey = WatchConfig.newCrashKey();
                 s.cfg.save();

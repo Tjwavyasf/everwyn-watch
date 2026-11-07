@@ -2,6 +2,11 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.12.0 — 2026-11-07 (branch `everwyn-follow-cam`, based on 1.11.0)
+- Follow camera in 3D (both modes): picking a player locks an orbit camera on them (smooth live position). Follow bar: Behind / Front / Side / Top / Free, −/+ distance, ✕ stop. One-finger drag orbits, pinch zooms, twist turns. Moving in Free cam (joystick/WASD) or panning in Tabletop stops following; Free cam continues from the follow camera's spot.
+- Underground: Free cam no longer stops at the ground (only at y −80). When the camera, or the followed player, is more than 3 blocks under the surface, real-block chunks are drawn as a band around that height (−36…+20, steps of 8) instead of the surface, the simple far terrain is hidden and the sky goes dark. Rock between the camera and the player is see-through (back faces).
+- Schematic placer: `SchematicPlacer`, `/api/schematic` (POST upload of a .nbt structure, max 8 MB and 200,000 blocks of space; GET status), actions `schematic_place` (dim, x, y, z, rot 0/90/180/270; refuses if any chunk in the area isn't loaded) and `schematic_undo` (last 3 placements, restores blocks and block-entity data). App: map hold menu → Place schematic here / Undo last schematic. Admins only.
+
 ## 1.11.0 — 2026-11-07 (branch `everwyn-crash-reports`, based on 1.10.0)
 Crash reports from players' modpacks.
 - New subproject `crash-reporter/` (Everwyn Crash Reporter 1.0.0): a client-only Fabric mod with no Minecraft code (needs only Fabric Loader, `preLaunch` entrypoint). Sends new `crash-reports/crash-*.txt` from a shutdown hook when the game crashes; on the next launch sends anything unsent: crash reports, `hs_err_pid*.log` (Java crashes) and archived `logs/*.log.gz` that show a failed start (incompatible mods, mixin errors…). Settings in `config/everwyn-crash-reporter.properties` (enabled, url, key, pack); sent files remembered in `config/everwyn-crash-reporter-sent.txt`; first run only sends the last 3 days; max 3 MB per report (end of file kept).
