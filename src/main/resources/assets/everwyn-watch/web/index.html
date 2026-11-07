@@ -312,6 +312,8 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
         <h2 class="sec">Automatic mob protection</h2>
         <p class="hint">Every 10 seconds, limits excess hostile mobs in loaded chunks, away from players. Named, persistent, and challenge mobs stay. Low TPS for a full minute temporarily tightens the limits.</p>
         <div id="mobGuardBox" class="card sub">Loading mob protection…</div>
+        <h2 class="sec">Crash reports</h2>
+        <div id="crashBox"><div class="card sub">Loading…</div></div>
         <h2 class="sec">Lag finder</h2>
         <div class="actions"><button class="btn gold" id="lagBtn" style="grid-column:1/-1">Find what's causing lag</button></div>
         <div id="lagOut"></div>
@@ -505,7 +507,7 @@ function showView(v) {
   if (v === "map") { resizeMap(); pollMobsOnce(); }
   if (v === "deaths") loadDeaths();
   if (v === "players") loadBoard();
-  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); loadRestartStatus(); }
+  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); loadRestartStatus(); loadCrashes(); }
 }
 $("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
 
@@ -1693,6 +1695,94 @@ $("#adminBox").addEventListener("click", async e => {
   const c = e.target.closest("[data-copy]");
   if (c) { const inp = $("#" + c.dataset.copy); inp.select(); try { await navigator.clipboard.writeText(inp.value); toast("Copied"); } catch (err) { toast("Press and hold the link to copy it"); } }
 });
+/* ---------- crash reports (players' games via the Everwyn Crash Reporter mod, and this server) ---------- */
+let crashData = null, crashShown = 15;
+async function loadCrashes() {
+  if (!isStaff()) { $("#crashBox").innerHTML = `<div class="card sub">Crash reports are for staff.</div>`; return; }
+  try {
+    const res = await api("/api/crashes");
+    if (!res.ok) throw Error();
+    crashData = await res.json(); renderCrashes();
+  } catch (e) { $("#crashBox").innerHTML = `<div class="card sub">Couldn't load crash reports.</div>`; }
+}
+const CRASH_KIND = { crash: "Game crash", java: "Java crash", log: "Didn't start" };
+function crashCard(r, i) {
+  const who = r.source === "server" ? "This server" : (r.player || "A player");
+  const avatarHtml = r.source === "server" ? `<div class="avatar" style="background:#7a2b27;color:#fff">S</div>` : avatar(r.player || "?", 40);
+  return `<div class="card" data-crash="${i}" style="cursor:pointer">
+    <div class="prow">${avatarHtml}<div class="pmain">
+      <div class="pname">${esc(who)} <span class="tag">${esc(CRASH_KIND[r.kind] || r.kind)}</span>${r.pack ? `<span class="tag">${esc(r.pack)}</span>` : ""}</div>
+      <div class="sub">${ago(r.time)}${r.mods ? ` · ${esc(r.mods)} mods` : ""}${r.description ? ` · ${esc(r.description)}` : ""}</div></div></div>
+    ${r.cause ? `<div class="note bad" style="margin-bottom:0;word-break:break-word">${esc(r.cause)}</div>` : ""}
+    ${r.problems?.length ? `<div class="note warn" style="margin-bottom:0">${r.problems.map(esc).join("<br>")}</div>` : ""}
+    ${r.mentions?.length ? `<div class="sub" style="margin-top:8px;white-space:normal">${r.kind === "java" ? "Crashed in" : "Mods in the error"}: <b>${r.mentions.map(esc).join(", ")}</b></div>` : ""}
+  </div>`;
+}
+function renderCrashes() {
+  const d = crashData; if (!d) return;
+  const reports = d.reports || [];
+  let h = "";
+  if (d.key) {
+    const cfgText = `enabled=true\nurl=${location.origin}\nkey=${d.key}\npack=`;
+    h += `<details class="card"${reports.length ? "" : " open"}><summary class="pix" style="cursor:pointer;font-size:12px">Set up for players</summary>
+      <p class="hint">Players need the <b>Everwyn Crash Reporter</b> mod in their modpack. When their game crashes, it sends the crash report here (or on their next launch if it couldn't). It's tiny, only needs Fabric Loader, and only sends crash reports.</p>
+      <p class="hint"><b>1.</b> Put the mod in your modpack's <b>mods</b> folder:</p>
+      ${d.reporter ? `<div class="actions"><a class="btn gold" href="/crash-reporter.jar" download="everwyn-crash-reporter.jar" style="grid-column:1/-1;text-align:center;text-decoration:none;line-height:22px;color:var(--text)">Download crash reporter mod</a></div>` : `<div class="note warn">This server's Everwyn Watch build doesn't include the reporter jar.</div>`}
+      <p class="hint"><b>2.</b> Add a file <b>config/everwyn-crash-reporter.properties</b> to the modpack with this inside (put your pack's name after <b>pack=</b> if you like):</p>
+      <textarea class="bfield" id="crashCfg" readonly rows="4" style="width:100%;font-family:ui-monospace,monospace;font-size:12px;color:var(--text);background:#0b0e0c;border:0;padding:8px;resize:none">${esc(cfgText)}</textarea>
+      <div class="actions"><button class="btn" id="crashCopy">Copy</button><button class="btn red" id="crashNewKey">New key</button></div>
+      <p class="hint">Players: crash reports include their Minecraft name, PC specs and the mod list. Let them know, and they can turn it off with <b>enabled=false</b>.</p>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="crashNotify"${state?.notify?.crash !== false ? " checked" : ""}> Phone/Discord alert when someone crashes</label>
+    </details>`;
+  }
+  if (!reports.length) h += `<div class="card sub">No crash reports yet.</div>`;
+  else {
+    h += reports.slice(0, crashShown).map(crashCard).join("");
+    if (reports.length > crashShown) h += `<button class="btn more" id="crashMore" style="width:100%">Show more (${reports.length - crashShown} left)</button>`;
+    if (canAll()) h += `<div class="actions" style="margin-top:8px"><button class="btn small red" id="crashClear" style="grid-column:1/-1">Delete all crash reports</button></div>`;
+  }
+  $("#crashBox").innerHTML = h;
+}
+$("#crashBox").addEventListener("click", async e => {
+  const t = e.target;
+  if (t.id === "crashCopy") { const a = $("#crashCfg"); a.select(); try { await navigator.clipboard.writeText(a.value); toast("Copied"); } catch (err) { toast("Press and hold to copy"); } return; }
+  if (t.id === "crashNewKey") {
+    if (await choose("Make a new crash key?", "The old one stops working, so you'll need to update the file in the modpack.", [{ key: "yes", label: "New key", cls: "red" }]) !== "yes") return;
+    if (await action({ action: "crash_new_key" })) loadCrashes();
+    return;
+  }
+  if (t.id === "crashNotify") { await action({ action: "crash_notify", on: t.checked }); return; }
+  if (t.id === "crashMore") { crashShown += 15; renderCrashes(); return; }
+  if (t.id === "crashClear") {
+    if (await choose("Delete all crash reports?", "This can't be undone.", [{ key: "yes", label: "Delete all", cls: "red" }]) !== "yes") return;
+    if (await action({ action: "crash_delete", id: "all" })) loadCrashes();
+    return;
+  }
+  const card = t.closest("[data-crash]");
+  if (card) openCrash(crashData.reports[+card.dataset.crash]);
+});
+async function openCrash(r) {
+  const who = r.source === "server" ? "This server" : (r.player || "A player");
+  openPanel(`<div class="pmain"><div class="pname">${esc(who)}</div><div class="sub">${esc(CRASH_KIND[r.kind] || r.kind)} · ${ago(r.time)}${r.file ? " · " + esc(r.file) : ""}</div></div>`,
+    `<div class="card sub">Loading…</div>`);
+  let text = "";
+  try { const res = await api("/api/crash?id=" + encodeURIComponent(r.id)); text = res.ok ? await res.text() : ""; } catch (e) {}
+  const body = $("#sheetBody");
+  body.innerHTML = `${r.cause ? `<div class="note bad" style="word-break:break-word">${esc(r.cause)}</div>` : ""}
+    ${r.mentions?.length ? `<p class="hint">Mods in the error: <b>${r.mentions.map(esc).join(", ")}</b>. Often one of these caused it; check it's the right version for 1.20.1 and that its dependencies are installed.</p>` : ""}
+    <div class="actions"><button class="btn" id="crashCopyAll">Copy full report</button><button class="btn" id="crashSave">Save as file</button>${canAll() ? `<button class="btn red" id="crashDel" style="grid-column:1/-1">Delete</button>` : ""}</div>
+    <pre style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;background:#0b0e0c;padding:10px;border-radius:2px;max-height:none;overflow:auto">${esc(text || "Couldn't load the report.")}</pre>`;
+  $("#crashCopyAll").onclick = async () => { try { await navigator.clipboard.writeText(text); toast("Copied"); } catch (e) { toast("Couldn't copy"); } };
+  $("#crashSave").onclick = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    a.download = (r.player || "server") + "-" + (r.file || r.id + ".txt").replace(/\.gz$/, "");
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  const del = $("#crashDel");
+  if (del) del.onclick = async () => { if (await action({ action: "crash_delete", id: r.id })) { closeSheet(); loadCrashes(); } };
+}
+
 function renderServerTab() {
   if (!state) return;
   const m = state.map;

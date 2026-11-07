@@ -72,6 +72,11 @@ public class WatchConfig {
     /** If TPS remains below this for a minute, tighten limits temporarily. */
     public double mobGuardEmergencyTps = 14.0;
 
+    /** Key the Everwyn Crash Reporter mod (in players' modpacks) uses to send crash reports. Not the app password. */
+    public String crashKey = "";
+    /** Push notification / Discord message when someone's game crashes. */
+    public boolean notifyCrash = true;
+
     /** Danger: only enable if your host is CONFIRMED to restart a cleanly stopped server. */
     public boolean hostRestartsOnStop = false;
 
@@ -111,6 +116,7 @@ public class WatchConfig {
         }
         if (cfg == null) cfg = new WatchConfig();
         if (cfg.token == null || cfg.token.isBlank()) cfg.token = randomToken();
+        if (cfg.crashKey == null || cfg.crashKey.isBlank()) cfg.crashKey = newCrashKey();
         if (cfg.ntfyTopic == null || cfg.ntfyTopic.isBlank()) cfg.ntfyTopic = "everwyn-" + randomToken().substring(0, 16).toLowerCase();
         cfg.path = path;
         cfg.save(path);
@@ -130,6 +136,10 @@ public class WatchConfig {
         } catch (IOException e) {
             EverwynWatch.LOG.error("Could not save {}", path, e);
         }
+    }
+
+    static String newCrashKey() {
+        return "crash-" + randomToken().substring(0, 20).toLowerCase();
     }
 
     private static String randomToken() {

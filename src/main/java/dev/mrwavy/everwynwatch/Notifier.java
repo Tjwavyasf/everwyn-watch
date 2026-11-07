@@ -30,6 +30,7 @@ final class Notifier {
                 case "challenge" -> cfg.notifyChallenge;
                 case "lag" -> cfg.notifyLag;
                 case "server" -> cfg.notifyServer;
+                case "crash" -> cfg.notifyCrash;
                 default -> false;
             };
             if (!on) return;

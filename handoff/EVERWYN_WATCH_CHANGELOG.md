@@ -2,6 +2,14 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.11.0 — 2026-11-07 (branch `everwyn-crash-reports`, based on 1.10.0)
+Crash reports from players' modpacks.
+- New subproject `crash-reporter/` (Everwyn Crash Reporter 1.0.0): a client-only Fabric mod with no Minecraft code (needs only Fabric Loader, `preLaunch` entrypoint). Sends new `crash-reports/crash-*.txt` from a shutdown hook when the game crashes; on the next launch sends anything unsent: crash reports, `hs_err_pid*.log` (Java crashes) and archived `logs/*.log.gz` that show a failed start (incompatible mods, mixin errors…). Settings in `config/everwyn-crash-reporter.properties` (enabled, url, key, pack); sent files remembered in `config/everwyn-crash-reporter-sent.txt`; first run only sends the last 3 days; max 3 MB per report (end of file kept).
+- Server: `POST /crash` (needs `X-Crash-Key` = new config `crashKey`, generated automatically; not the app password; 20 per hour per address; 4 MB max), `CrashReports` stores them in `config/everwyn-watch-crashes/` (last 300) with a summary: description, root cause, Fabric's incompatible-mods lines, the non-Minecraft packages in the stack trace, and known graphics-driver files for Java crashes. The server's own `crash-reports/` (last 14 days) are imported at start. Feed event, ntfy (`notifyCrash`) and Discord alert.
+- `/crash-reporter.jar` (the reporter is packed inside the server jar by the build), `/api/crashes`, `/api/crash?id=`, actions `crash_delete`, `crash_new_key`, `crash_notify`.
+- App: Server tab › Crash reports, with a setup card (download, config file to copy, new key, alert toggle) and the full report view (copy, save, delete).
+- Build: `settings.gradle` includes `crash-reporter`; root `processResources` packs its jar; the workflow also uploads `everwyn-crash-reporter.jar`.
+
 ## 1.10.0 — 2026-11-07 (branch `everwyn-real-blocks`, based on 1.9.3)
 Real blocks in the 3D view ("look at the world like a god"):
 - Server: `ChunkExport` + `/api/chunk` (every block of a chunk, palette + base64 indexes, gzipped, plus surface biome per 4x4 column with temperature/downfall/colors). Loaded chunks: sections copied on the server thread, encoded on a web thread; others read from region files. Never loads chunks; 40 chunk reads/s max, short cache.

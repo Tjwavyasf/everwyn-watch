@@ -126,6 +126,7 @@ public final class Snapshotter {
         n.addProperty("death", cfg.notifyDeath);
         n.addProperty("challenge", cfg.notifyChallenge);
         n.addProperty("lag", cfg.notifyLag);
+        n.addProperty("crash", cfg.notifyCrash);
         n.addProperty("server", cfg.notifyServer);
         root.add("notify", n);
 

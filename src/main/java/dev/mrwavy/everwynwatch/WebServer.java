@@ -67,6 +67,17 @@ public final class WebServer {
             boolean get = "GET".equals(ex.getRequestMethod());
             if (path.equals("/icon") && get) {
                 sendImage(ex, IconRenderer.icon(query(ex).getOrDefault("id", "")), 604800);
+            } else if (path.equals("/crash") && "POST".equals(ex.getRequestMethod())) {
+                receiveCrash(ex);
+            } else if (path.equals("/crash-reporter.jar") && get) {
+                try (InputStream in = WebServer.class.getResourceAsStream("/assets/everwyn-watch/crash-reporter.jar")) {
+                    if (in == null) {
+                        send(ex, 404, "text/plain", "The crash reporter isn't included in this build.");
+                    } else {
+                        ex.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"everwyn-crash-reporter.jar\"");
+                        send(ex, 200, "application/java-archive", in.readAllBytes());
+                    }
+                }
             } else if (path.equals("/skin") && get) {
                 String u = query(ex).getOrDefault("u", "");
                 sendImage(ex, u.matches("[0-9a-fA-F-]{32,36}") ? Faces.skin(u) : null, 3600);
@@ -188,6 +199,18 @@ public final class WebServer {
                 } catch (ChunkExport.Busy b) {
                     sendJson(ex, 503, error("busy"));
                 }
+            }
+            case "/api/crashes" -> {
+                if (!staff) { sendJson(ex, 403, error("Only staff can see crash reports")); return; }
+                JsonObject o = new JsonObject();
+                o.add("reports", s.crashes.list());
+                if (admin) o.addProperty("key", s.cfg.crashKey);
+                o.addProperty("reporter", WebServer.class.getResource("/assets/everwyn-watch/crash-reporter.jar") != null);
+                sendJson(ex, 200, o.toString());
+            }
+            case "/api/crash" -> {
+                if (!staff) { sendJson(ex, 403, error("Only staff can see crash reports")); return; }
+                send(ex, 200, "text/plain; charset=utf-8", s.crashes.text(q.getOrDefault("id", "")));
             }
             case "/api/asset" -> {
                 // Block models, blockstates and textures (vanilla + mods) for the 3D view
@@ -430,6 +453,44 @@ public final class WebServer {
         o.addProperty("ok", false);
         o.addProperty("error", msg);
         return o.toString();
+    }
+
+    /** POST /crash from the Everwyn Crash Reporter mod in a player's modpack. */
+    private void receiveCrash(HttpExchange ex) throws IOException {
+        String key = ex.getRequestHeaders().getFirst("X-Crash-Key");
+        if (key == null || s.cfg.crashKey == null || s.cfg.crashKey.isBlank()
+                || !java.security.MessageDigest.isEqual(key.getBytes(StandardCharsets.UTF_8), s.cfg.crashKey.getBytes(StandardCharsets.UTF_8))) {
+            send(ex, 401, "text/plain", "Wrong crash key");
+            return;
+        }
+        byte[] body = ex.getRequestBody().readNBytes(4 * 1024 * 1024 + 1);
+        if (body.length > 4 * 1024 * 1024) {
+            send(ex, 413, "text/plain", "Too big");
+            return;
+        }
+        Map<String, String> q = query(ex);
+        String ip = ex.getRemoteAddress().getAddress().getHostAddress();
+        JsonObject added;
+        try {
+            added = s.crashes.addFromPlayer(ip, body, "gzip".equalsIgnoreCase(ex.getRequestHeaders().getFirst("Content-Encoding")),
+                    q.get("player"), q.get("kind"), q.get("file"), q.get("pack"), q.get("mods"));
+        } catch (IllegalStateException tooMany) {
+            send(ex, 429, "text/plain", tooMany.getMessage());
+            return;
+        } catch (Exception bad) {
+            send(ex, 400, "text/plain", "Couldn't read the report");
+            return;
+        }
+        if (added == null) {
+            send(ex, 409, "text/plain", "Already received");
+            return;
+        }
+        String who = added.get("player").getAsString().isEmpty() ? "A player" : added.get("player").getAsString();
+        String cause = added.get("cause").getAsString();
+        s.events.add("event", null, who + "'s game crashed" + (cause.isEmpty() ? "" : ": " + cause));
+        Notifier.send("crash", who + "'s game crashed", cause.isEmpty() ? "Open the app: Server tab > Crash reports" : cause, "boom");
+        Discord.send("server", ":boom: **" + Discord.clean(who) + "**'s game crashed" + (cause.isEmpty() ? "" : ": `" + Discord.clean(cause) + "`"), null, null);
+        send(ex, 200, "text/plain", "Thanks, the admins got it");
     }
 
     private static void sendJson(HttpExchange ex, int code, String json) throws IOException {

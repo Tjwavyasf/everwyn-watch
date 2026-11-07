@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+// The players' side: a tiny client mod with no Minecraft code, so it only needs Fabric Loader to build.
+version = '1.0.0'
+group = 'dev.mrwavy'
+base {
+    archivesName = 'everwyn-crash-reporter'
+}
+
+repositories {
+    maven { url = 'https://maven.fabricmc.net/' }
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'net.fabricmc:fabric-loader:0.15.11'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 17
+}

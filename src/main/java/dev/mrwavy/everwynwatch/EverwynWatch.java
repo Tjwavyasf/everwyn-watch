@@ -51,6 +51,7 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         s.trails = new Trails(cacheDir.resolve("trails.json"));
         s.perf = new PerfMonitor(config);
         s.mobGuard = new MobGuard(config);
+        s.crashes = new CrashReports(configDir.resolve("everwyn-watch-crashes"));
         IconRenderer.init(configDir);
 
         // Copy the inventory right before a player dies (before graves/drops take it).
@@ -126,6 +127,9 @@ public class EverwynWatch implements DedicatedServerModInitializer {
             s.server = server;
             VoiceBridge.server = server;
             s.vault = new DeathVault(server, config);
+            Thread crashImport = new Thread(s.crashes::importServerReports, "EverwynWatch-CrashImport");
+            crashImport.setDaemon(true);
+            crashImport.start();
             s.challenges = new Challenges(server, s.events, configDir.resolve("everwyn-watch-challenges.json"));
             s.ledger = new LedgerBridge(server);
             s.boards = new Leaderboards(server, cacheDir.resolve("stats-history.json"));

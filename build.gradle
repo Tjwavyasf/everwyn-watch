@@ -2,6 +2,9 @@ plugins {
     id 'fabric-loom' version '1.7-SNAPSHOT'
 }
 
+// The players' crash reporter mod is built too and packed inside this jar, so the app can hand it out
+evaluationDependsOn(':crash-reporter')
+
 version = project.mod_version
 group = project.maven_group
 
@@ -26,6 +29,10 @@ processResources {
     inputs.property "version", project.version
     filesMatching("fabric.mod.json") {
         expand "version": project.version
+    }
+    from(project(':crash-reporter').tasks.named('jar')) {
+        into 'assets/everwyn-watch'
+        rename { 'crash-reporter.jar' }
     }
 }
 

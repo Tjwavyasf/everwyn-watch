@@ -57,6 +57,17 @@ final class AdminActions {
                 cfg.save();
                 yield "Automatic mob protection settings saved";
             }
+            case "crash_delete" -> s.crashes.delete(str(req, "id"));
+            case "crash_new_key" -> {
+                s.cfg.crashKey = WatchConfig.newCrashKey();
+                s.cfg.save();
+                yield "New crash key made. Update config/everwyn-crash-reporter.properties in the modpack.";
+            }
+            case "crash_notify" -> {
+                s.cfg.notifyCrash = req.get("on").getAsBoolean();
+                s.cfg.save();
+                yield s.cfg.notifyCrash ? "Crash alerts on" : "Crash alerts off";
+            }
             case "clear_all_hostiles" -> {
                 int n = PerfMonitor.clearAllHostiles(server);
                 yield "Removed " + n + " hostile mobs across loaded chunks (named, persistent and challenge mobs protected)";

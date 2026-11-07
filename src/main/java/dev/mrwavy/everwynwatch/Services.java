@@ -20,4 +20,5 @@ final class Services {
     Scheduler scheduler;
     RestartController restart;
     LedgerBridge ledger;
+    CrashReports crashes;
 }
