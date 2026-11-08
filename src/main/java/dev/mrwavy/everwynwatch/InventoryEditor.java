@@ -202,6 +202,40 @@ final class InventoryEditor {
         return "Moved " + what + " from " + from.label() + " to " + to.label();
     }
 
+    /** Takes a stack (or count of it) from one slot and puts it into a player's inventory, wherever it fits. */
+    static String giveTo(Services s, JsonObject fromRef, String toName, int count) throws Exception {
+        Map<String, Offline> files = new HashMap<>();
+        Slot from = resolve(s, fromRef, files);
+        ItemStack src = from.get();
+        if (src.isEmpty()) throw new IllegalArgumentException("That slot is empty");
+        int n = count <= 0 ? src.getCount() : Math.min(count, src.getCount());
+        ItemStack moving = src.copyWithCount(n);
+        ServerPlayerEntity target = s.server.getPlayerManager().getPlayer(toName);
+        String where;
+        if (target != null) {
+            target.getInventory().offerOrDrop(moving); // anything that doesn't fit drops at their feet
+            target.playerScreenHandler.sendContentUpdates();
+            where = target.getGameProfile().getName() + "'s inventory";
+        } else {
+            JsonObject probe = new JsonObject();
+            probe.addProperty("kind", "player");
+            probe.addProperty("name", toName);
+            probe.addProperty("part", "main");
+            int free = -1;
+            for (int i = 0; i < 36 && free < 0; i++) {
+                probe.addProperty("slot", i);
+                if (resolve(s, probe, files).get().isEmpty()) free = i;
+            }
+            if (free < 0) throw new IllegalArgumentException(toName + "'s inventory is full");
+            probe.addProperty("slot", free);
+            resolve(s, probe, files).set(moving);
+            where = toName + "'s inventory (offline)";
+        }
+        if (!from.copyOnly()) from.set(n >= src.getCount() ? ItemStack.EMPTY : src.copyWithCount(src.getCount() - n));
+        for (Offline f : files.values()) f.save();
+        return "Put " + n + " " + src.getName().getString() + " in " + where;
+    }
+
     /** Deletes a stack (or count of it). */
     static String delete(Services s, JsonObject ref, int count) throws Exception {
         Map<String, Offline> files = new HashMap<>();

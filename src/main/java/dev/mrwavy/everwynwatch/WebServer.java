@@ -201,6 +201,10 @@ public final class WebServer {
                     sendJson(ex, 503, error("busy"));
                 }
             }
+            case "/api/achievements" -> {
+                String name = q.getOrDefault("player", "");
+                sendJson(ex, 200, onServer(() -> Achievements.get(s.server, name).toString(), 10));
+            }
             case "/api/container" -> {
                 if (!staff) { sendJson(ex, 403, error("Viewers can't open containers")); return; }
                 String dim = q.getOrDefault("dim", "minecraft:overworld");

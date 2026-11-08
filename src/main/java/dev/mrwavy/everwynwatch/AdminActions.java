@@ -132,6 +132,17 @@ final class AdminActions {
                     throw new IllegalArgumentException("Couldn't move it: " + e.getMessage());
                 }
             }
+            case "inv_give_to" -> {
+                String to = str(req, "to").trim();
+                if (!to.matches("[A-Za-z0-9_.]{1,17}")) throw new IllegalArgumentException("Enter your Minecraft name");
+                try {
+                    yield InventoryEditor.giveTo(s, req.getAsJsonObject("from"), to, req.has("count") ? (int) num(req, "count") : 0);
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Couldn't move it: " + e.getMessage());
+                }
+            }
             case "inv_delete" -> {
                 try {
                     yield InventoryEditor.delete(s, req.getAsJsonObject("ref"), req.has("count") ? (int) num(req, "count") : 0);

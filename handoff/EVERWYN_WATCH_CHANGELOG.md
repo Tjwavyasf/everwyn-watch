@@ -2,6 +2,10 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.2.0 — 2026-11-08 (branch `everwyn-app`)
+- Achievements: `Achievements` + `/api/achievements?player=` (all advancements with a display, grouped by root tab; done, date, progress %, frame; secret ones hidden until done). Online: live tracker; offline: world/advancements/<uuid>.json. App: Achievements button on the player panel and offline profile; tabs, gold/gray icon grid, tap for details.
+- Inventory editor: action `inv_give_to` (from ref → a player's inventory wherever it fits; online uses offerOrDrop, offline the first free main slot) for **Send to me**; **My inventory** tab. The owner's Minecraft name is asked once and kept on the phone (`localStorage ew_mcname`).
+
 ## 2.1.0 — 2026-11-08 (branch `everwyn-app`)
 - "mob wave go" in chat: `Challenges.randomWave(player)` builds a challenge 5 blocks from the player (radius 18, so it starts right away): 5–10 waves, 1–3 random hostile mob types per wave (any `allowedMob`, minus bosses/flyers/annoying ones and ids containing "boss"), counts growing per wave, level 1→5 across the waves; time limit 5 + 2×waves minutes; random loot from common/rare/epic vanilla pools scaled by wave count.
 - Mob levels: wave entries may carry `level` 1–5 (kept by `cleanWaves`); spawned mobs get a visible "Lv N" name, armor by level (no drops) and Speed/Strength/Resistance/Health Boost/Fire Resistance.

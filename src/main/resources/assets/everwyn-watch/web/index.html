@@ -206,6 +206,15 @@ ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{marg
 .mctrs .slot{width:40px}
 .mcinv{max-width:none}
 .slot .in{position:absolute;left:2px;top:1px;font-family:var(--pix);font-size:8px;color:#ffd75e;text-shadow:1px 1px 0 #3f3f3f}
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px}
+.ach{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;text-align:center}
+.ach .achicon{width:46px;height:46px;display:grid;place-items:center;background:#3b4144;box-shadow:inset 2px 2px 0 #1c2022, inset -2px -2px 0 #565d61;border-radius:3px;filter:grayscale(1) brightness(.55)}
+.ach.goal .achicon{border-radius:50%} .ach.challenge .achicon{clip-path:polygon(50% 0,100% 30%,100% 70%,50% 100%,0 70%,0 30%)}
+.ach.done .achicon{filter:none;background:#6b5420;box-shadow:inset 2px 2px 0 #3d2f10, inset -2px -2px 0 #e2bd5c, 0 0 8px rgba(226,189,92,.4)}
+.ach.done.challenge .achicon{background:#5a2d6e;box-shadow:inset 2px 2px 0 #2c1236, inset -2px -2px 0 #c58cff}
+.ach .achicon .ab,.ach .achicon img{width:32px;height:32px}
+.achname{font-size:10px;line-height:1.15;color:#cdbf95;max-height:2.4em;overflow:hidden}
+.ach.done .achname{color:#f3e1a6}
 .ivhold{position:sticky;bottom:0;background:var(--panel);box-shadow:0 0 0 2px #0b0e0c;padding:10px;margin-top:10px;border-radius:2px}
 .slot.picked{box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff, 0 0 0 3px var(--grass)}
 .slot.picked::after{content:"";position:absolute;right:2px;top:2px;width:8px;height:8px;background:var(--grass);box-shadow:0 0 0 1px #0b0e0c}
@@ -787,7 +796,7 @@ function renderSheet() {
   const group = (title, buttons) => { const b = buttons.join(""); return b ? `<h2 class="sec">${title}</h2><div class="actions">${b}</div>` : ""; };
   html += group("Help them", [B_("heal", "heal", "Heal", "green"), B_("feed", "feed", "Feed", "green"), B_("give", "give", "Give items", "gold"),
       B_("package", "pkg", "Care package", "gold"), B_("clear_effects", "cleareff", "Clear effects"), B_("spawn_mob", "spawnmob", "Spawn a mob / pet")]);
-  html += group("Look", [isStaff() ? B_("", "openinv", "Open inventory", "gold") : "", state.voice && canAll() ? B_("", "listen", "Listen to voice", "green") : "", B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
+  html += group("Look", [isStaff() ? B_("", "openinv", "Open inventory", "gold") : "", B_("", "achv", "Achievements", "gold"), state.voice && canAll() ? B_("", "listen", "Listen to voice", "green") : "", B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
   html += `<div id="enderBox"></div>`;
   html += group("Move", [B_("", "map", "Show on map"), B_("tp_to_player", "tp", "Teleport"), B_("to_spawn", "spawn", "Send to spawn"), B_("waypoint_add", "wp", "Waypoint here")]);
   html += group("Manage", [B_("message", "msg", "Message"), B_("gamemode", "gm", "Gamemode"), B_("kick", "kick", "Kick", "red"), B_("ban", "ban", "Ban", "red"),
@@ -830,6 +839,8 @@ $("#sheet").addEventListener("click", async e => {
     case "spawn": action({ action: "to_spawn", player: name }); break;
     case "give": openBuilder("give", { player: name, name }); break;
     case "openinv": openInv({ type: "ender", name }, { type: "player", name }); break;
+    case "achv": openAchievements(name); break;
+    case "pachv": { const nm = $("#sheetHead .pname")?.textContent; if (nm) openAchievements(nm); break; }
     case "dinv": if (openDeathData) { const d = openDeathData; openInv({ type: "death", id: d.id, name: d.player }, { type: "player", name: d.player }); } break;
     case "pinv": { const nm = $("#sheetHead .pname")?.textContent; if (nm) openInv({ type: "ender", name: nm }, { type: "player", name: nm }); break; }
     case "spawnmob": { const pp = findPlayer(name); if (pp) openSpawn({ dim: pp.dim, x: Math.floor(pp.x) + 1, y: Math.floor(pp.y), z: Math.floor(pp.z), owner: name, near: name }); break; }
@@ -1442,8 +1453,9 @@ function ivRender() {
     tabs.push(["ender", "Ender chest"]);
     tabs.push(["other", "Another player"]);
     tabs.push(["deaths", "Their deaths"]);
+    if (canDo("inv_move")) tabs.push(["mine", "My inventory"]);
   }
-  let h = tabs.length ? `<div class="filters" style="margin-bottom:8px">${tabs.map(([k, l]) => `<button class="chip ${IV.top && ((k === "ender" && IV.top.type === "ender") || (k === "other" && IV.top.type === "player") || (k === "deaths" && IV.top.type === "death")) ? "on" : ""}" data-ivtab="${k}">${l}</button>`).join("")}${IV.top?.type === "block" ? `<button class="chip on">Container</button>` : ""}</div>` : "";
+  let h = tabs.length ? `<div class="filters" style="margin-bottom:8px">${tabs.map(([k, l]) => `<button class="chip ${IV.top && ((k === "ender" && IV.top.type === "ender") || (k === "other" && IV.top.type === "player" && IV.top.name !== store.get("ew_mcname")) || (k === "deaths" && IV.top.type === "death") || (k === "mine" && IV.top.type === "player" && IV.top.name === store.get("ew_mcname"))) ? "on" : ""}" data-ivtab="${k}">${l}</button>`).join("")}${IV.top?.type === "block" ? `<button class="chip on">Container</button>` : ""}</div>` : "";
   h += ivPane(IV.top, "top") + `<div style="height:10px"></div>` + ivPane(IV.bottom, "bottom");
   if (IV.held) {
     const it = IV.held.item;
@@ -1451,6 +1463,7 @@ function ivRender() {
       <div class="pmain"><div class="pname" style="font-size:14px">${esc(it.name)}${IV.held.count ? ` (moving ${IV.held.count})` : ""}</div><div class="sub">Tap a slot to put it there</div></div></div>
       <div class="actions" style="margin-top:8px">${it.count > 1 ? `<button class="btn small" data-ivh="half">Half</button><button class="btn small" data-ivh="one">Just 1</button>` : ""}
       ${it.inside ? `<button class="btn small" data-ivh="inside">What's inside</button>` : ""}
+      ${canEdit ? `<button class="btn small gold" data-ivh="me">Send to me</button>` : ""}
       ${IV.held.ref.kind !== "death" && canEdit ? `<button class="btn small red" data-ivh="del">Delete</button>` : ""}<button class="btn small" data-ivh="cancel">Cancel</button></div></div>`;
   } else if (!canEdit) h += `<p class="hint">You can look, but only admins can move items.</p>`;
   else h += `<p class="hint">Tap an item to pick it up, then tap where it goes (another slot, the other inventory, a chest). Items from a death backup are copied, so the backup stays.</p>`;
@@ -1492,6 +1505,7 @@ async function ivClick(e) {
   if (tab) {
     const who = IV.bottom.name, k = tab.dataset.ivtab;
     if (k === "ender") IV.top = { type: "ender", name: who };
+    else if (k === "mine") { const me = await myMcName(); if (!me) return; IV.top = { type: "player", name: me }; }
     else if (k === "other") {
       const others = (state?.players || []).map(p => p.name).filter(n => n !== who);
       const pick = await choose("Whose inventory?", "Shows it above, so you can move items between them.", others.map(n => ({ key: n, label: n })).concat([{ key: "#type", label: "Someone offline…" }]));
@@ -1518,6 +1532,11 @@ async function ivClick(e) {
     else if (k === "half") IV.held.count = Math.ceil(it.count / 2);
     else if (k === "one") IV.held.count = 1;
     else if (k === "inside") { ivInside(it); return; }
+    else if (k === "me") {
+      const me = await myMcName(); if (!me) return;
+      const ok = await action({ action: "inv_give_to", from: IV.held.ref, to: me, count: IV.held.count || 0 });
+      IV.held = null; if (ok) await ivLoad(); else ivRender(); return;
+    }
     else if (k === "del") {
       if (await choose(`Delete ${IV.held.count || it.count} ${it.name}?`, "It's gone for good.", [{ key: "yes", label: "Delete", cls: "red" }]) !== "yes") return;
       const ok = await action({ action: "inv_delete", ref: IV.held.ref, count: IV.held.count || 0 });
@@ -1540,6 +1559,17 @@ async function ivClick(e) {
   await action(move);
   $("#ivSub").textContent = "Tap an item, then tap where it goes";
   await ivLoad();
+}
+/** Your own Minecraft name (asked once, remembered on this phone). */
+async function myMcName(change) {
+  let n = store.get("ew_mcname");
+  if (!n || change) {
+    const v = await ask("Your Minecraft name", [{ name: "n", label: "The name you play as (items go to this player)", value: n || "" }], "Save");
+    n = v?.n?.trim();
+    if (!n || !/^[A-Za-z0-9_.]{1,17}$/.test(n)) { if (v) toast("That doesn't look like a Minecraft name"); return null; }
+    store.set("ew_mcname", n);
+  }
+  return n;
 }
 /** The item shown in a slot right now (from the loaded data). */
 function ivItemAt(ref) {
@@ -1565,6 +1595,39 @@ function ivInside(it) {
   const box = $("#modalForm .choices");
   box.lastElementChild.insertAdjacentHTML("beforebegin", `<div class="inv mcinv" style="margin:6px 0">${Array.from({ length: n }, (_, i) => slotHtml(slots[i])).join("")}</div>`);
   box.lastElementChild.textContent = "Close";
+}
+
+/* ---------- achievements (advancements) ---------- */
+const ACH = { data: null, tab: 0 };
+async function openAchievements(name) {
+  sheetPlayer = null; sheetMode = "ach"; openDeathData = null;
+  openPanel(`<div class="pmain"><div class="pname">${esc(name)}'s achievements</div><div class="sub" id="achSub">Loading…</div></div>`, `<div id="achBox"></div>`);
+  try {
+    const r = await api("/api/achievements?player=" + encodeURIComponent(name));
+    const d = await r.json(); if (!r.ok) throw Error(d.error || "Couldn't load achievements");
+    ACH.data = d; ACH.tab = 0;
+  } catch (e) { $("#achBox").innerHTML = `<div class="card sub">${esc(e.message)}</div>`; return; }
+  $("#achBox").addEventListener("click", e => {
+    e.stopPropagation();
+    const t = e.target.closest("[data-acht]");
+    if (t) { ACH.tab = +t.dataset.acht; achRender(); return; }
+    const a = e.target.closest("[data-ach]");
+    if (a) {
+      const it = ACH.data.tabs[ACH.tab].items[+a.dataset.ach];
+      choose(it.title, `${it.desc}\n\n${it.done ? "Done" + (it.time ? " " + ago(it.time) + " (" + new Date(it.time).toLocaleDateString() + ")" : "") : it.pct ? "In progress: " + it.pct + "%" : "Not done yet"} · ${({ task: "Advancement", goal: "Goal", challenge: "Challenge" })[it.frame] || it.frame}`, []);
+    }
+  });
+  achRender();
+}
+function achRender() {
+  const d = ACH.data, tab = d.tabs[ACH.tab];
+  $("#achSub").textContent = `${d.done} of ${d.total} done${d.online ? "" : " · from their last save"}`;
+  const pct = n => Math.round(n.done / Math.max(1, n.total) * 100);
+  $("#achBox").innerHTML = `<div class="bar" style="margin:0 0 10px"><span style="width:${pct(d)}%;background:var(--gold)"></span></div>
+    <div class="chips" style="flex-wrap:wrap;margin-bottom:10px">${d.tabs.map((t, i) => `<button class="chip ${i === ACH.tab ? "on" : ""}" data-acht="${i}">${esc(t.title)} · ${t.done}/${t.total}</button>`).join("")}</div>
+    <div class="mcpanel"><div class="mcname">${esc(tab.title)} · ${pct(tab)}%</div>
+    <div class="achgrid">${tab.items.map((it, i) => `<div class="ach ${it.done ? "done" : ""} ${esc(it.frame)}" data-ach="${i}" title="${esc(it.title)}">
+      <div class="achicon">${itemFace(it.icon)}</div><div class="achname">${esc(it.title)}</div></div>`).join("")}</div></div>`;
 }
 
 /* ---------- spawn mobs, tame pets for a player ---------- */
@@ -1800,7 +1863,7 @@ async function openProfile(name) {
   b += `</div>`;
   if (banned) b += `<div class="note bad">Banned: ${esc(banned.reason || "no reason")}</div>`;
   if (d) b += `<h2 class="sec">Inventory (from their last save)</h2>${invGrids(d.items)}<h2 class="sec">Ender chest</h2>${enderGrid(d.ender)}`;
-  b += `<h2 class="sec">Actions</h2><div class="actions">${isStaff() ? `<button class="btn gold" data-a="pinv" style="grid-column:1/-1">Open inventory</button>` : ""}<button class="btn" data-a="pdeaths">Their deaths</button><button class="btn" data-a="ptrail">Movement trail</button>
+  b += `<h2 class="sec">Actions</h2><div class="actions">${isStaff() ? `<button class="btn gold" data-a="pinv" style="grid-column:1/-1">Open inventory</button>` : ""}<button class="btn gold" data-a="pachv" style="grid-column:1/-1">Achievements</button><button class="btn" data-a="pdeaths">Their deaths</button><button class="btn" data-a="ptrail">Movement trail</button>
     ${d?.x != null ? `<button class="btn" data-a="pmap">Show where they logged out</button>` : ""}
     ${isStaff() ? `<button class="btn" data-a="pledger">What they changed</button>` : ""}
     ${canDo("ban") ? (banned ? `<button class="btn green" data-a="punban">Unban</button>` : `<button class="btn red" data-a="pban">Ban</button>`) : ""}</div>`;
