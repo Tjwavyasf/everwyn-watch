@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "everwyn-watch",
   "version": "${version}",
-  "name": "Everwyn Watch",
+  "name": "Everwyn App",
   "description": "Live server dashboard for your phone: map, players, chat feed, admin tools and voice listening.",
   "authors": ["Mr.Wavy"],
   "license": "MIT",

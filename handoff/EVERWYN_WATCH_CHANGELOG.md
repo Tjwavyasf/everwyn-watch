@@ -2,6 +2,13 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.0.0 — 2026-11-08 (branch `everwyn-app`, based on 1.14.0) — renamed "Everwyn App"
+- Rebrand: app title, login, manifest and mod display name are "Everwyn App". Mod id, config/data names (`everwyn-watch`) unchanged on purpose.
+- Fantasy theme layered at the end of the page's CSS: forest green, gold trim, vine borders (inline SVG), Cinzel Decorative title (Google Fonts), gold buttons/chips, leaf corner on cards. Features and layout unchanged.
+- Inventory editor restyled like a Minecraft inventory with a resource-pack look: dark slate slots, gold-trimmed panels, parchment player card showing the player's own skin from the front (`drawSkinFront`, 64x64 and legacy 64x32 skins, outer layer), trinkets row.
+- Real mob models in 3D (`MOB_MODELS`, `rbMobModel`, `rbMcBox`): Minecraft's own cuboid sizes/UVs/pivots for zombie, husk, drowned, skeleton, stray, wither skeleton, creeper, cow, mooshroom, pig, sheep (+ wool layer), chicken; textures from `/api/asset` (minecraft/textures/entity/...). Legs swing, heads turn. Others stay boxes.
+- Known: in the headless software renderer used for testing, thin brown "spikes" appeared on flat grass in tabletop view; geometry checks found no bad triangles, so it is probably a software-renderer artifact. Check on a real phone.
+
 ## 1.14.0 — 2026-11-08 (branch `everwyn-inventory`, based on 1.13.0)
 - `InventoryEditor`: actions `inv_move` (from/to refs: `{kind:"player", name, part:"main"|"ender"|"trinket", slot|key}`, `{kind:"block", dim,x,y,z, slot}`, `{kind:"death", id, slot}` copy-only; count 0 = whole stack; stacks merge, otherwise swap) and `inv_delete`. Online players change live (screens synced); offline players' main/armor/offhand/ender are edited in their playerdata file (backup `_old` written first). Trinket slots via the Trinkets API by reflection (no hard dependency; online only).
 - `/api/container?dim&x&y&z`: chest (double chests combined), barrel or any block-entity inventory; searches up to 12 blocks up/down for one (the 2D map doesn't know heights) and returns its real `y`.

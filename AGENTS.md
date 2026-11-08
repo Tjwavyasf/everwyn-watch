@@ -1,6 +1,6 @@
 # Instructions for AI coding assistants (ChatGPT/Codex, Claude, etc.)
 
-This repo's main project is **Everwyn Watch**: a server-side Fabric mod for Minecraft 1.20.1 (Java 17, Gradle + fabric-loom) that serves a phone web app (`src/main/resources/assets/everwyn-watch/web/index.html`, vanilla HTML/CSS/JS, no build step).
+This repo's main project is **Everwyn App** (formerly Everwyn Watch; mod id and config names are still `everwyn-watch`). Newest code: branch `everwyn-app`. It is a server-side Fabric mod for Minecraft 1.20.1 (Java 17, Gradle + fabric-loom) that serves a phone web app (`src/main/resources/assets/everwyn-watch/web/index.html`, vanilla HTML/CSS/JS, no build step).
 
 **Read first:** `handoff/EVERWYN_WATCH_PROJECT_HANDOFF.md`, then `handoff/EVERWYN_WATCH_NEXT_STEPS.md`.
 

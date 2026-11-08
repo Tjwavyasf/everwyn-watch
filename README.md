@@ -1,4 +1,6 @@
-# Everwyn Watch
+# Everwyn App (formerly Everwyn Watch)
+
+The mod id, config file names and data folders are still `everwyn-watch` so existing servers keep their settings.
 
 A server-side Fabric 1.20.1 mod that runs a small web app you can open on your phone:
 
@@ -6,6 +8,8 @@ A server-side Fabric 1.20.1 mod that runs a small web app you can open on your p
 - **3D map** – tap **Tabletop 3D** above the map for a tilted, rotatable diorama of the real terrain (drag to move, pinch to zoom, twist to turn, Tilt for top-down), or **Free cam** to fly around it (left thumb moves, drag to look, ▲▼ up/down; WASD + mouse on a computer). Players, waypoints, deaths and spawn show up in 3D too; hold on the ground for the usual waypoint/care-package menu. The 3D engine (three.js) loads from the internet the first time you open it.
 - **Real blocks in 3D** – in Tabletop 3D and Free cam, the land near the camera is drawn block by block with Minecraft's own models and textures (modded blocks too), with biome-colored grass, leaves and water. Players show as their real skins and move live: walking, jumping, crouching, swimming, flying. Mobs show as simple shapes in their spawn-egg colors. Slide **See inside** to slice the world at any height and look into builds and caves. The **Real/Simple** button switches back to the lighter terrain.
 - **Follow camera and underground** – tap a player's name in 3D to follow them: **Behind / Front / Side / Top / Free**, drag to circle around them, pinch or −/+ to get close or far. It follows them into caves and mines: underground the app draws the blocks around them (rock in front of the camera turns see-through). Free cam can fly underground too.
+- **Real mob models** – zombies, husks, drowned, skeletons, strays, wither skeletons, creepers, cows, mooshrooms, pigs, sheep (with wool) and chickens show with their real models and textures in 3D and walk/turn their heads. Other mobs are simple shapes in their spawn-egg colors.
+- **Fantasy look** – forest-green and gold theme with vines; the inventory looks like a Minecraft inventory with each player's own skin.
 - **Inventory editor** – a player's panel → **Open inventory**: a Minecraft-style screen with armor, offhand, **trinket slots** (Trinkets mod), main inventory and hotbar. Tap an item, then tap where it goes. The top half switches between their **ender chest**, **another player** (move stolen items straight back), **one of their deaths** (copy items back; the backup stays) or a **chest/container** (map: hold a spot → Open the chest/container here). Shulker boxes, bundles and backpacks show what's inside. Works for offline players too (not trinkets). Death backups now include trinkets and give them back into their slots.
 - **Spawn mobs and pets** – hold a spot on the map → **Spawn a mob here**, or a player → **Spawn a mob / pet**. Search every mob in the pack, pick how many, a name tag, baby, and for wolves, cats, horses, parrots (and modded tameables) **Tame it** for any player. Tap a wild tameable mob on the map → **Tame it for…**, or a pet → **Give it to someone else**.
 - **Schematic placer** – hold a spot on the map → **Place schematic here**, pick a `.nbt` structure file (structure block / Create format) and a rotation. **Undo last schematic** puts back what was there. The area must be loaded.

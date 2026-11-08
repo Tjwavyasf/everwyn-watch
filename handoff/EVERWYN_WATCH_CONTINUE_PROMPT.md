@@ -2,33 +2,22 @@
 
 ---
 
-I'm continuing development of **Everwyn Watch**, a server-side Fabric 1.20.1 Minecraft mod (Java 17) with a built-in phone web app (`src/main/resources/assets/everwyn-watch/web/index.html`, vanilla JS, no build step).
+I'm continuing development of **Everwyn App** (formerly Everwyn Watch): a server-side Fabric 1.20.1 Minecraft mod (Java 17) with a built-in phone web app (`src/main/resources/assets/everwyn-watch/web/index.html`, vanilla JS + three.js, no build step), plus a small client mod for my modpack (`crash-reporter/`).
 
 GitHub repo (source of truth): **https://github.com/Tjwavyasf/everwyn-watch**
-Work on branch: **`claude/funny-feynman-ifcll1`** (it has the newest Everwyn Watch code, including the 3D map; the branch name is just where the last session worked).
+Newest code: branch **`everwyn-app`** (version 2.0.0). `main` is old and doesn't have these features yet.
 
-First, read these files in the repo, in this order:
-1. `AGENTS.md` (rules)
-2. `handoff/EVERWYN_WATCH_PROJECT_HANDOFF.md` (what the app is, architecture, status)
-3. `handoff/EVERWYN_WATCH_NEXT_STEPS.md`
-4. `handoff/EVERWYN_WATCH_SETUP.md` and `handoff/EVERWYN_WATCH_CHANGELOG.md` as needed
+Read first, in this order: `AGENTS.md`, `handoff/EVERWYN_WATCH_PROJECT_HANDOFF.md` (the "READ THIS FIRST" section), `handoff/EVERWYN_WATCH_NEXT_STEPS.md`, `handoff/EVERWYN_WATCH_CHANGELOG.md`, `handoff/EVERWYN_WATCH_SETUP.md`.
 
-State at handoff (2026-11-06):
-- Last code commit: `3167fd7bb155f494ad503e283f5ed00ff3d683a6` — Tabletop 3D + Free cam map views, mod version 1.9.0. GitHub Actions build passed.
-- `main` has 8 extra commits for a **separate** game, Warehouse Showdown / "Clocked In", in `warehouse-showdown/`. The 3D map is NOT merged into `main`, so the "latest" release jar has no 3D yet. A test merge was clean.
-- Open question from me, not answered yet: "Can I see every block?" Options offered: (1) real textures on top blocks, (2) full real blocks near the camera, (3) option 2 + cave slider. Nothing built.
-
-Before editing anything:
-1. Look at the latest state of the repo (all branches) and tell me if anything differs from the handoff.
-2. Never mix Everwyn Watch with `warehouse-showdown/` (Clocked In).
+Build: Java 17, **Gradle 8.10** (`gradle build --no-daemon`), or push and use the GitHub Actions "Build mod jar" artifacts (server jar + crash reporter jar).
 
 Rules:
-- DO NOT rebuild Everwyn Watch or redesign its interface without my permission.
-- DO NOT remove features, rename files unnecessarily, replace the stack (Fabric / Java 17 / vanilla JS), or change saved data formats without asking.
-- DO NOT add unrelated features or replace working code with placeholders.
-- Keep the pixel Minecraft look and plain, simple wording in the app.
-- Make only the changes I ask for. Keep the `handoff/` docs updated when you change things.
-- Make changes on a branch or as a pull request. Do not push to `main`, merge, force-push, reset, or delete branches unless I say so.
-- The code can't be fully tested without a Minecraft server: after changes, check that the GitHub Actions "Build mod jar" run passes.
+- Don't rebuild or redesign the app, remove features, rename files, or change the stack. Keep the Everwyn fantasy look (forest green, gold, vines) and the Minecraft-style inventory.
+- Don't rename the mod id or config/data names (`everwyn-watch`).
+- Keep `warehouse-showdown/` (Clocked In game on main) separate.
+- Work on a branch; don't push to main, merge, force-push or delete branches without asking me.
+- Never commit server config (it has passwords, webhooks, keys).
+- Update the `handoff/` docs and changelog when you change something.
+- Things can't be tested without a Minecraft server: make sure it compiles, and tell me what to test.
 
 Wait for my next instruction.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#141915">
+<meta name="theme-color" content="#0c110d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Everwyn">
@@ -12,8 +12,8 @@
 <link rel="icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
-<title>Everwyn Watch</title>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+<title>Everwyn App</title>
 <style>
 :root{
   --bg:#141915; --panel:#1c231e; --panel2:#232c26; --line:#2f3b33; --text:#e6ebe3; --muted:#8e9b91;
@@ -187,14 +187,22 @@ ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{marg
 #listenBar .meter span{position:absolute;left:0;top:0;bottom:0;background:var(--grass);transition:width .15s}
 #listenBar .txt{flex:1;min-width:0;font-size:13px}
 .map-status{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);max-width:86%;background:rgba(20,25,21,.94);box-shadow:0 0 0 2px #0b0e0c;padding:12px 14px;border-radius:2px;font-size:13px;text-align:center;color:var(--muted);pointer-events:none}
-.mcpanel{background:#c6c6c6;box-shadow:inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #0b0e0c;border-radius:4px;padding:10px;color:#3f3f3f}
-.mcname{font-family:var(--pix);font-size:11px;color:#3f3f3f;margin:0 0 6px}
+.mcpanel{background:linear-gradient(#2c3133,#24282a);border:2px solid #b8913f;box-shadow:inset 0 0 0 2px #14181a, 0 0 0 2px #0b0e0c, 0 4px 14px rgba(0,0,0,.5);border-radius:6px;padding:10px;color:#e8dcc0;position:relative}
+.mcpanel::before,.mcpanel::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #e2bd5c;pointer-events:none}
+.mcpanel::before{left:-3px;top:-3px;border-right:0;border-bottom:0;border-radius:6px 0 0 0}
+.mcpanel::after{right:-3px;bottom:-3px;border-left:0;border-top:0;border-radius:0 0 6px 0}
+.mcpanel .slot{background:#3b4144;box-shadow:inset 2px 2px 0 #1c2022, inset -2px -2px 0 #565d61;border-radius:2px}
+.mcpanel .slot.picked{box-shadow:inset 2px 2px 0 #1c2022, inset -2px -2px 0 #565d61, 0 0 0 3px #e2bd5c}
+.mcname{font-family:var(--pix);font-size:11px;color:#e2bd5c;margin:0 0 6px}
 .mcrow{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
 .mccol{display:flex;flex-direction:column;gap:3px;width:calc((100% - 24px) / 9 * 1.1);flex:none}
-.mcmid{flex:1;min-width:0;background:#000;box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff;padding:6px;align-self:stretch;min-height:120px}
-.mcmid .mcname{color:#e6ebe3}
+.mcmid{flex:1;min-width:0;align-self:stretch;min-height:150px;background:#e9dcb4 radial-gradient(circle at 30% 20%,#f3e8c8,transparent 60%);border:2px solid #8a6a32;box-shadow:inset 0 0 18px rgba(120,80,30,.35);border-radius:3px;padding:6px;display:flex;flex-direction:column;align-items:center;position:relative}
+.mcmid .mcname{color:#5a3e1a;font-size:12px;align-self:flex-start}
+.mcskin{image-rendering:pixelated;height:118px;width:59px;margin:2px auto 0;filter:drop-shadow(2px 3px 0 rgba(60,40,10,.35))}
+.mctrbox{margin:0 0 8px}
+.mctrbox .mcname{font-size:10px}
 .mctr{display:flex;flex-wrap:wrap;gap:6px}
-.mctrs{display:flex;flex-direction:column;align-items:center;width:46px;font-family:var(--pix);font-size:8px;color:#bbb;text-align:center;line-height:1.1}
+.mctrs{display:flex;flex-direction:column;align-items:center;width:46px;font-family:var(--pix);font-size:8px;color:#cdb98a;text-align:center;line-height:1.1}
 .mctrs .slot{width:40px}
 .mcinv{max-width:none}
 .slot .in{position:absolute;left:2px;top:1px;font-family:var(--pix);font-size:8px;color:#ffd75e;text-shadow:1px 1px 0 #3f3f3f}
@@ -228,6 +236,38 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
 .more{width:100%;margin-top:10px}
 .hint{color:var(--muted);font-size:13px;margin:4px 2px 8px}
 .banner b{color:var(--text)}
+/* ===== Everwyn App theme: forest, gold and vines ===== */
+:root{--bg:#0c110d;--panel:#141b16;--panel2:#1c2620;--line:#2e3a2f;--text:#efe6cf;--muted:#a3a58f;--gold:#e2bd5c;--gold-d:#9c7a2e;--grass:#6ea24a;--grass-d:#3f6e2c;
+  --vine:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='18' viewBox='0 0 120 18'%3E%3Cpath d='M0 9 C15 1 25 17 40 9 S65 1 80 9 105 17 120 9' fill='none' stroke='%234f7a35' stroke-width='2'/%3E%3Cpath d='M20 7 q4 -6 9 -4 q-3 5 -9 4z M58 11 q4 6 9 4 q-3 -5 -9 -4z M98 7 q4 -6 9 -4 q-3 5 -9 4z' fill='%236ea24a'/%3E%3Ccircle cx='40' cy='9' r='1.6' fill='%23e2bd5c'/%3E%3Ccircle cx='80' cy='9' r='1.6' fill='%23e2bd5c'/%3E%3C/svg%3E");--leaf:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath d='M2 2 C14 4 18 10 20 20' fill='none' stroke='%23b8913f' stroke-width='1.6'/%3E%3Cpath d='M8 3 q6 -2 8 3 q-5 2 -8 -3z M15 9 q6 -1 7 5 q-5 1 -7 -5z' fill='%235d8f3e'/%3E%3Ccircle cx='3' cy='3' r='2' fill='%23e2bd5c'/%3E%3C/svg%3E")}
+body{background:radial-gradient(ellipse at 50% -10%,#1d2a1f 0%,#0c110d 55%) fixed,#0c110d}
+.ew-title,#title{font-family:"Cinzel Decorative","Cinzel",serif!important;font-weight:900;letter-spacing:.06em;background:linear-gradient(180deg,#fff1c2 0%,#e2bd5c 45%,#9c7a2e 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;text-shadow:none}
+#title{font-size:21px!important}
+.login-box .ew-title{font-size:44px;margin:18px 0 0;line-height:1}
+.ew-sub{font-family:"Cinzel",serif;color:var(--gold);letter-spacing:.5em;font-size:13px;margin:4px 0 16px;padding-left:.5em}
+.login-box img{box-shadow:0 0 0 2px var(--gold-d),0 0 0 4px #0b0e0c,0 0 24px rgba(226,189,92,.25);border-radius:6px}
+#login{background:radial-gradient(ellipse at 50% 30%,#1e2c20,#0c110d 70%)}
+#login::before,#login::after{content:"";position:absolute;left:0;right:0;height:18px;background:var(--vine) repeat-x;opacity:.9}
+#login::before{top:calc(16px + var(--safe-t))} #login::after{bottom:calc(16px + var(--safe-b));transform:scaleY(-1)}
+header{background:linear-gradient(180deg,#18221a,#111813);border-bottom:0;position:relative;box-shadow:0 2px 0 var(--gold-d),0 3px 0 #0b0e0c}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-20px;height:18px;background:var(--vine) repeat-x;pointer-events:none;z-index:5;opacity:.85}
+nav{background:linear-gradient(0deg,#111813,#18221a);border-top:0;box-shadow:0 -2px 0 var(--gold-d),0 -3px 0 #0b0e0c}
+nav button.on{color:var(--gold)} nav button.on .ico{background:var(--gold)}
+.pill{background:#1a241c;box-shadow:inset 0 0 0 1px var(--gold-d);color:var(--text)}
+.btn{background:linear-gradient(180deg,#22302a,#18211c);box-shadow:inset 0 0 0 1px var(--gold-d),inset 0 -3px 0 rgba(0,0,0,.35),0 0 0 2px #0b0e0c;color:var(--text);border-radius:4px}
+.btn.green{background:linear-gradient(180deg,#4f8a36,#335e24)} .btn.gold{background:linear-gradient(180deg,#a8842f,#735a1d);color:#fff6dc}
+.btn.red{background:linear-gradient(180deg,#8e3530,#5e211e)}
+.card{background:linear-gradient(180deg,#17201a,#121914);box-shadow:inset 0 0 0 1px rgba(226,189,92,.28),0 0 0 2px #0b0e0c;border-radius:6px;position:relative}
+.card::before{content:"";position:absolute;left:-3px;top:-3px;width:34px;height:34px;background:var(--leaf) no-repeat;pointer-events:none;opacity:.9}
+h2.sec{font-family:"Cinzel",serif;color:var(--gold);letter-spacing:.08em;display:flex;align-items:center;gap:8px}
+h2.sec::after{content:"";flex:1;height:10px;background:var(--vine) repeat-x;background-size:80px 10px;opacity:.7}
+.chip{background:#172019;box-shadow:inset 0 0 0 1px rgba(226,189,92,.35),0 0 0 2px #0b0e0c;border-radius:4px}
+.chip.on{background:linear-gradient(180deg,#a8842f,#735a1d);color:#fff6dc}
+.map-modes button.on,.followbar button.on{background:linear-gradient(180deg,#a8842f,#735a1d);color:#fff6dc}
+.map-modes,.followbar,.cutbar,.map-info,.map-top select{box-shadow:0 0 0 1px var(--gold-d),0 0 0 3px #0b0e0c!important}
+#sheet{background:linear-gradient(180deg,#141c16,#0f1511);box-shadow:0 -2px 0 var(--gold-d),0 -6px 24px rgba(0,0,0,.6)}
+.note.warn{box-shadow:inset 3px 0 0 var(--gold)}
+input.bfield,.field input,select,textarea{border-radius:4px}
+.tag{background:#1d281f;color:#cdbf95}
 </style>
 </head>
 <body>
@@ -235,7 +275,8 @@ canvas.chart{width:100%;height:110px;display:block;margin-top:6px}
 <div id="login">
   <form class="login-box" id="loginForm" autocomplete="off">
     <img src="/icon-192.png" alt="">
-    <h1>Everwyn Watch</h1>
+    <h1 class="ew-title">Everwyn</h1>
+    <div class="ew-sub">App</div>
     <p>Enter the token from <b>config/everwyn-watch.json</b> on your server.</p>
     <div class="field">
       <label for="tokenIn">Token</label>
@@ -1362,11 +1403,13 @@ function ivPlayerPane(p, d, death) {
   const slots = {}; for (const it of items || []) slots[it.slot] = it;
   const ref = slot => death ? { kind: "death", id: p.id, slot } : { kind: "player", name: p.name, part: "main", slot };
   const trinkets = death ? (d.itemList || []).filter(it => it.slot >= 1000) : (d.trinkets || []);
+  const uuid = d.uuid || "";
   let h = `<div class="mcrow"><div class="mccol">${IV_ARMOR.map(([s]) => ivSlot(ref(s), slots[s], " gear")).join("")}</div>
-    <div class="mcmid"><div class="mcname">${esc(death ? d.player + " · death " + ago(d.time) : d.name)}${death ? "" : d.online ? "" : " · offline"}</div>
-      ${trinkets.length ? `<div class="mctr">${trinkets.map(t => `<div class="mctrs"><span>${esc(t.trinket || t.slotName || "")}</span>${ivSlot(death ? ref(t.slot) : { kind: "player", name: p.name, part: "trinket", key: t.key }, t.id ? t : null)}</div>`).join("")}</div>`
-        : `<div class="sub" style="color:#555">${death ? "" : d.online ? "No trinket slots" : "Trinkets show when they're online"}</div>`}</div>
+    <div class="mcmid"><div class="mcname">${esc(death ? d.player : d.name)}</div><canvas class="mcskin" width="16" height="32" data-skin="${esc(uuid)}"></canvas>
+      <div class="sub" style="color:#7a5a2a;font-size:11px">${death ? "Death · " + ago(d.time) : d.online ? "" : "Offline"}</div></div>
     <div class="mccol">${ivSlot(ref(40), slots[40], " gear")}</div></div>
+    ${trinkets.length ? `<div class="mctrbox"><div class="mcname">Trinkets</div><div class="mctr">${trinkets.map(t => `<div class="mctrs"><span>${esc(t.trinket || t.slotName || "")}</span>${ivSlot(death ? ref(t.slot) : { kind: "player", name: p.name, part: "trinket", key: t.key }, t.id ? t : null)}</div>`).join("")}</div></div>`
+      : death || d.online ? "" : `<p class="sub" style="color:#a99868;margin:0 0 6px">Trinkets show when they're online</p>`}
     <div class="inv mcinv">${Array.from({ length: 27 }, (_, i) => ivSlot(ref(i + 9), slots[i + 9])).join("")}</div>
     <div class="inv mcinv" style="margin-top:8px">${Array.from({ length: 9 }, (_, i) => ivSlot(ref(i), slots[i])).join("")}</div>`;
   return h;
@@ -1408,6 +1451,35 @@ function ivRender() {
   } else if (!canEdit) h += `<p class="hint">You can look, but only admins can move items.</p>`;
   else h += `<p class="hint">Tap an item to pick it up, then tap where it goes (another slot, the other inventory, a chest). Items from a death backup are copied, so the backup stays.</p>`;
   $("#invEd").innerHTML = h;
+  document.querySelectorAll("#invEd canvas[data-skin]").forEach(drawSkinFront);
+}
+/** Draws a player's skin from the front, like the game's inventory (head, body, arms, legs, outer layer). */
+const SKIN_IMG = new Map();
+function drawSkinFront(cv) {
+  const uuid = cv.dataset.skin;
+  let p = SKIN_IMG.get(uuid);
+  if (!p) {
+    p = (async () => {
+      try { if (uuid) { const r = await fetch("/skin?u=" + encodeURIComponent(uuid)); if (r.ok) return await createImageBitmap(await r.blob()); } } catch (e) {}
+      try { const r = await api("/api/asset?p=" + encodeURIComponent("minecraft/textures/entity/player/wide/steve.png")); if (r.ok) return await createImageBitmap(await r.blob()); } catch (e) {}
+      return null;
+    })();
+    SKIN_IMG.set(uuid, p);
+  }
+  p.then(img => {
+    if (!img || !cv.isConnected) return;
+    const g = cv.getContext("2d"), k = img.width / 64, old = img.height / k < 64;
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, 16, 32);
+    const part = (sx, sy, w, h, dx, dy) => g.drawImage(img, sx * k, sy * k, w * k, h * k, dx, dy, w, h);
+    // inner layer: head, body, right arm (viewer's left), left arm, legs
+    part(8, 8, 8, 8, 4, 0); part(20, 20, 8, 12, 4, 8);
+    part(44, 20, 4, 12, 0, 8); part(old ? 44 : 36, old ? 20 : 52, 4, 12, 12, 8);
+    part(4, 20, 4, 12, 4, 20); part(old ? 4 : 20, old ? 20 : 52, 4, 12, 8, 20);
+    if (!old) { // outer layer: hat, jacket, sleeves, pants
+      part(40, 8, 8, 8, 4, 0); part(20, 36, 8, 12, 4, 8); part(44, 36, 4, 12, 0, 8); part(52, 52, 4, 12, 12, 8);
+      part(4, 36, 4, 12, 4, 20); part(4, 52, 4, 12, 8, 20);
+    } else part(40, 8, 8, 8, 4, 0);
+  });
 }
 async function ivClick(e) {
   e.stopPropagation();
@@ -4111,6 +4183,8 @@ function rbPlayerFigure(p) {
   };
 }
 function rbMobFigure(m) {
+  const real = rbMobModel(m);
+  if (real) return real;
   const T = M3.T, c1 = m.c1 ?? 0x9a9a9a, c2 = m.c2 ?? 0x555555, w = m.w || 0.6, h = m.h || 1;
   const root = new T.Group();
   const body = new T.Mesh(new T.BoxGeometry(w, h * 0.78, w), new T.MeshBasicMaterial({ color: c1 }));
@@ -4155,6 +4229,13 @@ function rbFigures(dt) {
     f.lastX = p.x; f.lastY = p.y; f.lastZ = p.z;
     if (!isP) {
       if (e.data.baby) f.root.scale.setScalar(0.55);
+      if (f.parts) { // walking legs, turning head
+        const sw = Math.sin(f.walk) * 0.8 * Math.min(1, (f.speed || 0) * 1.6);
+        for (const pt of f.parts) {
+          if (pt.swing) pt.pivot.rotation.x = pt.base[0] + sw * pt.swing;
+          if (pt.head) pt.pivot.rotation.y = -(((p.head ?? p.yaw) - p.yaw) * Math.PI / 180);
+        }
+      }
       continue;
     }
     const d = e.data, swing = Math.sin(f.walk) * 0.9 * Math.min(1, f.speed * 1.6);
@@ -4180,6 +4261,119 @@ function rbFigures(dt) {
     if (pose === "sleeping") { f.model.rotation.x = -Math.PI / 2; f.model.position.y = 0.6; f.model.position.z = -0.9; }
   }
   return moving;
+}
+
+/* --- real mob models: Minecraft's own part sizes and texture layout (others stay simple shapes) --- */
+// Parts use Minecraft's model numbers: pivot [x,y,z] (y down, 24 = ground, front is -z), boxes
+// [x,y,z, w,h,d, u,v, grow, texture#], rotation [x,y,z] in radians, swing (+1/-1 for legs/arms), head.
+const HUMANOID = (thin, tex64, armsOut) => {
+  const a = thin ? 2 : 4, ao = thin ? -1 : -3, az = thin ? -1 : -2, lx = thin ? 2 : 1.9;
+  return [
+    { p: [0, 0, 0], b: [[-4, -8, -4, 8, 8, 8, 0, 0], [-4, -8, -4, 8, 8, 8, 32, 0, 0.5]], head: true },
+    { p: [0, 0, 0], b: [[-4, 0, -2, 8, 12, 4, 16, 16]] },
+    { p: [-5, 2, 0], b: [[ao, -2, az, a, 12, a, 40, 16]], swing: 1, r: armsOut ? [-1.45, 0, 0] : null },
+    { p: [5, 2, 0], b: [[-1, -2, az, a, 12, a, tex64 ? 32 : 40, tex64 ? 48 : 16]], swing: -1, r: armsOut ? [-1.45, 0, 0] : null },
+    { p: [-lx, 12, 0], b: [[-a / 2, 0, -a / 2, a, 12, a, 0, 16]], swing: -1 },
+    { p: [lx, 12, 0], b: [[-a / 2, 0, -a / 2, a, 12, a, tex64 ? 16 : 0, tex64 ? 48 : 16]], swing: 1 }
+  ];
+};
+const QUAD_LEGS = (h, x, zb, zf) => [[-x, 24 - h, zb, -1], [x, 24 - h, zb, 1], [-x, 24 - h, zf, 1], [x, 24 - h, zf, -1]]
+  .map(([px, py, pz, s]) => ({ p: [px, py, pz], b: [[-2, 0, -2, 4, h, 4, 0, 16]], swing: s }));
+const MOB_MODELS = {
+  zombie: { tex: ["zombie/zombie"], parts: HUMANOID(false, true, true) },
+  husk: { tex: ["zombie/husk"], parts: HUMANOID(false, true, true) },
+  drowned: { tex: ["zombie/drowned"], parts: HUMANOID(false, true, true) },
+  skeleton: { tex: ["skeleton/skeleton"], parts: HUMANOID(true, false, false) },
+  stray: { tex: ["skeleton/stray"], parts: HUMANOID(true, false, false) },
+  wither_skeleton: { tex: ["skeleton/wither_skeleton"], parts: HUMANOID(true, false, false), scale: 1.2 },
+  creeper: { tex: ["creeper/creeper"], parts: [
+    { p: [0, 6, 0], b: [[-4, -8, -4, 8, 8, 8, 0, 0]], head: true },
+    { p: [0, 6, 0], b: [[-4, 0, -2, 8, 12, 4, 16, 16]] },
+    ...[[-2, 4, -1], [2, 4, 1], [-2, -4, 1], [2, -4, -1]].map(([x, z, s]) => ({ p: [x, 18, z], b: [[-2, 0, -2, 4, 6, 4, 0, 16]], swing: s }))] },
+  pig: { tex: ["pig/pig"], parts: [
+    { p: [0, 12, -6], b: [[-4, -4, -8, 8, 8, 8, 0, 0], [-2, 0, -9, 4, 3, 1, 16, 16]], head: true },
+    { p: [0, 11, 2], r: [Math.PI / 2, 0, 0], b: [[-5, -10, -7, 10, 16, 8, 28, 8]] }, ...QUAD_LEGS(6, 3, 7, -5)] },
+  cow: { tex: ["cow/cow"], parts: [
+    { p: [0, 4, -8], b: [[-4, -4, -6, 8, 8, 6, 0, 0], [-5, -5, -4, 1, 3, 1, 22, 0], [4, -5, -4, 1, 3, 1, 22, 0]], head: true },
+    { p: [0, 5, 2], r: [Math.PI / 2, 0, 0], b: [[-6, -10, -7, 12, 18, 10, 18, 4], [-2, 2, -8, 4, 6, 1, 52, 0]] }, ...QUAD_LEGS(12, 4, 7, -6)] },
+  sheep: { tex: ["sheep/sheep", "sheep/sheep_fur"], parts: [
+    { p: [0, 6, -8], b: [[-3, -4, -6, 6, 6, 8, 0, 0], [-3, -4, -4, 6, 6, 6, 0, 0, 0.6, 1]], head: true },
+    { p: [0, 5, 2], r: [Math.PI / 2, 0, 0], b: [[-4, -10, -7, 8, 16, 6, 28, 8], [-4, -10, -7, 8, 16, 6, 28, 8, 1.75, 1]] },
+    ...QUAD_LEGS(12, 3, 7, -5).map(l => ({ ...l, b: [...l.b, [-2, 0, -2, 4, 6, 4, 0, 16, 0.5, 1]] }))] },
+  chicken: { tex: ["chicken"], parts: [
+    { p: [0, 15, -4], b: [[-2, -6, -2, 4, 6, 3, 0, 0], [-2, -4, -4, 4, 2, 2, 14, 0], [-1, -2, -3, 2, 2, 2, 14, 4]], head: true },
+    { p: [0, 16, 0], r: [Math.PI / 2, 0, 0], b: [[-3, -4, -3, 6, 8, 6, 0, 9]] },
+    { p: [-2, 19, 1], b: [[-1, 0, -3, 3, 5, 3, 26, 0]], swing: 1 }, { p: [1, 19, 1], b: [[-1, 0, -3, 3, 5, 3, 26, 0]], swing: -1 },
+    { p: [-4, 13, 0], b: [[0, 0, -3, 1, 4, 6, 24, 13]] }, { p: [4, 13, 0], b: [[-1, 0, -3, 1, 4, 6, 24, 13]] }] }
+};
+MOB_MODELS.mooshroom = { ...MOB_MODELS.cow, tex: ["cow/red_mooshroom"] };
+MOB_MODELS.zombie_villager = null; // uses a villager body, not done yet
+
+/** A box from Minecraft's model numbers, converted to this scene (y up, front +z). */
+function rbMcBox(x, y, z, w, h, d, u, v, grow, tw, th) {
+  const T = M3.T, g = grow || 0;
+  const x0 = x - g, x1 = x + w + g, y0 = -(y + h) - g, y1 = -y + g, z0 = -(z + d) - g, z1 = -z + g;
+  const pos = [], uv = [], idx = [];
+  const face = (a, b, c, e, u0, v0, u1, v1) => {
+    const n = pos.length / 3;
+    pos.push(...a, ...b, ...c, ...e);
+    uv.push(u0 / tw, v0 / th, u0 / tw, v1 / th, u1 / tw, v1 / th, u1 / tw, v0 / th);
+    idx.push(n, n + 1, n + 2, n, n + 2, n + 3);
+  };
+  face([x0, y1, z1], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], u + d, v + d, u + d + w, v + d + h);
+  face([x1, y1, z0], [x1, y0, z0], [x0, y0, z0], [x0, y1, z0], u + 2 * d + w, v + d, u + 2 * d + 2 * w, v + d + h);
+  face([x0, y1, z0], [x0, y0, z0], [x0, y0, z1], [x0, y1, z1], u, v + d, u + d, v + d + h);
+  face([x1, y1, z1], [x1, y0, z1], [x1, y0, z0], [x1, y1, z0], u + d + w, v + d, u + 2 * d + w, v + d + h);
+  face([x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0], u + d, v, u + d + w, v + d);
+  face([x0, y0, z1], [x0, y0, z0], [x1, y0, z0], [x1, y0, z1], u + d + w, v, u + d + 2 * w, v + d);
+  const geo = new T.BufferGeometry();
+  geo.setAttribute("position", new T.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("uv", new T.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  return geo;
+}
+const RB_ENTITY_TEX = new Map();
+function rbEntityTex(path) {
+  let t = RB_ENTITY_TEX.get(path);
+  if (t) return t;
+  const T = M3.T, c = document.createElement("canvas"); c.width = 64; c.height = 32;
+  t = new T.CanvasTexture(c); t.magFilter = T.NearestFilter; t.minFilter = T.NearestFilter; t.generateMipmaps = false; t.flipY = false;
+  t.size = [64, 32];
+  RB_ENTITY_TEX.set(path, t);
+  rbAsset(`minecraft/textures/entity/${path}.png`).then(img => {
+    if (!img) return;
+    c.width = img.width; c.height = img.height;
+    const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0);
+    t.size = [img.width, img.height]; t.dispose(); t.needsUpdate = true; M3.dirty = true;
+  });
+  return t;
+}
+/** A textured mob model, or null if this mob doesn't have one yet. */
+function rbMobModel(m) {
+  const key = m.type.replace(/^minecraft:/, "");
+  const spec = m.type.startsWith("minecraft:") ? MOB_MODELS[key] : null;
+  if (!spec) return null;
+  const T = M3.T, root = new T.Group(), model = new T.Group();
+  model.scale.setScalar((spec.scale || 1) / 16);
+  root.add(model);
+  const texs = spec.tex.map(rbEntityTex);
+  // texture sizes in the model files (64x64 for zombies, 64x32 for the rest)
+  const sizes = spec.tex.map(p => /zombie\//.test(p) ? [64, 64] : [64, 32]);
+  const mats = texs.map((t, i) => new T.MeshBasicMaterial({ map: t, alphaTest: 0.5, side: i ? T.DoubleSide : T.FrontSide, color: i && key === "sheep" ? 0xeeeeee : 0xffffff }));
+  const parts = [];
+  for (const part of spec.parts) {
+    const pivot = new T.Group();
+    pivot.position.set(part.p[0], 24 - part.p[1], -part.p[2]);
+    const base = part.r || [0, 0, 0];
+    pivot.rotation.set(base[0], -base[1], -base[2], "ZYX");
+    for (const [x, y, z, w, h, d, u, v, grow, ti] of part.b) {
+      const t = ti || 0;
+      pivot.add(new T.Mesh(rbMcBox(x, y, z, w, h, d, u, v, grow, sizes[t][0], sizes[t][1]), mats[t]));
+    }
+    model.add(pivot);
+    parts.push({ pivot, base, swing: part.swing || 0, head: !!part.head });
+  }
+  return { root, mob: true, model, parts, mats };
 }
 
 /* --- buttons --- */

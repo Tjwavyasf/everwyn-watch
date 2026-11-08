@@ -1,4 +1,30 @@
-# Everwyn Watch — Project Handoff
+# Everwyn App (formerly Everwyn Watch) — Project Handoff
+
+## READ THIS FIRST — state on 2026-11-08 (version 2.0.0)
+
+- **Newest code:** branch **`everwyn-app`** of `Tjwavyasf/everwyn-watch`. Every feature branch was built on the previous one, so `everwyn-app` contains everything:
+  `claude/funny-feynman-ifcll1` (1.9.0 3D map) → `everwyn-1.9.2` (1.9.2 admin tools, 1.9.3 death fix) → `everwyn-real-blocks` (1.10.0) → `everwyn-crash-reports` (1.11.0) → `everwyn-follow-cam` (1.12.0) → `everwyn-spawn-ledger` (1.13.0) → `everwyn-inventory` (1.14.0) → **`everwyn-app` (2.0.0)**.
+- **`main` is old** (only the original app + the separate Clocked In game). Nothing above has been merged; the "latest" release jar is old. Merge `everwyn-app` into `main` only when the owner says so (keep `warehouse-showdown/` on main untouched).
+- **Two jars are built:** `build/libs/everwyn-watch-<version>.jar` (server mod, display name "Everwyn App") and `crash-reporter/build/libs/everwyn-crash-reporter-1.0.0.jar` (client mod for the modpack; also packed inside the server jar and downloadable from the app).
+- **Build:** Java 17 target, **Gradle 8.10** (Loom 1.7 breaks on Gradle 8.14+), needs maven.fabricmc.net / Mojang hosts. GitHub Actions "Build mod jar" runs on every push and uploads both jars as artifacts.
+- **Mod id, config and data names are still `everwyn-watch`** (config/everwyn-watch.json etc.) so servers keep their settings. Don't rename them.
+- **Tested:** every feature was tested in a headless browser against a Python mock server with real Minecraft 1.20.1 textures, and Java compiles cleanly; parsers (crash summaries, Ledger DB, schematics) were tested against real-format data. **Not tested on the live server**: real-world use of 3D real blocks, spawning/taming, schematic placing, inventory moves, Ledger fix, mob models. Ask the owner for screenshots/logs.
+
+### What the app does now (all in the web app at `src/main/resources/assets/everwyn-watch/web/index.html`, one file, vanilla JS)
+Map (2D), Tabletop 3D and Free cam with **real blocks** (Minecraft models/textures, mod textures, biome tints, AO, water/lava), **See inside** slice, **underground** view, **follow camera** (Behind/Front/Side/Top/Free, close/far), live **player models with skins** (walk/sneak/swim/elytra/sleep), **real mob models** for common vanilla mobs (others boxes), players/deaths/crash reports/leaderboards/lag/schedules/Ledger/voice/modpack installer/mod upload/guarded restart, mob protection, **spawn mobs and tame pets for a player**, **schematic placer** (.nbt) with undo, **inventory editor** (move items between inventories, ender chests, other players, chests and death backups; trinkets; backpack contents), death vault with trinkets, **crash reports from players' games** (Everwyn Crash Reporter mod).
+
+### Key server files added recently
+`ChunkExport` (/api/chunk), `Live` (/api/live), `IconRenderer.asset` (/api/asset), `CrashReports` (/crash, /api/crashes), `SchematicPlacer` (/api/schematic), `Spawner` (/api/spawnables, spawn_mob, tame_entity), `InventoryEditor` (inv_move, inv_delete, /api/container), `MobGuard`, `RestartController`, `SingleModUpload`, `LedgerBridge` (fixed), `DeathVault` (trinkets, backup copy). Changelog has the details per version.
+
+### Open items / ideas (only build when the owner asks)
+1. Owner to test 2.0.0 on the server (3D real blocks + mobs, inventory moves, spawn/tame, Ledger). If Ledger still errors, the app now shows the exact message.
+2. More real mob models (spiders, wolves, villagers, endermen…) and GeckoLib modded mobs (their .geo.json files are in mod jars).
+3. "Always catch every death" (per-tick death detection + always-current inventory copy), proposed, not built.
+4. Check the thin "spikes" seen on grass in the software renderer on a real phone.
+5. Block entities (chests, signs, beds) are stand-ins; no block lighting; animated textures show frame 1.
+
+---
+
 
 _For any AI assistant or developer (ChatGPT, Codex, Claude, a person) continuing this project. Start with `AGENTS.md` at the repo root._
 
