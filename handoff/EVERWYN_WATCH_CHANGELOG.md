@@ -2,6 +2,12 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.1.0 — 2026-11-08 (branch `everwyn-app`)
+- "mob wave go" in chat: `Challenges.randomWave(player)` builds a challenge 5 blocks from the player (radius 18, so it starts right away): 5–10 waves, 1–3 random hostile mob types per wave (any `allowedMob`, minus bosses/flyers/annoying ones and ids containing "boss"), counts growing per wave, level 1→5 across the waves; time limit 5 + 2×waves minutes; random loot from common/rare/epic vanilla pools scaled by wave count.
+- Mob levels: wave entries may carry `level` 1–5 (kept by `cleanWaves`); spawned mobs get a visible "Lv N" name, armor by level (no drops) and Speed/Strength/Resistance/Health Boost/Fire Resistance.
+- Max waves per challenge raised from 5 to 10 (the app's builder still offers 5).
+- Config: `chatMobWaves` (default true), `chatMobWaveCooldownMin` (default 10). One random wave per player at a time.
+
 ## 2.0.1 — 2026-11-08 (branch `everwyn-app`)
 - Everwyn SMP logo (owner's artwork, `web/logo.png`) on the login screen and in the header; new app icons (icon-192/512, apple-touch-icon) with the logo on a forest-green tile with gold border. `/logo.png` served as a static file.
 

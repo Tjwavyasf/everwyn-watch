@@ -72,6 +72,11 @@ public class WatchConfig {
     /** If TPS remains below this for a minute, tighten limits temporarily. */
     public double mobGuardEmergencyTps = 14.0;
 
+    /** Players can type "mob wave go" in chat to start a random mob wave challenge around them. */
+    public boolean chatMobWaves = true;
+    /** Minutes a player waits between random mob waves. */
+    public int chatMobWaveCooldownMin = 10;
+
     /** Key the Everwyn Crash Reporter mod (in players' modpacks) uses to send crash reports. Not the app password. */
     public String crashKey = "";
     /** Push notification / Discord message when someone's game crashes. */

@@ -21,6 +21,7 @@ A server-side Fabric 1.20.1 mod that runs a small web app you can open on your p
 - **Deaths** – each player's last death spot shows as a red X on the map and in their profile.
 
 - **Care packages** – tap a waypoint (or "Care package" on a player), pick items from every item in the pack, and a chest drops there with a lightning strike.
+- **"mob wave go"** – any player can type `mob wave go` in chat to start a random challenge around them: 5–10 waves of random hostile mobs (vanilla and modded) that get stronger each wave (Lv 1–5: name tag, armor, Speed/Strength/Resistance), with random loot that's better for longer challenges. One at a time per player, 10-minute cooldown (`chatMobWaveCooldownMin`), turn off with `"chatMobWaves": false` in config/everwyn-watch.json.
 - **Mob wave challenges** – tap a waypoint → "Mob wave challenge here". Pick up to 5 waves of hostile mobs (vanilla or modded), a time limit and the loot. It starts when a player walks within 16 blocks. Beat every wave → loot chest appears. A player dies, time runs out, or everyone leaves → "Challenge failed" and the mobs vanish.
 
 - **Real item icons** – the server downloads Minecraft's own textures from Mojang once (about 25 MB) and draws every item and block icon, modded ones included.

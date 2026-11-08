@@ -11,6 +11,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +117,20 @@ public class EverwynWatch implements DedicatedServerModInitializer {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             String text = message.getContent().getString();
             s.events.add("chat", sender.getGameProfile().getName(), text);
+            // "mob wave go": a random mob wave challenge around the player
+            String cmd = text.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z ]", "").replaceAll("\\s+", " ").trim();
+            if (config.chatMobWaves && s.challenges != null && (cmd.equals("mob wave go") || cmd.equals("mobwave go"))) {
+                sender.getServer().execute(() -> {
+                    try {
+                        String msg = s.challenges.randomWave(sender);
+                        s.events.add("event", sender.getGameProfile().getName(), msg);
+                    } catch (IllegalArgumentException e) {
+                        sender.sendMessage(Text.literal("[Everwyn] ").formatted(Formatting.GOLD).append(Text.literal(e.getMessage()).formatted(Formatting.YELLOW)));
+                    } catch (Exception e) {
+                        LOG.error("Everwyn mob wave go failed", e);
+                    }
+                });
+            }
             Discord.send("chat", Discord.clean(text), sender.getGameProfile().getName(), sender.getUuidAsString());
         });
         ServerMessageEvents.COMMAND_MESSAGE.register((message, source, params) ->

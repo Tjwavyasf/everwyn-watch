@@ -47,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,7 +64,7 @@ import java.util.UUID;
 public final class Challenges {
     static final String MOB_TAG = "everwyn_wave";
     private static final int MAX_CHALLENGES = 20;
-    private static final int MAX_WAVES = 5;
+    private static final int MAX_WAVES = 10;
     private static final int MAX_MOBS_PER_WAVE = 50;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -282,6 +283,7 @@ public final class Challenges {
                 mob.addCommandTag(MOB_TAG);
                 mob.addCommandTag(w.runTag);
                 mob.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 60 * 60, 0, false, false));
+                if (s.has("level")) level(mob, s.get("level").getAsInt());
                 if (!targets.isEmpty()) mob.setTarget(targets.get(world.getRandom().nextInt(targets.size())));
                 w.mobs.add(mob.getUuid()); // before spawning, so the load check knows it's ours
                 world.spawnEntityAndPassengers(mob);
@@ -430,6 +432,124 @@ public final class Challenges {
 
     // ------------------------------------------------------------------ helpers
 
+    // ------------------------------------------------------------------ "mob wave go": random waves from chat
+
+    private final Map<UUID, Long> lastRandom = new HashMap<>();
+    private final Map<UUID, String> activeRandom = new HashMap<>();
+    private static final Set<EntityType<?>> NOT_RANDOM = Set.of(EntityType.WARDEN, EntityType.WITHER, EntityType.ELDER_GUARDIAN,
+            EntityType.GUARDIAN, EntityType.GIANT, EntityType.ILLUSIONER, EntityType.GHAST, EntityType.PHANTOM, EntityType.SHULKER,
+            EntityType.ENDERMITE, EntityType.SILVERFISH, EntityType.VEX, EntityType.ZOGLIN, EntityType.RAVAGER);
+
+    /** A random challenge (5-10 waves, random mobs with levels 1-5, random loot) right where the player is. */
+    public String randomWave(ServerPlayerEntity p) {
+        WatchConfig cfg = EverwynWatch.config();
+        long now = System.currentTimeMillis();
+        String running = activeRandom.get(p.getUuid());
+        if (running != null && challenges.containsKey(running)) throw new IllegalArgumentException("You already have a mob wave going. Finish it first!");
+        Long last = lastRandom.get(p.getUuid());
+        long cooldown = Math.max(0, cfg.chatMobWaveCooldownMin) * 60_000L;
+        if (last != null && now - last < cooldown) {
+            long left = (cooldown - (now - last) + 59_999) / 60_000;
+            throw new IllegalArgumentException("You can start another mob wave in " + left + " minute" + (left == 1 ? "" : "s") + ".");
+        }
+        List<EntityType<?>> pool = new ArrayList<>();
+        for (EntityType<?> t : Registries.ENTITY_TYPE) {
+            if (allowedMob(t) && !NOT_RANDOM.contains(t) && !Registries.ENTITY_TYPE.getId(t).getPath().contains("boss")) pool.add(t);
+        }
+        if (pool.isEmpty()) throw new IllegalArgumentException("No mobs to use");
+        net.minecraft.util.math.random.Random r = p.getWorld().getRandom();
+        int waves = 5 + r.nextInt(6); // 5-10
+        JsonArray defs = new JsonArray();
+        for (int i = 0; i < waves; i++) {
+            int level = Math.min(5, 1 + i * 5 / waves);
+            int kinds = 1 + r.nextInt(Math.min(3, 1 + i / 2));
+            int total = Math.min(MAX_MOBS_PER_WAVE, 3 + i * 2 + r.nextInt(3));
+            JsonArray wave = new JsonArray();
+            for (int k = 0; k < kinds; k++) {
+                JsonObject e = new JsonObject();
+                e.addProperty("mob", Registries.ENTITY_TYPE.getId(pool.get(r.nextInt(pool.size()))).toString());
+                e.addProperty("count", Math.max(1, total / kinds));
+                e.addProperty("level", level);
+                wave.add(e);
+            }
+            defs.add(wave);
+        }
+        JsonObject req = new JsonObject();
+        String name = p.getGameProfile().getName();
+        req.addProperty("name", name + "'s mob wave");
+        req.addProperty("dim", p.getWorld().getRegistryKey().getValue().toString());
+        double a = r.nextDouble() * Math.PI * 2;
+        req.addProperty("x", (int) Math.floor(p.getX() + Math.cos(a) * 5));
+        req.addProperty("y", (int) Math.floor(p.getY()));
+        req.addProperty("z", (int) Math.floor(p.getZ() + Math.sin(a) * 5));
+        req.addProperty("radius", 18);
+        req.addProperty("timeLimit", 5 + waves * 2);
+        req.add("waves", defs);
+        req.add("loot", randomLoot(r, waves));
+        createWave(req);
+        String id = null;
+        for (Wave w : challenges.values()) if (w.name.equals(cleanName(name + "'s mob wave", "Mob wave")) && w.state.equals("armed")) id = w.id;
+        if (id != null) activeRandom.put(p.getUuid(), id);
+        lastRandom.put(p.getUuid(), now);
+        p.sendMessage(prefix().append(Text.literal(waves + " waves are coming! Mobs get stronger each wave (up to level 5). Beat them all for loot.").formatted(Formatting.GOLD)));
+        return name + " started a random mob wave (" + waves + " waves)";
+    }
+
+    /** Random loot: better and more of it for longer challenges. */
+    private static JsonArray randomLoot(net.minecraft.util.math.random.Random r, int waves) {
+        String[][] common = {{"minecraft:iron_ingot", "16"}, {"minecraft:gold_ingot", "12"}, {"minecraft:cooked_beef", "16"}, {"minecraft:arrow", "32"},
+                {"minecraft:coal", "24"}, {"minecraft:experience_bottle", "16"}, {"minecraft:redstone", "24"}, {"minecraft:lapis_lazuli", "16"}, {"minecraft:bread", "16"}};
+        String[][] rare = {{"minecraft:diamond", "6"}, {"minecraft:emerald", "12"}, {"minecraft:golden_apple", "4"}, {"minecraft:ender_pearl", "8"},
+                {"minecraft:name_tag", "2"}, {"minecraft:saddle", "1"}, {"minecraft:blaze_rod", "6"}, {"minecraft:diamond_horse_armor", "1"}};
+        String[][] epic = {{"minecraft:netherite_scrap", "2"}, {"minecraft:enchanted_golden_apple", "1"}, {"minecraft:totem_of_undying", "1"},
+                {"minecraft:elytra", "1"}, {"minecraft:diamond_block", "2"}, {"minecraft:netherite_upgrade_smithing_template", "1"}};
+        JsonArray out = new JsonArray();
+        java.util.function.BiConsumer<String[][], Integer> pick = (pool, n) -> {
+            for (int i = 0; i < n; i++) {
+                String[] it = pool[r.nextInt(pool.length)];
+                int max = Integer.parseInt(it[1]);
+                JsonObject o = new JsonObject();
+                o.addProperty("id", it[0]);
+                o.addProperty("count", Math.max(1, max / 2 + r.nextInt(max / 2 + 1)));
+                out.add(o);
+            }
+        };
+        pick.accept(common, 3 + r.nextInt(3));
+        pick.accept(rare, 1 + waves / 3 + r.nextInt(2));
+        if (waves >= 7 || r.nextInt(4) == 0) pick.accept(epic, waves >= 9 ? 2 : 1);
+        return out;
+    }
+
+    /** Makes a challenge mob stronger: a "Lv N" name, armor and effects. */
+    private static void level(MobEntity mob, int level) {
+        if (level <= 1) return;
+        mob.setCustomName(Text.literal("Lv " + level + " ").formatted(level >= 5 ? Formatting.DARK_RED : level >= 4 ? Formatting.RED : Formatting.GOLD)
+                .append(mob.getType().getName().copy().formatted(Formatting.WHITE)));
+        mob.setCustomNameVisible(true);
+        int long_ = 20 * 60 * 60;
+        mob.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, long_, level >= 5 ? 1 : 0, false, false));
+        if (level >= 3) mob.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, long_, level >= 5 ? 1 : 0, false, false));
+        if (level >= 4) {
+            mob.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, long_, 0, false, false));
+            mob.addStatusEffect(new StatusEffectInstance(StatusEffects.HEALTH_BOOST, long_, level - 3, false, false));
+        }
+        if (level >= 5) mob.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, long_, 0, false, false));
+        Item[][] sets = {
+                {Items.LEATHER_HELMET, null, null, null},
+                {Items.CHAINMAIL_HELMET, Items.CHAINMAIL_CHESTPLATE, null, null},
+                {Items.IRON_HELMET, Items.IRON_CHESTPLATE, Items.IRON_LEGGINGS, Items.IRON_BOOTS},
+                {Items.DIAMOND_HELMET, Items.DIAMOND_CHESTPLATE, Items.DIAMOND_LEGGINGS, Items.DIAMOND_BOOTS}};
+        Item[] set = sets[Math.min(sets.length - 1, level - 2)];
+        net.minecraft.entity.EquipmentSlot[] slots = {net.minecraft.entity.EquipmentSlot.HEAD, net.minecraft.entity.EquipmentSlot.CHEST,
+                net.minecraft.entity.EquipmentSlot.LEGS, net.minecraft.entity.EquipmentSlot.FEET};
+        for (int i = 0; i < 4; i++) {
+            if (set[i] == null) continue;
+            mob.equipStack(slots[i], new ItemStack(set[i]));
+            mob.setEquipmentDropChance(slots[i], 0f); // no armor farming
+        }
+        mob.setHealth(mob.getMaxHealth());
+    }
+
     static boolean allowedMob(EntityType<?> t) {
         return t.getSpawnGroup() == SpawnGroup.MONSTER && t.isSummonable() && t != EntityType.ENDER_DRAGON;
     }
@@ -454,6 +574,7 @@ public final class Challenges {
                 JsonObject c = new JsonObject();
                 c.addProperty("mob", id.toString());
                 c.addProperty("count", count);
+                if (s.has("level")) c.addProperty("level", clamp(s.get("level").getAsInt(), 1, 5));
                 wave.add(c);
             }
             if (wave.isEmpty()) throw new IllegalArgumentException("Wave " + n + " has no mobs");
