@@ -43,6 +43,16 @@ final class Inventories {
             o.addProperty("y", (int) Math.floor(online.getY()));
             o.addProperty("z", (int) Math.floor(online.getZ()));
             o.addProperty("xp", online.experienceLevel);
+            JsonArray tr = new JsonArray();
+            for (InventoryEditor.TrinketSlot t : InventoryEditor.trinkets(online)) {
+                JsonObject it = item(t.inv().getStack(t.index()), -1);
+                if (it == null) it = new JsonObject();
+                it.addProperty("key", t.key());
+                it.addProperty("group", t.group());
+                it.addProperty("slotName", t.slot());
+                tr.add(it);
+            }
+            o.add("trinkets", tr);
         } else {
             GameProfile profile = AdminActions.profileByName(server, name);
             if (profile == null) throw new IllegalArgumentException("Never seen a player called " + name);
@@ -80,14 +90,56 @@ final class Inventories {
     }
 
     private static void add(JsonArray arr, int slot, ItemStack s) {
-        if (s == null || s.isEmpty()) return;
+        JsonObject it = item(s, slot);
+        if (it != null) arr.add(it);
+    }
+
+    /** An item for the app: id, name, count, enchanted, durability, and what's inside it (shulkers, bundles, backpacks). */
+    static JsonObject item(ItemStack s, int slot) {
+        return item(s, slot, 0);
+    }
+
+    private static JsonObject item(ItemStack s, int slot, int depth) {
+        if (s == null || s.isEmpty()) return null;
         JsonObject it = new JsonObject();
-        it.addProperty("slot", slot);
+        if (slot >= 0) it.addProperty("slot", slot);
         it.addProperty("id", Registries.ITEM.getId(s.getItem()).toString());
         it.addProperty("name", s.getName().getString());
         it.addProperty("count", s.getCount());
         if (s.hasEnchantments()) it.addProperty("ench", true);
         if (s.isDamageable() && s.getMaxDamage() > 0) it.addProperty("dur", Math.round(100.0 * (s.getMaxDamage() - s.getDamage()) / s.getMaxDamage()));
-        arr.add(it);
+        if (s.hasCustomName()) it.addProperty("custom", true);
+        if (depth == 0 && s.hasNbt()) {
+            NbtList inside = contents(s.getNbt(), 0);
+            if (inside != null && !inside.isEmpty()) {
+                JsonArray arr = new JsonArray();
+                for (int i = 0; i < inside.size() && arr.size() < 200; i++) {
+                    NbtCompound c = inside.getCompound(i);
+                    JsonObject sub = item(ItemStack.fromNbt(c), c.contains("Slot") ? c.getByte("Slot") & 0xFF : i, 1);
+                    if (sub != null) arr.add(sub);
+                }
+                if (!arr.isEmpty()) it.add("inside", arr);
+            }
+        }
+        return it;
+    }
+
+    /**
+     * Items stored inside an item: shulker boxes (BlockEntityTag.Items), bundles (Items) and most modded
+     * backpacks (Items / Inventory / inventory...): any list of item compounds a few levels down.
+     */
+    private static NbtList contents(NbtCompound nbt, int depth) {
+        if (nbt == null || depth > 3) return null;
+        for (String k : nbt.getKeys()) {
+            NbtElement el = nbt.get(k);
+            if (el instanceof NbtList list && list.getHeldType() == NbtElement.COMPOUND_TYPE && !list.isEmpty()) {
+                NbtCompound first = list.getCompound(0);
+                if (first.contains("id", NbtElement.STRING_TYPE) && (first.contains("Count") || first.contains("count"))) return list;
+            } else if (el instanceof NbtCompound c && !k.equals("display") && !k.equals("Enchantments")) {
+                NbtList found = contents(c, depth + 1);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 }

@@ -187,6 +187,18 @@ ol.steps{padding-left:20px;margin:6px 0 12px;color:var(--text)} ol.steps li{marg
 #listenBar .meter span{position:absolute;left:0;top:0;bottom:0;background:var(--grass);transition:width .15s}
 #listenBar .txt{flex:1;min-width:0;font-size:13px}
 .map-status{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);max-width:86%;background:rgba(20,25,21,.94);box-shadow:0 0 0 2px #0b0e0c;padding:12px 14px;border-radius:2px;font-size:13px;text-align:center;color:var(--muted);pointer-events:none}
+.mcpanel{background:#c6c6c6;box-shadow:inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #0b0e0c;border-radius:4px;padding:10px;color:#3f3f3f}
+.mcname{font-family:var(--pix);font-size:11px;color:#3f3f3f;margin:0 0 6px}
+.mcrow{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.mccol{display:flex;flex-direction:column;gap:3px;width:calc((100% - 24px) / 9 * 1.1);flex:none}
+.mcmid{flex:1;min-width:0;background:#000;box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff;padding:6px;align-self:stretch;min-height:120px}
+.mcmid .mcname{color:#e6ebe3}
+.mctr{display:flex;flex-wrap:wrap;gap:6px}
+.mctrs{display:flex;flex-direction:column;align-items:center;width:46px;font-family:var(--pix);font-size:8px;color:#bbb;text-align:center;line-height:1.1}
+.mctrs .slot{width:40px}
+.mcinv{max-width:none}
+.slot .in{position:absolute;left:2px;top:1px;font-family:var(--pix);font-size:8px;color:#ffd75e;text-shadow:1px 1px 0 #3f3f3f}
+.ivhold{position:sticky;bottom:0;background:var(--panel);box-shadow:0 0 0 2px #0b0e0c;padding:10px;margin-top:10px;border-radius:2px}
 .slot.picked{box-shadow:inset 2px 2px 0 #373737, inset -2px -2px 0 #fff, 0 0 0 3px var(--grass)}
 .slot.picked::after{content:"";position:absolute;right:2px;top:2px;width:8px;height:8px;background:var(--grass);box-shadow:0 0 0 1px #0b0e0c}
 .slot.done{opacity:.4}
@@ -730,7 +742,7 @@ function renderSheet() {
   const group = (title, buttons) => { const b = buttons.join(""); return b ? `<h2 class="sec">${title}</h2><div class="actions">${b}</div>` : ""; };
   html += group("Help them", [B_("heal", "heal", "Heal", "green"), B_("feed", "feed", "Feed", "green"), B_("give", "give", "Give items", "gold"),
       B_("package", "pkg", "Care package", "gold"), B_("clear_effects", "cleareff", "Clear effects"), B_("spawn_mob", "spawnmob", "Spawn a mob / pet")]);
-  html += group("Look", [state.voice && canAll() ? B_("", "listen", "Listen to voice", "green") : "", B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
+  html += group("Look", [isStaff() ? B_("", "openinv", "Open inventory", "gold") : "", state.voice && canAll() ? B_("", "listen", "Listen to voice", "green") : "", B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
   html += `<div id="enderBox"></div>`;
   html += group("Move", [B_("", "map", "Show on map"), B_("tp_to_player", "tp", "Teleport"), B_("to_spawn", "spawn", "Send to spawn"), B_("waypoint_add", "wp", "Waypoint here")]);
   html += group("Manage", [B_("message", "msg", "Message"), B_("gamemode", "gm", "Gamemode"), B_("kick", "kick", "Kick", "red"), B_("ban", "ban", "Ban", "red"),
@@ -772,6 +784,9 @@ $("#sheet").addEventListener("click", async e => {
     case "cleareff": action({ action: "clear_effects", player: name }); break;
     case "spawn": action({ action: "to_spawn", player: name }); break;
     case "give": openBuilder("give", { player: name, name }); break;
+    case "openinv": openInv({ type: "ender", name }, { type: "player", name }); break;
+    case "dinv": if (openDeathData) { const d = openDeathData; openInv({ type: "death", id: d.id, name: d.player }, { type: "player", name: d.player }); } break;
+    case "pinv": { const nm = $("#sheetHead .pname")?.textContent; if (nm) openInv({ type: "ender", name: nm }, { type: "player", name: nm }); break; }
     case "spawnmob": { const pp = findPlayer(name); if (pp) openSpawn({ dim: pp.dim, x: Math.floor(pp.x) + 1, y: Math.floor(pp.y), z: Math.floor(pp.z), owner: name, near: name }); break; }
     case "deaths": closeSheet(); deathFilter = name; showView("deaths"); break;
     case "smite": action({ action: "smite", player: name }); break;
@@ -1173,6 +1188,7 @@ async function openDeath(id) {
       <button class="btn" data-a="dselnone"${pickable ? "" : " disabled"}>Clear selection</button>
       <button class="btn gold" data-a="drestore" style="grid-column:1/-1"${d.online && d.items ? "" : " disabled"}>Give back everything</button>`;
   } else h += `<div class="actions">`;
+  if (isStaff()) h += `<button class="btn gold" data-a="dinv" style="grid-column:1/-1">Open next to their inventory</button>`;
   h += `<button class="btn" data-a="dmap">Show on map</button>${canDo("waypoint_add") ? `<button class="btn" data-a="dwp">Save as waypoint</button>` : ""}</div>`;
   $("#sheetBody").innerHTML = h; $("#sheetBody").scrollTop = 0;
   $("#scrim").classList.remove("hidden"); $("#sheet").classList.remove("closed");
@@ -1267,6 +1283,7 @@ async function mapSpotMenu(dim, x, y, z) {
   if (canDo("waypoint_add")) buttons.push({ key: "wp", label: "Drop a waypoint here", cls: "green" });
   if (isStaff()) buttons.push({ key: "ledger", label: "Who changed this area? (Ledger)" });
   if (canAll()) { buttons.push({ key: "pkg", label: "Care package here" }); buttons.push({ key: "wave", label: "Mob wave challenge here" }); }
+  if (isStaff()) buttons.push({ key: "chest", label: "Open the chest/container here" });
   if (canDo("spawn_mob")) buttons.push({ key: "spawn", label: "Spawn a mob here" });
   if (schem) { buttons.push({ key: "schem", label: "Place schematic here" }); if (schem.undo) buttons.push({ key: "schemUndo", label: "Undo last schematic", cls: "red" }); }
   if (!buttons.length) return;
@@ -1277,9 +1294,201 @@ async function mapSpotMenu(dim, x, y, z) {
   else if (k === "wave") openBuilder("wave", { name: "", dim, x, y, z });
   else if (k === "schem") placeSchematic(dim, x, y, z, schem);
   else if (k === "spawn") openSpawn({ dim, x, y, z });
+  else if (k === "chest") {
+    const near = (state?.players || []).filter(p => p.dim === dim).sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z))[0];
+    openInv({ type: "block", dim, x, y: y - 1, z }, near ? { type: "player", name: near.name } : null);
+  }
   else if (k === "schemUndo") {
     if (await choose("Undo the last schematic?", "Puts back the blocks that were there before.", [{ key: "yes", label: "Undo", cls: "red" }]) === "yes") action({ action: "schematic_undo" });
   }
+}
+
+/* ---------- inventory editor: Minecraft-style, move items between players, ender chests, chests and death backups ---------- */
+// A pane is { type: "player"|"ender"|"block"|"death", name, dim, x, y, z, id }. Tap an item to pick it up, tap a slot to put it there.
+const IV = { top: null, bottom: null, data: {}, refs: [], held: null, timer: 0 };
+function openInv(top, bottom) {
+  IV.top = top; IV.bottom = bottom; IV.held = null; IV.data = {};
+  sheetPlayer = null; sheetMode = "inv"; openDeathData = null;
+  openPanel(`<div class="pmain"><div class="pname">Inventory</div><div class="sub" id="ivSub">Tap an item, then tap where it goes</div></div>`, `<div id="invEd"><div class="card sub">Loading…</div></div>`);
+  $("#invEd").addEventListener("click", ivClick);
+  ivLoad();
+  clearInterval(IV.timer);
+  IV.timer = setInterval(() => { if (sheetMode !== "inv" || $("#sheet").classList.contains("closed")) { clearInterval(IV.timer); return; } if (!IV.held) ivLoad(); }, 4000);
+}
+const ivKey = p => p ? p.type + ":" + (p.name || p.id || [p.dim, p.x, p.y, p.z].join(",")) : "";
+async function ivFetch(p) {
+  if (!p) return null;
+  if (p.type === "player" || p.type === "ender") {
+    const r = await api("/api/inventory?player=" + encodeURIComponent(p.name));
+    const d = await r.json(); if (!r.ok) throw Error(d.error || "Couldn't open that inventory"); return d;
+  }
+  if (p.type === "block") {
+    const r = await api(`/api/container?dim=${encodeURIComponent(p.dim)}&x=${p.x}&y=${p.y}&z=${p.z}`);
+    const d = await r.json(); if (!r.ok) throw Error(d.error || "Couldn't open that container"); return d;
+  }
+  if (p.type === "death") {
+    const r = await api("/api/death?id=" + encodeURIComponent(p.id));
+    const d = await r.json(); if (!r.ok) throw Error(d.error || "Couldn't open that death"); return d;
+  }
+}
+async function ivLoad() {
+  const panes = [IV.top, IV.bottom].filter(Boolean);
+  const seen = {};
+  try {
+    for (const p of panes) {
+      const k = p.type === "ender" ? "player:" + p.name : ivKey(p);
+      if (!(k in seen)) seen[k] = await ivFetch(p);
+      if (p.type === "block" && seen[k]?.y != null) p.y = seen[k].y; // the server found the chest's real height
+      IV.data[ivKey(p)] = seen[k];
+      if (p.type === "ender" || p.type === "player") IV.data["player:" + p.name] = seen[k];
+    }
+    IV.error = null;
+  } catch (e) { IV.error = e.message; }
+  ivRender();
+}
+function ivSlot(ref, it, extraCls = "") {
+  const i = IV.refs.push(ref) - 1;
+  const held = IV.held && JSON.stringify(IV.held.ref) === JSON.stringify(ref);
+  if (!it) return `<div class="slot${extraCls}${held ? " picked" : ""}" data-r="${i}"></div>`;
+  const durCol = it.dur > 50 ? "#55ff55" : it.dur > 20 ? "#ffff55" : "#ff5555";
+  return `<div class="slot${it.ench ? " ench" : ""}${extraCls}${held ? " picked" : ""}" data-r="${i}" title="${esc(it.name)}">
+    ${itemFace(it.id)}${it.count > 1 ? `<span class="ct">${it.count}</span>` : ""}
+    ${it.dur != null && it.dur < 100 ? `<span class="du"><span style="width:${it.dur}%;background:${durCol}"></span></span>` : ""}
+    ${it.inside ? `<span class="in">${it.inside.length}</span>` : ""}</div>`;
+}
+const IV_ARMOR = [[39, "Helmet"], [38, "Chestplate"], [37, "Leggings"], [36, "Boots"]];
+function ivPlayerPane(p, d, death) {
+  const items = death ? d.itemList : d.items;
+  const slots = {}; for (const it of items || []) slots[it.slot] = it;
+  const ref = slot => death ? { kind: "death", id: p.id, slot } : { kind: "player", name: p.name, part: "main", slot };
+  const trinkets = death ? (d.itemList || []).filter(it => it.slot >= 1000) : (d.trinkets || []);
+  let h = `<div class="mcrow"><div class="mccol">${IV_ARMOR.map(([s]) => ivSlot(ref(s), slots[s], " gear")).join("")}</div>
+    <div class="mcmid"><div class="mcname">${esc(death ? d.player + " · death " + ago(d.time) : d.name)}${death ? "" : d.online ? "" : " · offline"}</div>
+      ${trinkets.length ? `<div class="mctr">${trinkets.map(t => `<div class="mctrs"><span>${esc(t.trinket || t.slotName || "")}</span>${ivSlot(death ? ref(t.slot) : { kind: "player", name: p.name, part: "trinket", key: t.key }, t.id ? t : null)}</div>`).join("")}</div>`
+        : `<div class="sub" style="color:#555">${death ? "" : d.online ? "No trinket slots" : "Trinkets show when they're online"}</div>`}</div>
+    <div class="mccol">${ivSlot(ref(40), slots[40], " gear")}</div></div>
+    <div class="inv mcinv">${Array.from({ length: 27 }, (_, i) => ivSlot(ref(i + 9), slots[i + 9])).join("")}</div>
+    <div class="inv mcinv" style="margin-top:8px">${Array.from({ length: 9 }, (_, i) => ivSlot(ref(i), slots[i])).join("")}</div>`;
+  return h;
+}
+function ivGridPane(title, size, items, ref) {
+  const slots = {}; for (const it of items || []) slots[it.slot] = it;
+  return `<div class="mcname">${esc(title)}</div><div class="inv mcinv">${Array.from({ length: size }, (_, i) => ivSlot(ref(i), slots[i])).join("")}</div>`;
+}
+function ivPane(p, which) {
+  if (!p) return `<div class="mcpanel"><div class="mcname">Pick a player</div><div class="chips" style="flex-wrap:wrap">${(state?.players || []).map(pl => `<button class="chip" data-ivpick="${which}" data-n="${esc(pl.name)}">${esc(pl.name)}</button>`).join("") || `<span class="sub">Nobody online</span>`}</div></div>`;
+  const d = IV.data[ivKey(p)];
+  if (!d) return `<div class="mcpanel"><div class="sub" style="color:#555">${IV.error ? esc(IV.error) : "Loading…"}</div></div>`;
+  let h = `<div class="mcpanel">`;
+  if (p.type === "player") h += ivPlayerPane(p, d, false);
+  else if (p.type === "death") h += ivPlayerPane(p, d, true);
+  else if (p.type === "ender") h += ivGridPane(d.name + "'s ender chest", 27, d.ender, i => ({ kind: "player", name: p.name, part: "ender", slot: i }));
+  else if (p.type === "block") h += ivGridPane(`${d.name} · ${p.x}, ${p.y}, ${p.z}`, d.size, d.items, i => ({ kind: "block", dim: p.dim, x: p.x, y: p.y, z: p.z, slot: i }));
+  return h + `</div>`;
+}
+function ivRender() {
+  IV.refs = [];
+  const canEdit = canDo("inv_move");
+  const who = IV.bottom?.type === "player" ? IV.bottom.name : null;
+  const tabs = [];
+  if (who) {
+    tabs.push(["ender", "Ender chest"]);
+    tabs.push(["other", "Another player"]);
+    tabs.push(["deaths", "Their deaths"]);
+  }
+  let h = tabs.length ? `<div class="filters" style="margin-bottom:8px">${tabs.map(([k, l]) => `<button class="chip ${IV.top && ((k === "ender" && IV.top.type === "ender") || (k === "other" && IV.top.type === "player") || (k === "deaths" && IV.top.type === "death")) ? "on" : ""}" data-ivtab="${k}">${l}</button>`).join("")}${IV.top?.type === "block" ? `<button class="chip on">Container</button>` : ""}</div>` : "";
+  h += ivPane(IV.top, "top") + `<div style="height:10px"></div>` + ivPane(IV.bottom, "bottom");
+  if (IV.held) {
+    const it = IV.held.item;
+    h += `<div class="ivhold"><div style="display:flex;align-items:center;gap:8px"><div class="slot" style="width:40px;flex:none">${itemFace(it.id)}${it.count > 1 ? `<span class="ct">${it.count}</span>` : ""}</div>
+      <div class="pmain"><div class="pname" style="font-size:14px">${esc(it.name)}${IV.held.count ? ` (moving ${IV.held.count})` : ""}</div><div class="sub">Tap a slot to put it there</div></div></div>
+      <div class="actions" style="margin-top:8px">${it.count > 1 ? `<button class="btn small" data-ivh="half">Half</button><button class="btn small" data-ivh="one">Just 1</button>` : ""}
+      ${it.inside ? `<button class="btn small" data-ivh="inside">What's inside</button>` : ""}
+      ${IV.held.ref.kind !== "death" && canEdit ? `<button class="btn small red" data-ivh="del">Delete</button>` : ""}<button class="btn small" data-ivh="cancel">Cancel</button></div></div>`;
+  } else if (!canEdit) h += `<p class="hint">You can look, but only admins can move items.</p>`;
+  else h += `<p class="hint">Tap an item to pick it up, then tap where it goes (another slot, the other inventory, a chest). Items from a death backup are copied, so the backup stays.</p>`;
+  $("#invEd").innerHTML = h;
+}
+async function ivClick(e) {
+  e.stopPropagation();
+  const t = e.target;
+  const tab = t.closest("[data-ivtab]");
+  if (tab) {
+    const who = IV.bottom.name, k = tab.dataset.ivtab;
+    if (k === "ender") IV.top = { type: "ender", name: who };
+    else if (k === "other") {
+      const others = (state?.players || []).map(p => p.name).filter(n => n !== who);
+      const pick = await choose("Whose inventory?", "Shows it above, so you can move items between them.", others.map(n => ({ key: n, label: n })).concat([{ key: "#type", label: "Someone offline…" }]));
+      if (!pick) return;
+      let n = pick;
+      if (pick === "#type") { const v = await ask("Player", [{ name: "n", label: "Their Minecraft name" }], "Open"); n = v?.n?.trim(); if (!n) return; }
+      IV.top = { type: "player", name: n };
+    } else if (k === "deaths") {
+      let list = [];
+      try { const r = await api("/api/deaths"); list = (await r.json()).filter(d => d.player === who); } catch (err) {}
+      if (!list.length) { toast(`No saved deaths for ${who}`); return; }
+      const pick = await choose(`${who}'s deaths`, "Copy items back from one:", list.slice(0, 8).map(d => ({ key: d.id, label: `${ago(d.time)} · ${d.items} items` })));
+      if (!pick) return;
+      IV.top = { type: "death", id: pick, name: who };
+    }
+    IV.held = null; IV.data = {}; ivRender(); ivLoad(); return;
+  }
+  const pk = t.closest("[data-ivpick]");
+  if (pk) { IV[pk.dataset.ivpick] = { type: "player", name: pk.dataset.n }; ivLoad(); return; }
+  const hb = t.closest("[data-ivh]");
+  if (hb && IV.held) {
+    const k = hb.dataset.ivh, it = IV.held.item;
+    if (k === "cancel") IV.held = null;
+    else if (k === "half") IV.held.count = Math.ceil(it.count / 2);
+    else if (k === "one") IV.held.count = 1;
+    else if (k === "inside") { ivInside(it); return; }
+    else if (k === "del") {
+      if (await choose(`Delete ${IV.held.count || it.count} ${it.name}?`, "It's gone for good.", [{ key: "yes", label: "Delete", cls: "red" }]) !== "yes") return;
+      const ok = await action({ action: "inv_delete", ref: IV.held.ref, count: IV.held.count || 0 });
+      IV.held = null; if (ok) await ivLoad(); else ivRender(); return;
+    }
+    ivRender(); return;
+  }
+  const sl = t.closest("[data-r]");
+  if (!sl) return;
+  const ref = IV.refs[+sl.dataset.r], item = ivItemAt(ref);
+  if (!IV.held) {
+    if (!item) return;
+    if (!canDo("inv_move")) { ivInside(item); return; }
+    IV.held = { ref, item, count: 0 }; ivRender(); return;
+  }
+  if (JSON.stringify(ref) === JSON.stringify(IV.held.ref)) { IV.held = null; ivRender(); return; }
+  const move = { action: "inv_move", from: IV.held.ref, to: ref, count: IV.held.count || 0 };
+  IV.held = null;
+  $("#ivSub").textContent = "Moving…";
+  await action(move);
+  $("#ivSub").textContent = "Tap an item, then tap where it goes";
+  await ivLoad();
+}
+/** The item shown in a slot right now (from the loaded data). */
+function ivItemAt(ref) {
+  const find = (list, s) => (list || []).find(it => it.slot === s) || null;
+  if (ref.kind === "player") {
+    const d = IV.data["player:" + ref.name] || IV.data["ender:" + ref.name];
+    if (!d) return null;
+    if (ref.part === "ender") return find(d.ender, ref.slot);
+    if (ref.part === "trinket") { const t = (d.trinkets || []).find(x => x.key === ref.key); return t && t.id ? t : null; }
+    return find(d.items, ref.slot);
+  }
+  if (ref.kind === "block") return find(IV.data[ivKey({ type: "block", dim: ref.dim, x: ref.x, y: ref.y, z: ref.z })]?.items, ref.slot);
+  if (ref.kind === "death") return find(IV.data["death:" + ref.id]?.itemList, ref.slot);
+  return null;
+}
+/** What's inside a shulker box, bundle or backpack (and the item's details). */
+function ivInside(it) {
+  choose(it.name + (it.count > 1 ? " ×" + it.count : ""), `${it.id}${it.dur != null ? ` · ${it.dur}% durability` : ""}${it.ench ? " · enchanted" : ""}${it.inside ? `\n${it.inside.length} stacks inside:` : ""}`, []);
+  if (!it.inside) return;
+  const slots = {}; for (const x of it.inside) slots[x.slot] = x;
+  const last = Math.max(...it.inside.map(x => x.slot));
+  const n = Math.min(108, Math.max(9, Math.ceil((last + 1) / 9) * 9));
+  const box = $("#modalForm .choices");
+  box.lastElementChild.insertAdjacentHTML("beforebegin", `<div class="inv mcinv" style="margin:6px 0">${Array.from({ length: n }, (_, i) => slotHtml(slots[i])).join("")}</div>`);
+  box.lastElementChild.textContent = "Close";
 }
 
 /* ---------- spawn mobs, tame pets for a player ---------- */
@@ -1515,7 +1724,7 @@ async function openProfile(name) {
   b += `</div>`;
   if (banned) b += `<div class="note bad">Banned: ${esc(banned.reason || "no reason")}</div>`;
   if (d) b += `<h2 class="sec">Inventory (from their last save)</h2>${invGrids(d.items)}<h2 class="sec">Ender chest</h2>${enderGrid(d.ender)}`;
-  b += `<h2 class="sec">Actions</h2><div class="actions"><button class="btn" data-a="pdeaths">Their deaths</button><button class="btn" data-a="ptrail">Movement trail</button>
+  b += `<h2 class="sec">Actions</h2><div class="actions">${isStaff() ? `<button class="btn gold" data-a="pinv" style="grid-column:1/-1">Open inventory</button>` : ""}<button class="btn" data-a="pdeaths">Their deaths</button><button class="btn" data-a="ptrail">Movement trail</button>
     ${d?.x != null ? `<button class="btn" data-a="pmap">Show where they logged out</button>` : ""}
     ${isStaff() ? `<button class="btn" data-a="pledger">What they changed</button>` : ""}
     ${canDo("ban") ? (banned ? `<button class="btn green" data-a="punban">Unban</button>` : `<button class="btn red" data-a="pban">Ban</button>`) : ""}</div>`;

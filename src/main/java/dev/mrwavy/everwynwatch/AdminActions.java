@@ -123,6 +123,24 @@ final class AdminActions {
                 yield "Test message sent to Discord";
             }
             case "remove_entity" -> Mobs.remove(server, str(req, "id"));
+            case "inv_move" -> {
+                try {
+                    yield InventoryEditor.move(s, req.getAsJsonObject("from"), req.getAsJsonObject("to"), req.has("count") ? (int) num(req, "count") : 0);
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Couldn't move it: " + e.getMessage());
+                }
+            }
+            case "inv_delete" -> {
+                try {
+                    yield InventoryEditor.delete(s, req.getAsJsonObject("ref"), req.has("count") ? (int) num(req, "count") : 0);
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Couldn't delete it: " + e.getMessage());
+                }
+            }
             case "spawn_mob" -> {
                 ServerWorld w = world(server, str(req, "dim"));
                 if (w == null) throw new IllegalArgumentException("Unknown world");

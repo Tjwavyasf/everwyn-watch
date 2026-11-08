@@ -2,6 +2,13 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.14.0 — 2026-11-08 (branch `everwyn-inventory`, based on 1.13.0)
+- `InventoryEditor`: actions `inv_move` (from/to refs: `{kind:"player", name, part:"main"|"ender"|"trinket", slot|key}`, `{kind:"block", dim,x,y,z, slot}`, `{kind:"death", id, slot}` copy-only; count 0 = whole stack; stacks merge, otherwise swap) and `inv_delete`. Online players change live (screens synced); offline players' main/armor/offhand/ender are edited in their playerdata file (backup `_old` written first). Trinket slots via the Trinkets API by reflection (no hard dependency; online only).
+- `/api/container?dim&x&y&z`: chest (double chests combined), barrel or any block-entity inventory; searches up to 12 blocks up/down for one (the 2D map doesn't know heights) and returns its real `y`.
+- `/api/inventory` and death details now include `trinkets` and, for shulker boxes / bundles / backpacks, the `inside` items (any list of item compounds in the item's NBT, 3 levels deep).
+- `DeathVault`: snapshots (and the 1-second backup) save trinkets; restore puts them back into their slots (or gives them if the slot is gone); trinkets appear in the death item list from slot 1000.
+- App: Minecraft-style inventory editor (player panel → Open inventory, offline profile → Open inventory, death → Open next to their inventory, map hold → Open the chest/container here), tabs Ender chest / Another player / Their deaths, hold bar (Half, Just 1, What's inside, Delete, Cancel).
+
 ## 1.13.0 — 2026-11-08 (branch `everwyn-spawn-ledger`, based on 1.12.0)
 - Spawn mobs: `Spawner`, `/api/spawnables` (every summonable living mob, vanilla + modded, with tame/baby flags; bosses left out), action `spawn_mob` (dim, x, y, z, type, count 1–20, owner, name, baby; spot must be loaded). App: map hold menu → Spawn a mob here; player panel → Spawn a mob / pet (next to them, owner pre-filled).
 - Tame: spawned tameables (TameableEntity, horses/llamas) can be tamed for a player; action `tame_entity` tames a mob on the map or gives a pet to someone else. `/api/mobs` now marks `tamable` and pets' `owner`.

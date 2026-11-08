@@ -200,6 +200,17 @@ public final class WebServer {
                     sendJson(ex, 503, error("busy"));
                 }
             }
+            case "/api/container" -> {
+                if (!staff) { sendJson(ex, 403, error("Viewers can't open containers")); return; }
+                String dim = q.getOrDefault("dim", "minecraft:overworld");
+                int x = (int) parseLong(q.get("x"), 0), y = (int) parseLong(q.get("y"), 0), z = (int) parseLong(q.get("z"), 0);
+                sendJson(ex, 200, onServer(() -> {
+                    for (net.minecraft.server.world.ServerWorld w : s.server.getWorlds()) {
+                        if (w.getRegistryKey().getValue().toString().equals(dim)) return InventoryEditor.container(w, x, y, z).toString();
+                    }
+                    throw new IllegalArgumentException("Unknown world");
+                }, 5));
+            }
             case "/api/spawnables" -> {
                 if (!admin) { sendJson(ex, 403, error("Only admins can spawn mobs")); return; }
                 sendJson(ex, 200, onServer(() -> Spawner.catalog(s.server), 20));

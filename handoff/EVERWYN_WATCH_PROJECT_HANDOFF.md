@@ -75,7 +75,11 @@ Map (live players, Overworld/Nether/End, pinch zoom, whole explored world from s
 
 Removed on purpose: screen spectating (added in 6689045, dropped in 0988351).
 
-## 5a-0000. Latest: version 1.13.0 (branch `everwyn-spawn-ledger`)
+## 5a-00000. Latest: version 1.14.0 (branch `everwyn-inventory`)
+
+Inventory editor (move items between inventories, ender chests, other players, chests, death backups; trinkets and backpack contents) and trinkets in death backups. Discussed, not built: real mob models (vanilla mobs need hand-made models; GeckoLib modded mobs could be read from their files). See changelog.
+
+## 5a-0000. Version 1.13.0 (branch `everwyn-spawn-ledger`)
 
 Spawn mobs / tame pets for a player, and the Ledger "Server error" fix (errors now readable). If Ledger still fails, the app shows the exact reason. See changelog.
 

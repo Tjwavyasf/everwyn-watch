@@ -51,7 +51,9 @@ final class DeathVault {
     private final List<JsonObject> deaths = new ArrayList<>(); // oldest first
     private final Map<UUID, JsonObject> pending = new HashMap<>();
     /** A copy of each online player's inventory, refreshed every second, in case the copy taken at death is missed. */
-    private record Backup(long at, List<ItemStack> stacks, int xp) {}
+    private record Backup(long at, List<ItemStack> stacks, int xp, Map<String, ItemStack> trinkets) {}
+    /** Trinket slots in a death record are numbered from here in the app (after the normal 41 slots). */
+    static final int TRINKET_BASE = 1000;
     private final Map<UUID, Backup> lastKnown = new HashMap<>();
     private int backupTicks;
     private static final long FRESH_MS = 10_000;
@@ -73,7 +75,7 @@ final class DeathVault {
         PlayerInventory inv = p.getInventory();
         List<ItemStack> stacks = new ArrayList<>();
         for (int i = 0; i < inv.size(); i++) stacks.add(inv.getStack(i));
-        JsonObject d = record(p, stacks, p.experienceLevel);
+        JsonObject d = record(p, stacks, p.experienceLevel, trinketsOf(p, false));
         d.addProperty("capturedAt", System.currentTimeMillis());
         pending.put(p.getUuid(), d);
     }
@@ -90,12 +92,22 @@ final class DeathVault {
             PlayerInventory inv = p.getInventory();
             List<ItemStack> copy = new ArrayList<>(inv.size());
             for (int i = 0; i < inv.size(); i++) copy.add(inv.getStack(i).copy());
-            lastKnown.put(p.getUuid(), new Backup(now, copy, p.experienceLevel));
+            lastKnown.put(p.getUuid(), new Backup(now, copy, p.experienceLevel, trinketsOf(p, true)));
         }
         lastKnown.keySet().retainAll(online);
     }
 
-    private JsonObject record(ServerPlayerEntity p, List<ItemStack> stacks, int xp) {
+    /** The player's trinkets (Trinkets mod), by slot key. Empty when the mod isn't installed. */
+    private static Map<String, ItemStack> trinketsOf(ServerPlayerEntity p, boolean copy) {
+        Map<String, ItemStack> out = new java.util.LinkedHashMap<>();
+        for (InventoryEditor.TrinketSlot t : InventoryEditor.trinkets(p)) {
+            ItemStack st = t.inv().getStack(t.index());
+            if (!st.isEmpty()) out.put(t.key(), copy ? st.copy() : st);
+        }
+        return out;
+    }
+
+    private JsonObject record(ServerPlayerEntity p, List<ItemStack> stacks, int xp, Map<String, ItemStack> trinkets) {
         JsonObject d = new JsonObject();
         d.addProperty("player", p.getGameProfile().getName());
         d.addProperty("uuid", p.getUuidAsString());
@@ -115,8 +127,32 @@ final class DeathVault {
             }
         }
         d.add("slots", slots);
+        if (trinkets != null && !trinkets.isEmpty()) {
+            JsonArray tr = new JsonArray();
+            for (Map.Entry<String, ItemStack> e : trinkets.entrySet()) {
+                JsonObject t = new JsonObject();
+                t.addProperty("key", e.getKey());
+                t.addProperty("nbt", e.getValue().writeNbt(new NbtCompound()).asString());
+                tr.add(t);
+                count++;
+            }
+            d.add("trinkets", tr);
+        }
         d.addProperty("items", count);
         return d;
+    }
+
+    /** One stack from a death record (app slot number; trinkets from TRINKET_BASE). */
+    synchronized ItemStack stackAt(String id, int slot) {
+        JsonObject d = find(id);
+        if (slot >= TRINKET_BASE) {
+            JsonArray tr = d.has("trinkets") ? d.getAsJsonArray("trinkets") : new JsonArray();
+            int i = slot - TRINKET_BASE;
+            if (i >= tr.size()) return ItemStack.EMPTY;
+            return stack(tr.get(i).getAsJsonObject().get("nbt"));
+        }
+        JsonArray slots = d.getAsJsonArray("slots");
+        return slot >= 0 && slot < slots.size() ? stack(slots.get(slot)) : ItemStack.EMPTY;
     }
 
     /**
@@ -132,10 +168,10 @@ final class DeathVault {
         boolean backupUsable = b != null && now - b.at() <= FRESH_MS && b.stacks().stream().anyMatch(s -> !s.isEmpty());
         String source = "death";
         if ((d == null || d.get("items").getAsInt() == 0) && backupUsable) {
-            d = record(p, b.stacks(), b.xp());
+            d = record(p, b.stacks(), b.xp(), b.trinkets());
             source = "backup";
         } else if (d == null) {
-            d = record(p, List.of(), p.experienceLevel);
+            d = record(p, List.of(), p.experienceLevel, null);
             source = "none";
         }
         d.remove("capturedAt");
@@ -181,23 +217,24 @@ final class DeathVault {
         JsonObject d = find(id);
         JsonObject o = new JsonObject();
         for (Map.Entry<String, JsonElement> e : d.entrySet()) {
-            if (!e.getKey().equals("slots")) o.add(e.getKey(), e.getValue());
+            if (!e.getKey().equals("slots") && !e.getKey().equals("trinkets")) o.add(e.getKey(), e.getValue());
         }
         JsonArray items = new JsonArray();
         JsonArray slots = d.getAsJsonArray("slots");
         for (int i = 0; i < slots.size(); i++) {
-            ItemStack s = stack(slots.get(i));
-            if (s.isEmpty()) continue;
-            JsonObject it = new JsonObject();
-            it.addProperty("slot", i);
-            it.addProperty("id", Registries.ITEM.getId(s.getItem()).toString());
-            it.addProperty("name", s.getName().getString());
-            it.addProperty("count", s.getCount());
-            if (s.hasEnchantments()) it.addProperty("ench", true);
-            if (s.isDamageable() && s.getMaxDamage() > 0) {
-                it.addProperty("dur", Math.round(100.0 * (s.getMaxDamage() - s.getDamage()) / s.getMaxDamage()));
+            JsonObject it = Inventories.item(stack(slots.get(i)), i);
+            if (it != null) items.add(it);
+        }
+        if (d.has("trinkets")) { // listed after the normal slots, numbered from TRINKET_BASE
+            JsonArray tr = d.getAsJsonArray("trinkets");
+            for (int i = 0; i < tr.size(); i++) {
+                JsonObject t = tr.get(i).getAsJsonObject();
+                JsonObject it = Inventories.item(stack(t.get("nbt")), TRINKET_BASE + i);
+                if (it == null) continue;
+                String[] k = t.get("key").getAsString().split("/");
+                it.addProperty("trinket", k.length > 1 ? k[1] : t.get("key").getAsString());
+                items.add(it);
             }
-            items.add(it);
         }
         o.add("itemList", items);
         o.addProperty("online", server.getPlayerManager().getPlayer(UUID.fromString(d.get("uuid").getAsString())) != null);
@@ -235,6 +272,28 @@ final class DeathVault {
                 displaced.add(saved);
             }
             restored++;
+        }
+        // trinkets go back into their own slots (anything already there is moved aside too)
+        if (d.has("trinkets")) {
+            JsonArray tr = d.getAsJsonArray("trinkets");
+            List<InventoryEditor.TrinketSlot> slotsNow = InventoryEditor.trinkets(p);
+            for (int i = 0; i < tr.size(); i++) {
+                if (pick != null && !pick.contains(TRINKET_BASE + i)) continue;
+                JsonObject t = tr.get(i).getAsJsonObject();
+                ItemStack saved = stack(t.get("nbt"));
+                if (saved.isEmpty()) continue;
+                String key = t.get("key").getAsString();
+                InventoryEditor.TrinketSlot target = slotsNow.stream().filter(x -> x.key().equals(key)).findFirst().orElse(null);
+                if (target != null) {
+                    ItemStack current = target.inv().getStack(target.index());
+                    if (!current.isEmpty()) displaced.add(current.copy());
+                    target.inv().setStack(target.index(), saved);
+                    target.inv().markDirty();
+                } else {
+                    displaced.add(saved); // that slot doesn't exist now: give it to them
+                }
+                restored++;
+            }
         }
         for (ItemStack s : displaced) inv.offerOrDrop(s);
         inv.markDirty();
