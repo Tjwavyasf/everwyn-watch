@@ -161,15 +161,36 @@ final class DeathVault {
      * death skipped the "before death" event), else records the death without items.
      */
     void commit(ServerPlayerEntity p, String message) {
+        store(p, message, FRESH_MS, false);
+    }
+
+    /** When each player's last death was saved, so a respawn can tell if one was missed. */
+    private final Map<UUID, Long> lastSaved = new HashMap<>();
+    /** A player can sit on the death screen a while; copies this old still count for a respawn save. */
+    private static final long RESPAWN_MS = 15 * 60_000L;
+
+    /**
+     * Called when a player respawns after dying. If that death never got saved (the death event didn't
+     * reach us), it's saved now from the copy taken at death or the 1-second copy from just before.
+     * Returns true if it saved one. oldPlayer still has the death position.
+     */
+    boolean respawned(ServerPlayerEntity oldPlayer) {
+        Long last = lastSaved.get(oldPlayer.getUuid());
+        if (last != null && System.currentTimeMillis() - last < RESPAWN_MS) return false; // already saved
+        store(oldPlayer, oldPlayer.getGameProfile().getName() + " died (saved when they respawned)", RESPAWN_MS, true);
+        return true;
+    }
+
+    private void store(ServerPlayerEntity p, String message, long maxAge, boolean late) {
         long now = System.currentTimeMillis();
         JsonObject d = pending.remove(p.getUuid());
-        if (d != null && now - d.get("capturedAt").getAsLong() > FRESH_MS) d = null; // left over from a totem save
+        if (d != null && now - d.get("capturedAt").getAsLong() > maxAge) d = null; // left over from a totem save
         Backup b = lastKnown.remove(p.getUuid());
-        boolean backupUsable = b != null && now - b.at() <= FRESH_MS && b.stacks().stream().anyMatch(s -> !s.isEmpty());
-        String source = "death";
+        boolean backupUsable = b != null && now - b.at() <= maxAge && b.stacks().stream().anyMatch(s -> !s.isEmpty());
+        String source = late ? "respawn" : "death";
         if ((d == null || d.get("items").getAsInt() == 0) && backupUsable) {
             d = record(p, b.stacks(), b.xp(), b.trinkets());
-            source = "backup";
+            source = late ? "respawn" : "backup";
         } else if (d == null) {
             d = record(p, List.of(), p.experienceLevel, null);
             source = "none";
@@ -185,7 +206,11 @@ final class DeathVault {
         int limit = Math.max(20, cfg.deathHistoryLimit);
         while (deaths.size() > limit) deaths.remove(0);
         save();
-        if (source.equals("none")) {
+        lastSaved.put(p.getUuid(), now);
+        if (late) {
+            EverwynWatch.LOG.warn("Everwyn Watch: {}'s death didn't come through, so it was saved when they respawned ({} item stacks)",
+                    p.getGameProfile().getName(), d.get("items").getAsInt());
+        } else if (source.equals("none")) {
             EverwynWatch.LOG.warn("Everwyn Watch: {} died but their items couldn't be copied (no copy from the moment of death or the second before)", p.getGameProfile().getName());
         } else {
             EverwynWatch.LOG.info("Everwyn Watch saved {}'s death: {} item stacks ({})", p.getGameProfile().getName(), d.get("items").getAsInt(),

@@ -2,6 +2,9 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.3.1 — 2026-11-08 (branch `everwyn-app`)
+- Deaths still went missing on the live server. New safety net: `ServerPlayerEvents.AFTER_RESPAWN` (alive=false). If no death was saved for that player in the last 15 minutes, `DeathVault.respawned(oldPlayer)` saves one at the death position from the copy taken at death or the 1-second backup copy (which stops updating while the player is dead), source `respawn`; also adds the map death marker and a feed event. Death screen notes when a death was saved at respawn.
+
 ## 2.3.0 — 2026-11-08 (branch `everwyn-app`)
 - RPG armor ladder for the owner's RPG Level mod (config in `config/rpglevel/`, restrictions are JSON arrays of `{actions, itemIds, requirements:{"rpglevel:<skill>": level}}`). Problem: many armors weren't listed (so anyone could wear them) and levels weren't linear.
 - `ArmorLadder`: groups every `ArmorItem` on the server by armor material, scores a full set (protection + toughness + 10×knockback resistance, per piece, scaled to 4 pieces), finds leather (floor) and Metallurgium (top), and assigns levels lo..hi (default 1..Defense maxLevel from skills/defense.json): "even" = equal steps between distinct strengths, "strength" = proportional. Weaker than leather → lo, stronger than Metallurgium → hi.

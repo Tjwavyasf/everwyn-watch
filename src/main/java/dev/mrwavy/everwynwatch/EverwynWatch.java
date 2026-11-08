@@ -108,6 +108,18 @@ public class EverwynWatch implements DedicatedServerModInitializer {
             Discord.send("death", ":skull: " + Discord.clean(msg), null, null);
         });
 
+        // Safety net: a respawn after dying always gets a death record, even if the death event never reached us
+        net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (alive || s.vault == null) return; // alive = coming back from the End, not a death
+            safe("respawn death record", () -> {
+                if (s.vault.respawned(oldPlayer)) {
+                    String name = oldPlayer.getGameProfile().getName();
+                    s.markers.recordDeath(name, oldPlayer.getWorld().getRegistryKey().getValue().toString(), oldPlayer.getX(), oldPlayer.getY(), oldPlayer.getZ(), name + " died");
+                    s.events.add("death", name, name + " died (saved when they respawned)");
+                }
+            });
+        });
+
         // Clean up leftover wave mobs after a crash or restart
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
             if (s.challenges != null) s.challenges.onEntityLoad(entity);
