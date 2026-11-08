@@ -47,3 +47,14 @@ jobs:
           gh release create latest everwyn-watch.jar everwyn-crash-reporter.jar \
             --title "Everwyn Watch (latest build)" \
             --notes "Download everwyn-watch.jar below and put it in your server's mods folder."
+      # Everwyn App (branch everwyn-app): a direct download that's always the newest build
+      - name: Publish Everwyn App download
+        if: github.ref == 'refs/heads/everwyn-app'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete everwyn-app-latest --yes --cleanup-tag || true
+          gh release create everwyn-app-latest everwyn-watch.jar everwyn-crash-reporter.jar \
+            --target "${{ github.sha }}" --prerelease \
+            --title "Everwyn App (newest build)" \
+            --notes "everwyn-watch.jar goes in the server's mods folder. everwyn-crash-reporter.jar goes in the modpack."
