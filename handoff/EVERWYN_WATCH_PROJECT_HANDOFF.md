@@ -1,6 +1,6 @@
 # Everwyn App (formerly Everwyn Watch) — Project Handoff
 
-## READ THIS FIRST — state on 2026-11-08 (version 2.0.0)
+## READ THIS FIRST — state on 2026-11-08 (version 2.0.1)
 
 - **Newest code:** branch **`everwyn-app`** of `Tjwavyasf/everwyn-watch`. Every feature branch was built on the previous one, so `everwyn-app` contains everything:
   `claude/funny-feynman-ifcll1` (1.9.0 3D map) → `everwyn-1.9.2` (1.9.2 admin tools, 1.9.3 death fix) → `everwyn-real-blocks` (1.10.0) → `everwyn-crash-reports` (1.11.0) → `everwyn-follow-cam` (1.12.0) → `everwyn-spawn-ledger` (1.13.0) → `everwyn-inventory` (1.14.0) → **`everwyn-app` (2.0.0)**.

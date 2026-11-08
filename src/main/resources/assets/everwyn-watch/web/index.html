@@ -268,14 +268,17 @@ h2.sec::after{content:"";flex:1;height:10px;background:var(--vine) repeat-x;back
 .note.warn{box-shadow:inset 3px 0 0 var(--gold)}
 input.bfield,.field input,select,textarea{border-radius:4px}
 .tag{background:#1d281f;color:#cdbf95}
+.login-box img.ew-logo{width:100%;max-width:340px;height:auto;box-shadow:none;border-radius:0;image-rendering:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+.hdr-logo{height:38px;width:auto;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+header{gap:8px} header .pill:first-of-type{margin-left:auto}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}
 </style>
 </head>
 <body>
 
 <div id="login">
   <form class="login-box" id="loginForm" autocomplete="off">
-    <img src="/icon-192.png" alt="">
-    <h1 class="ew-title">Everwyn</h1>
+    <img src="/logo.png" alt="Everwyn SMP" class="ew-logo">
     <div class="ew-sub">App</div>
     <p>Enter the token from <b>config/everwyn-watch.json</b> on your server.</p>
     <div class="field">
@@ -289,7 +292,8 @@ input.bfield,.field input,select,textarea{border-radius:4px}
 
 <div id="app" class="hidden">
   <header>
-    <h1 id="title">Everwyn</h1>
+    <img src="/logo.png" alt="Everwyn" class="hdr-logo">
+    <h1 id="title" class="sr-only">Everwyn</h1>
     <span class="pill" id="onlinePill">0 online</span>
     <span class="pill" id="tpsPill"><span class="dot"></span>-- TPS</span>
     <button class="iconbtn" id="bellBtn" aria-label="Notifications"><span class="ico i-bell"></span></button>

@@ -32,7 +32,8 @@ public final class WebServer {
             "/manifest.webmanifest", "manifest.webmanifest",
             "/icon-192.png", "icon-192.png",
             "/icon-512.png", "icon-512.png",
-            "/apple-touch-icon.png", "apple-touch-icon.png");
+            "/apple-touch-icon.png", "apple-touch-icon.png",
+            "/logo.png", "logo.png");
 
     private final Services s;
     private final Map<String, int[]> failures = new ConcurrentHashMap<>(); // ip -> {count, windowStartSeconds}

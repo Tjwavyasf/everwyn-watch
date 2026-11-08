@@ -2,6 +2,9 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.0.1 — 2026-11-08 (branch `everwyn-app`)
+- Everwyn SMP logo (owner's artwork, `web/logo.png`) on the login screen and in the header; new app icons (icon-192/512, apple-touch-icon) with the logo on a forest-green tile with gold border. `/logo.png` served as a static file.
+
 ## 2.0.0 — 2026-11-08 (branch `everwyn-app`, based on 1.14.0) — renamed "Everwyn App"
 - Rebrand: app title, login, manifest and mod display name are "Everwyn App". Mod id, config/data names (`everwyn-watch`) unchanged on purpose.
 - Fantasy theme layered at the end of the page's CSS: forest green, gold trim, vine borders (inline SVG), Cinzel Decorative title (Google Fonts), gold buttons/chips, leaf corner on cards. Features and layout unchanged.
