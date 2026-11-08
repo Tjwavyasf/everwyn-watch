@@ -201,6 +201,22 @@ public final class WebServer {
                     sendJson(ex, 503, error("busy"));
                 }
             }
+            case "/api/armorladder" -> {
+                if (!admin) { sendJson(ex, 403, error("Only admins can change armor levels")); return; }
+                int lo = (int) parseLong(q.get("lo"), 1), hi = (int) parseLong(q.get("hi"), ArmorLadder.defenseMax());
+                String spacing = q.getOrDefault("spacing", "even");
+                if ("POST".equals(ex.getRequestMethod())) {
+                    if (me.role() != Accounts.Role.OWNER && me.role() != Accounts.Role.ADMIN) { sendJson(ex, 403, error("Admins only")); return; }
+                    String msg = onServer(() -> ArmorLadder.apply(lo, hi, spacing), 20);
+                    s.accounts.record(me, "armor_ladder", msg);
+                    JsonObject o = new JsonObject();
+                    o.addProperty("ok", true);
+                    o.addProperty("message", msg);
+                    sendJson(ex, 200, o.toString());
+                } else {
+                    sendJson(ex, 200, onServer(() -> ArmorLadder.preview(lo, hi, spacing).toString(), 10));
+                }
+            }
             case "/api/achievements" -> {
                 String name = q.getOrDefault("player", "");
                 sendJson(ex, 200, onServer(() -> Achievements.get(s.server, name).toString(), 10));

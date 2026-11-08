@@ -388,6 +388,8 @@ header{gap:8px} header .pill:first-of-type{margin-left:auto}
         <h2 class="sec">Automatic mob protection</h2>
         <p class="hint">Every 10 seconds, limits excess hostile mobs in loaded chunks, away from players. Named, persistent, and challenge mobs stay. Low TPS for a full minute temporarily tightens the limits.</p>
         <div id="mobGuardBox" class="card sub">Loading mob protection…</div>
+        <h2 class="sec">RPG armor levels</h2>
+        <div id="ladderBox"></div>
         <h2 class="sec">Crash reports</h2>
         <div id="crashBox"><div class="card sub">Loading…</div></div>
         <h2 class="sec">Lag finder</h2>
@@ -583,7 +585,7 @@ function showView(v) {
   if (v === "map") { resizeMap(); pollMobsOnce(); }
   if (v === "deaths") loadDeaths();
   if (v === "players") loadBoard();
-  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); loadRestartStatus(); loadCrashes(); }
+  if (v === "server") { lastPub = state?.publicLeaderboard; loadPerf(); loadAccounts(); renderServerTab(); loadPack(); loadRestartStatus(); loadCrashes(); renderLadderBox(); }
 }
 $("#tipClose").addEventListener("click", () => { store.set("ew_tip", "1"); $("#installTip").classList.add("hidden"); });
 
@@ -2170,6 +2172,43 @@ $("#adminBox").addEventListener("click", async e => {
   const c = e.target.closest("[data-copy]");
   if (c) { const inp = $("#" + c.dataset.copy); inp.select(); try { await navigator.clipboard.writeText(inp.value); toast("Copied"); } catch (err) { toast("Press and hold the link to copy it"); } }
 });
+/* ---------- RPG armor levels: a straight leather → Metallurgium ladder for the RPG Level mod ---------- */
+const LAD = { lo: 1, hi: null, spacing: "even", data: null };
+function renderLadderBox() {
+  const el = $("#ladderBox"); if (!el) return;
+  if (!canAll()) { el.innerHTML = `<div class="card sub">Admins only.</div>`; return; }
+  const d = LAD.data;
+  el.innerHTML = `<div class="card">
+    <p class="hint">Gives every armor on the server (vanilla and every mod) a Defense level, weakest to strongest in a straight line: <b>leather</b> lowest, <b>Metallurgium</b> highest. Armor that's equally strong shares a level. Applying backs up your RPG Level restrictions first and replaces only the armor locks; shields, elytra and everything else stay as they are.</p>
+    <div class="topic" style="gap:8px;align-items:center"><span class="sub" style="flex:none">Lowest</span><input class="bfield" id="ladLo" type="number" min="0" max="100" value="${LAD.lo}" style="width:70px">
+      <span class="sub" style="flex:none">Highest</span><input class="bfield" id="ladHi" type="number" min="1" max="100" value="${LAD.hi ?? ""}" placeholder="max" style="width:70px"></div>
+    <div class="chips" style="margin:8px 0"><button class="chip ${LAD.spacing === "even" ? "on" : ""}" data-lsp="even">Even steps</button><button class="chip ${LAD.spacing === "strength" ? "on" : ""}" data-lsp="strength">By armor strength</button></div>
+    <div class="actions"><button class="btn" id="ladPrev">Preview</button><button class="btn gold" id="ladApply"${d ? "" : " disabled"}>Apply to RPG Level</button></div>
+    ${d ? (!d.found ? `<div class="note bad">Couldn't find config/rpglevel/restrictions on the server.</div>` : "") +
+      `<div style="max-height:46vh;overflow:auto;margin-top:8px">${d.sets.map(st => `<div class="mobrow"><span class="tag" style="min-width:52px;text-align:center;color:var(--gold)">Lv ${st.level}</span><span class="n">${esc(st.material)} <span class="sub">· ${st.items.length} piece${st.items.length === 1 ? "" : "s"} · strength ${st.score}</span></span></div>`).join("")}</div>` : ""}
+  </div>`;
+}
+$("#ladderBox").addEventListener("click", async e => {
+  const t = e.target;
+  const sp = t.closest("[data-lsp]"); if (sp) { LAD.spacing = sp.dataset.lsp; LAD.data = null; renderLadderBox(); return; }
+  const read = () => { LAD.lo = Math.max(0, +$("#ladLo").value || 0); const h = +$("#ladHi").value; LAD.hi = h > 0 ? h : null; };
+  const qs = () => `lo=${LAD.lo}${LAD.hi ? "&hi=" + LAD.hi : ""}&spacing=${LAD.spacing}`;
+  if (t.id === "ladPrev") {
+    read();
+    try { const r = await api("/api/armorladder?" + qs()); const d = await r.json(); if (!r.ok) throw Error(d.error); LAD.data = d; if (!LAD.hi) LAD.hi = d.maxLevel; renderLadderBox(); }
+    catch (err) { toast(err.message || "Couldn't build the ladder"); }
+  } else if (t.id === "ladApply") {
+    read();
+    const n = LAD.data.sets.reduce((k, st) => k + st.items.length, 0);
+    if (await choose("Apply the armor ladder?", `${n} armor pieces get Defense levels ${LAD.lo}–${LAD.hi}. Your restrictions folder is backed up first. Restart the server afterwards so RPG Level loads it.`, [{ key: "yes", label: "Apply", cls: "gold" }]) !== "yes") return;
+    try {
+      const r = await api("/api/armorladder?" + qs(), { method: "POST" }); const d = await r.json();
+      toast(r.ok ? d.message : (d.error || "Couldn't apply it"));
+      if (r.ok) choose("Armor ladder applied", d.message, []);
+    } catch (err) { toast("Couldn't reach the server"); }
+  }
+});
+
 /* ---------- crash reports (players' games via the Everwyn Crash Reporter mod, and this server) ---------- */
 let crashData = null, crashShown = 15;
 async function loadCrashes() {

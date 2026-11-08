@@ -2,6 +2,12 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.3.0 — 2026-11-08 (branch `everwyn-app`)
+- RPG armor ladder for the owner's RPG Level mod (config in `config/rpglevel/`, restrictions are JSON arrays of `{actions, itemIds, requirements:{"rpglevel:<skill>": level}}`). Problem: many armors weren't listed (so anyone could wear them) and levels weren't linear.
+- `ArmorLadder`: groups every `ArmorItem` on the server by armor material, scores a full set (protection + toughness + 10×knockback resistance, per piece, scaled to 4 pieces), finds leather (floor) and Metallurgium (top), and assigns levels lo..hi (default 1..Defense maxLevel from skills/defense.json): "even" = equal steps between distinct strengths, "strength" = proportional. Weaker than leather → lo, stronger than Metallurgium → hi.
+- `/api/armorladder` GET = preview; POST = apply (admins): zip backup `restrictions_backup_before_everwyn_ladder_<time>.zip`, removes laddered armor ids from every `equip_item` entry in all restriction files (drops entries left empty; non-armor items and other actions untouched), appends one entry per level to `restrictions/minecraft/defense.json`. Tested against a copy of the owner's uploaded rpglevel folder.
+- App: Server tab → RPG armor levels (lowest/highest, Even steps / By armor strength, Preview, Apply).
+
 ## 2.2.0 — 2026-11-08 (branch `everwyn-app`)
 - Achievements: `Achievements` + `/api/achievements?player=` (all advancements with a display, grouped by root tab; done, date, progress %, frame; secret ones hidden until done). Online: live tracker; offline: world/advancements/<uuid>.json. App: Achievements button on the player panel and offline profile; tabs, gold/gray icon grid, tap for details.
 - Inventory editor: action `inv_give_to` (from ref → a player's inventory wherever it fits; online uses offerOrDrop, offline the first free main slot) for **Send to me**; **My inventory** tab. The owner's Minecraft name is asked once and kept on the phone (`localStorage ew_mcname`).
