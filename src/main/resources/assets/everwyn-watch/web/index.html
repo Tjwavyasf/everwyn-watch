@@ -729,7 +729,7 @@ function renderSheet() {
   const B_ = (perm, a, label, cls = "") => perm === "" || canDo(perm) ? `<button class="btn ${cls}" data-a="${a}">${label}</button>` : "";
   const group = (title, buttons) => { const b = buttons.join(""); return b ? `<h2 class="sec">${title}</h2><div class="actions">${b}</div>` : ""; };
   html += group("Help them", [B_("heal", "heal", "Heal", "green"), B_("feed", "feed", "Feed", "green"), B_("give", "give", "Give items", "gold"),
-      B_("package", "pkg", "Care package", "gold"), B_("clear_effects", "cleareff", "Clear effects")]);
+      B_("package", "pkg", "Care package", "gold"), B_("clear_effects", "cleareff", "Clear effects"), B_("spawn_mob", "spawnmob", "Spawn a mob / pet")]);
   html += group("Look", [state.voice && canAll() ? B_("", "listen", "Listen to voice", "green") : "", B_("", "deaths", "Their deaths"), isStaff() ? B_("", "ender", "Ender chest") : "", B_("", "trail", "Movement trail"), isStaff() ? B_("", "ledgerp", "What they changed") : ""]);
   html += `<div id="enderBox"></div>`;
   html += group("Move", [B_("", "map", "Show on map"), B_("tp_to_player", "tp", "Teleport"), B_("to_spawn", "spawn", "Send to spawn"), B_("waypoint_add", "wp", "Waypoint here")]);
@@ -772,6 +772,7 @@ $("#sheet").addEventListener("click", async e => {
     case "cleareff": action({ action: "clear_effects", player: name }); break;
     case "spawn": action({ action: "to_spawn", player: name }); break;
     case "give": openBuilder("give", { player: name, name }); break;
+    case "spawnmob": { const pp = findPlayer(name); if (pp) openSpawn({ dim: pp.dim, x: Math.floor(pp.x) + 1, y: Math.floor(pp.y), z: Math.floor(pp.z), owner: name, near: name }); break; }
     case "deaths": closeSheet(); deathFilter = name; showView("deaths"); break;
     case "smite": action({ action: "smite", player: name }); break;
     case "kill":
@@ -1266,6 +1267,7 @@ async function mapSpotMenu(dim, x, y, z) {
   if (canDo("waypoint_add")) buttons.push({ key: "wp", label: "Drop a waypoint here", cls: "green" });
   if (isStaff()) buttons.push({ key: "ledger", label: "Who changed this area? (Ledger)" });
   if (canAll()) { buttons.push({ key: "pkg", label: "Care package here" }); buttons.push({ key: "wave", label: "Mob wave challenge here" }); }
+  if (canDo("spawn_mob")) buttons.push({ key: "spawn", label: "Spawn a mob here" });
   if (schem) { buttons.push({ key: "schem", label: "Place schematic here" }); if (schem.undo) buttons.push({ key: "schemUndo", label: "Undo last schematic", cls: "red" }); }
   if (!buttons.length) return;
   const k = await choose(`${dimName(dim)} · ${x}, ${z}`, "", buttons);
@@ -1274,9 +1276,78 @@ async function mapSpotMenu(dim, x, y, z) {
   else if (k === "pkg") openBuilder("package", { name: "Care package", dim, x, y, z });
   else if (k === "wave") openBuilder("wave", { name: "", dim, x, y, z });
   else if (k === "schem") placeSchematic(dim, x, y, z, schem);
+  else if (k === "spawn") openSpawn({ dim, x, y, z });
   else if (k === "schemUndo") {
     if (await choose("Undo the last schematic?", "Puts back the blocks that were there before.", [{ key: "yes", label: "Undo", cls: "red" }]) === "yes") action({ action: "schematic_undo" });
   }
+}
+
+/* ---------- spawn mobs, tame pets for a player ---------- */
+let spawnables = null;
+async function openSpawn(place) {
+  if (!spawnables) {
+    try { const r = await api("/api/spawnables"); if (!r.ok) throw Error(); spawnables = await r.json(); }
+    catch (e) { toast("Couldn't load the mob list"); return; }
+  }
+  const S = { place, sel: null };
+  sheetPlayer = null; sheetMode = "spawn";
+  openPanel(`<div class="pmain"><div class="pname">Spawn a mob</div><div class="sub">${place.near ? "Next to " + esc(place.near) : `${esc(dimName(place.dim))} · ${place.x}, ${place.y}, ${place.z}`}</div></div>`,
+    `<input class="bfield" id="spQ" placeholder="Search: wolf, horse, zombie, cat…" autocomplete="off" style="width:100%">
+    <div id="spList" style="max-height:38vh;overflow:auto;margin:8px 0"></div>
+    <div id="spOpts" class="card hidden"></div>`);
+  const owners = [...new Set((state?.players || []).map(p => p.name))];
+  const list = () => {
+    const q = $("#spQ").value.trim().toLowerCase();
+    const hits = spawnables.filter(m => !q || m.name.toLowerCase().includes(q) || m.id.includes(q)).slice(0, 80);
+    $("#spList").innerHTML = hits.map(m => `<div class="mobrow" data-sp="${esc(m.id)}" style="cursor:pointer${S.sel?.id === m.id ? ";background:var(--panel2)" : ""}">
+      <span class="n">${esc(m.name)}${m.id.startsWith("minecraft:") ? "" : ` <span class="tag">${esc(m.id.split(":")[0])}</span>`}</span>
+      ${m.tame ? `<span class="tag" style="color:var(--grass)">Tamable</span>` : m.cat === "hostile" ? `<span class="tag" style="color:var(--red)">Hostile</span>` : ""}</div>`).join("")
+      || `<div class="sub">No mob called that.</div>`;
+  };
+  const opts = () => {
+    const m = S.sel, el = $("#spOpts");
+    if (!m) { el.classList.add("hidden"); return; }
+    el.classList.remove("hidden");
+    el.innerHTML = `<div class="pname" style="margin-bottom:8px">${esc(m.name)}</div>
+      <label class="sub">How many (1–20)</label>
+      <div class="topic"><button type="button" class="btn" data-spc="-1">−</button><input class="bfield" id="spCount" type="number" min="1" max="20" value="1" inputmode="numeric" style="flex:1;min-width:0"><button type="button" class="btn" data-spc="1">+</button></div>
+      <label class="sub" style="display:block;margin-top:8px">Name tag (optional)</label>
+      <input class="bfield" id="spName" maxlength="32" placeholder="e.g. Rex" style="width:100%">
+      ${m.baby ? `<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="spBaby"> Baby</label>` : ""}
+      ${m.tame ? `<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="spTame"${place.owner ? " checked" : ""}> Tame it</label>
+        <div id="spOwnerBox" class="${place.owner ? "" : "hidden"}"><label class="sub">Owner (who it belongs to)</label>
+        <input class="bfield" id="spOwner" list="spOwners" placeholder="Minecraft name" value="${esc(place.owner || "")}" style="width:100%" autocomplete="off">
+        <datalist id="spOwners">${owners.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+        <div class="chips" style="margin-top:6px;flex-wrap:wrap">${owners.map(n => `<button type="button" class="chip" data-spo="${esc(n)}">${esc(n)}</button>`).join("")}</div></div>` : ""}
+      <div class="actions" style="margin-top:10px"><button class="btn green" id="spGo" style="grid-column:1/-1">Spawn ${esc(m.name)}</button></div>`;
+  };
+  list();
+  $("#spQ").oninput = list;
+  $("#spList").onclick = e => { const r = e.target.closest("[data-sp]"); if (!r) return; S.sel = spawnables.find(m => m.id === r.dataset.sp); list(); opts(); $("#spOpts").scrollIntoView({ behavior: "smooth", block: "nearest" }); };
+  $("#spOpts").onclick = async e => {
+    const t = e.target;
+    if (t.dataset.spc) { const c = $("#spCount"); c.value = Math.max(1, Math.min(20, (+c.value || 1) + +t.dataset.spc)); return; }
+    if (t.id === "spTame") { $("#spOwnerBox").classList.toggle("hidden", !t.checked); return; }
+    if (t.dataset.spo) { $("#spOwner").value = t.dataset.spo; return; }
+    if (t.id !== "spGo") return;
+    const count = Math.max(1, Math.min(20, Math.floor(+$("#spCount").value || 1)));
+    const tame = !!$("#spTame")?.checked, owner = tame ? $("#spOwner").value.trim() : "";
+    if (tame && !/^[A-Za-z0-9_]{1,16}$/.test(owner)) { toast("Type the owner's Minecraft name"); return; }
+    if (S.sel.cat === "hostile" && count > 5 && await choose(`Spawn ${count} ${S.sel.name}s?`, "That's a lot of hostile mobs.", [{ key: "yes", label: "Spawn them", cls: "red" }]) !== "yes") return;
+    const ok = await action({ action: "spawn_mob", dim: place.dim, x: place.x, y: place.y, z: place.z, type: S.sel.id, count, owner, name: $("#spName").value.trim(), baby: !!$("#spBaby")?.checked });
+    if (ok) { closeSheet(); setTimeout(pollMobsOnce, 400); }
+  };
+}
+/** Tame a mob on the map for a player, or give a pet to someone else. */
+async function tameMenu(m, name) {
+  const owners = [...new Set((state?.players || []).map(p => p.name))].filter(n => n !== m.owner);
+  const buttons = owners.map(n => ({ key: "p:" + n, label: n })).concat([{ key: "type", label: "Someone else…" }]);
+  const k = await choose(m.owner ? `Give ${name} to…` : `Tame ${name} for…`, m.owner ? `It belongs to ${m.owner} now.` : "Pick who it belongs to.", buttons);
+  if (!k) return;
+  let owner = k.startsWith("p:") ? k.slice(2) : null;
+  if (k === "type") { const v = await ask("Owner", [{ name: "owner", label: "Their Minecraft name" }], "Tame"); owner = v?.owner?.trim(); }
+  if (!owner) return;
+  if (await action({ action: "tame_entity", id: m.u, owner })) pollMobsOnce();
 }
 
 /* ---------- schematic placer (.nbt structure files) ---------- */
@@ -1989,10 +2060,13 @@ const mobLabel = (m, t) => m.n || (t.name && !/^entity\./.test(t.name) ? t.name 
 async function mobMenu(m) {
   const t = mobData?.types[m.t] || {};
   const label = { hostile: "Hostile", animal: "Animal", villager: "Villager", boss: "Boss" }[t.cat] || "Mob";
-  const extra = [m.pet ? "Tamed pet" : "", m.wave ? "Challenge mob" : "", m.n ? prettyId(m.t) : ""].filter(Boolean).join(" · ");
+  const extra = [m.pet ? (m.owner ? "Pet of " + m.owner : "Tamed pet") : "", m.wave ? "Challenge mob" : "", m.n ? prettyId(m.t) : ""].filter(Boolean).join(" · ");
   const buttons = [];
+  if (canDo("tame_entity") && m.tamable) buttons.push({ key: "tame", label: "Tame it for…", cls: "green" });
+  if (canDo("tame_entity") && m.pet) buttons.push({ key: "tame", label: "Give it to someone else" });
   if (canAll()) buttons.push({ key: "rm", label: "Remove this mob", cls: "red" });
   const k = await choose(mobLabel(m, t), `${label} · ${m.hp}/${m.max} health\n${m.x.toFixed(0)}, ${m.y}, ${m.z.toFixed(0)}${extra ? "\n" + extra : ""}`, buttons);
+  if (k === "tame") return tameMenu(m, mobLabel(m, t));
   if (k !== "rm") return;
   if ((m.pet || m.n) && await choose("Remove it anyway?", m.pet ? "This is someone's tamed pet." : "This mob has a name, so someone probably cares about it.", [{ key: "yes", label: "Remove", cls: "red" }]) !== "yes") return;
   if (await action({ action: "remove_entity", id: m.u })) pollMobsOnce();

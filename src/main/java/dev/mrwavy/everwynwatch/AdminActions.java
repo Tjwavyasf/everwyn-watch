@@ -123,6 +123,14 @@ final class AdminActions {
                 yield "Test message sent to Discord";
             }
             case "remove_entity" -> Mobs.remove(server, str(req, "id"));
+            case "spawn_mob" -> {
+                ServerWorld w = world(server, str(req, "dim"));
+                if (w == null) throw new IllegalArgumentException("Unknown world");
+                yield Spawner.spawn(server, w, (int) num(req, "x"), (int) num(req, "y"), (int) num(req, "z"), str(req, "type"),
+                        req.has("count") ? (int) num(req, "count") : 1, req.has("owner") ? str(req, "owner") : "",
+                        req.has("name") ? str(req, "name") : "", req.has("baby") && req.get("baby").getAsBoolean());
+            }
+            case "tame_entity" -> Spawner.tame(server, str(req, "id"), str(req, "owner"));
             case "pack_undo" -> {
                 try {
                     yield PackInstaller.undo();

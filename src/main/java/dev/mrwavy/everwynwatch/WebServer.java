@@ -200,6 +200,10 @@ public final class WebServer {
                     sendJson(ex, 503, error("busy"));
                 }
             }
+            case "/api/spawnables" -> {
+                if (!admin) { sendJson(ex, 403, error("Only admins can spawn mobs")); return; }
+                sendJson(ex, 200, onServer(() -> Spawner.catalog(s.server), 20));
+            }
             case "/api/schematic" -> {
                 // upload a .nbt structure (POST, body = the file) or ask what's ready (GET)
                 if (!admin) { sendJson(ex, 403, error("Only admins can place schematics")); return; }

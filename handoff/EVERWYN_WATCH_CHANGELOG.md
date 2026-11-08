@@ -2,6 +2,11 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 1.13.0 — 2026-11-08 (branch `everwyn-spawn-ledger`, based on 1.12.0)
+- Spawn mobs: `Spawner`, `/api/spawnables` (every summonable living mob, vanilla + modded, with tame/baby flags; bosses left out), action `spawn_mob` (dim, x, y, z, type, count 1–20, owner, name, baby; spot must be loaded). App: map hold menu → Spawn a mob here; player panel → Spawn a mob / pet (next to them, owner pre-filled).
+- Tame: spawned tameables (TameableEntity, horses/llamas) can be tamed for a player; action `tame_entity` tames a mob on the map or gives a pet to someone else. `/api/mobs` now marks `tamable` and pets' `owner`.
+- Fix: Ledger lookups showed "Server error". `LedgerBridge` now finds a custom database location in config/ledger.toml, opens Ledger's WAL database read-only and falls back to a normal (still read-only use) connection, and reports any failure (including driver/native errors) as a readable message in the app plus a warning in the server log.
+
 ## 1.12.0 — 2026-11-07 (branch `everwyn-follow-cam`, based on 1.11.0)
 - Follow camera in 3D (both modes): picking a player locks an orbit camera on them (smooth live position). Follow bar: Behind / Front / Side / Top / Free, −/+ distance, ✕ stop. One-finger drag orbits, pinch zooms, twist turns. Moving in Free cam (joystick/WASD) or panning in Tabletop stops following; Free cam continues from the follow camera's spot.
 - Underground: Free cam no longer stops at the ground (only at y −80). When the camera, or the followed player, is more than 3 blocks under the surface, real-block chunks are drawn as a band around that height (−36…+20, steps of 8) instead of the surface, the simple far terrain is hidden and the sky goes dark. Rock between the camera and the player is see-through (back faces).

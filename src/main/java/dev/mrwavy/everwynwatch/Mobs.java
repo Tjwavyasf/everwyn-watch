@@ -62,7 +62,11 @@ final class Mobs {
             o.addProperty("hp", Math.round(m.getHealth()));
             o.addProperty("max", Math.round(m.getMaxHealth()));
             if (m.hasCustomName()) o.addProperty("n", m.getCustomName().getString());
-            if (m instanceof TameableEntity t && t.isTamed()) o.addProperty("pet", true);
+            String owner = Spawner.ownerName(server, m);
+            if (owner != null) {
+                o.addProperty("pet", true);
+                o.addProperty("owner", owner);
+            } else if (Spawner.canTame(m)) o.addProperty("tamable", true);
             if (m.getCommandTags().contains(Challenges.MOB_TAG)) o.addProperty("wave", true);
             mobs.add(o);
             if (!types.has(type)) types.add(type, info(m));

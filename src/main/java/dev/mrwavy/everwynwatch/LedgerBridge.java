@@ -34,7 +34,32 @@ final class LedgerBridge {
 
     LedgerBridge(MinecraftServer server) {
         this.server = server;
-        this.db = server.getSavePath(WorldSavePath.ROOT).resolve("ledger.sqlite");
+        this.db = findDatabase(server);
+    }
+
+    /** For tests: a database file directly. */
+    LedgerBridge(MinecraftServer server, Path db) {
+        this.server = server;
+        this.db = db;
+    }
+
+    /** Ledger keeps ledger.sqlite in the world folder unless config/ledger.toml sets database location. */
+    private static Path findDatabase(MinecraftServer server) {
+        Path fallback = server.getSavePath(WorldSavePath.ROOT).resolve("ledger.sqlite");
+        try {
+            Path cfg = FabricLoader.getInstance().getConfigDir().resolve("ledger.toml");
+            if (Files.exists(cfg)) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?m)^\\s*location\\s*=\\s*[\"']([^\"']+)[\"']").matcher(Files.readString(cfg));
+                if (m.find()) {
+                    Path custom = Path.of(m.group(1)).resolve("ledger.sqlite");
+                    if (!custom.isAbsolute()) custom = FabricLoader.getInstance().getGameDir().resolve(custom);
+                    if (Files.exists(custom)) return custom;
+                }
+            }
+        } catch (Exception e) {
+            EverwynWatch.LOG.debug("Couldn't read Ledger's config", e);
+        }
+        return fallback;
     }
 
     boolean installed() {
@@ -47,12 +72,29 @@ final class LedgerBridge {
         return "ready";
     }
 
+    /**
+     * Ledger keeps its database in WAL mode, which SQLite often won't open read-only, so if the read-only
+     * connection fails this opens it normally (still only reading, like Ledger's own lookups do).
+     */
     private Connection connect() throws Exception {
-        Class.forName("org.sqlite.JDBC");
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Ledger's database driver isn't available on this server (is Ledger set up for MySQL instead of SQLite?)");
+        }
+        String url = "jdbc:sqlite:" + db.toAbsolutePath();
         Properties p = new Properties();
         p.setProperty("open_mode", "1"); // read-only
-        p.setProperty("busy_timeout", "4000");
-        return DriverManager.getConnection("jdbc:sqlite:" + db.toAbsolutePath(), p);
+        p.setProperty("busy_timeout", "5000");
+        try {
+            Connection c = DriverManager.getConnection(url, p);
+            c.createStatement().executeQuery("SELECT 1 FROM sqlite_master LIMIT 1").close(); // make sure it really opened
+            return c;
+        } catch (Exception readOnlyFailed) {
+            Properties q = new Properties();
+            q.setProperty("busy_timeout", "5000");
+            return DriverManager.getConnection(url, q);
+        }
     }
 
     /** Table names differ in case between Ledger versions, so look them up. */
@@ -72,9 +114,24 @@ final class LedgerBridge {
         return t;
     }
 
-    /** Recent changes in a square around (x, z). Runs on a web thread. */
-    JsonObject lookup(String dim, int x, int z, int radius, int hours, String player, int limit) throws Exception {
+    /** Recent changes in a square around (x, z). Runs on a web thread. Problems come back as a readable message. */
+    JsonObject lookup(String dim, int x, int z, int radius, int hours, String player, int limit) {
         if (!"ready".equals(status())) throw new IllegalArgumentException(installed() ? "Ledger hasn't made its database yet" : "Ledger isn't installed on the server");
+        try {
+            return query(dim, x, z, radius, hours, player, limit);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Throwable e) { // includes driver/native-library errors, which aren't Exceptions
+            tables = null; // look the tables up again next time
+            Throwable root = e;
+            while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+            EverwynWatch.LOG.warn("Everwyn Watch couldn't read Ledger's database {}", db, e);
+            String why = root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage();
+            throw new IllegalArgumentException("Couldn't read Ledger's database: " + why);
+        }
+    }
+
+    private JsonObject query(String dim, int x, int z, int radius, int hours, String player, int limit) throws Exception {
         radius = Math.max(1, Math.min(64, radius));
         limit = Math.max(1, Math.min(500, limit));
         long since = hours > 0 ? System.currentTimeMillis() - hours * 3_600_000L : 0;

@@ -75,7 +75,11 @@ Map (live players, Overworld/Nether/End, pinch zoom, whole explored world from s
 
 Removed on purpose: screen spectating (added in 6689045, dropped in 0988351).
 
-## 5a-000. Latest: version 1.12.0 (branch `everwyn-follow-cam`)
+## 5a-0000. Latest: version 1.13.0 (branch `everwyn-spawn-ledger`)
+
+Spawn mobs / tame pets for a player, and the Ledger "Server error" fix (errors now readable). If Ledger still fails, the app shows the exact reason. See changelog.
+
+## 5a-000. Version 1.12.0 (branch `everwyn-follow-cam`)
 
 Follow camera (Behind/Front/Side/Top/Free, close/far), underground viewing, and the .nbt schematic placer. See changelog.
 
