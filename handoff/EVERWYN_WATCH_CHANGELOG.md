@@ -2,6 +2,10 @@
 
 Built from the git history of `claude/funny-feynman-ifcll1` (which contains all Everwyn Watch commits). Dates are commit dates. Short hashes refer to that history.
 
+## 2.3.2 — 2026-11-08 (branch `everwyn-app`)
+- Bug: if `config/everwyn-watch.json` could not be read (e.g. a typo after a hand edit), `WatchConfig.load` used defaults **and saved them over the file**, wiping the owner's port (9063 → 8125), passwords and webhooks. The live server showed "dashboard running on port 8125" and the app timed out. Now the unreadable file is first copied to `everwyn-watch.json.broken-<time>` (log says so); if even the copy fails, the file is left untouched and nothing is saved.
+- Note: the `SQLITE_CONSTRAINT_NOTNULL players.player_name` warnings in the server log come from Ledger 1.3.18 itself (Everwyn only reads Ledger's database).
+
 ## 2.3.1 — 2026-11-08 (branch `everwyn-app`)
 - Deaths still went missing on the live server. New safety net: `ServerPlayerEvents.AFTER_RESPAWN` (alive=false). If no death was saved for that player in the last 15 minutes, `DeathVault.respawned(oldPlayer)` saves one at the death position from the copy taken at death or the 1-second backup copy (which stops updating while the player is dead), source `respawn`; also adds the map death marker and a feed event. Death screen notes when a death was saved at respawn.
 

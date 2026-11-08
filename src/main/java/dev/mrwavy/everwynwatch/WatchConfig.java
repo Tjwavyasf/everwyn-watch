@@ -116,7 +116,20 @@ public class WatchConfig {
             try (Reader r = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
                 cfg = GSON.fromJson(r, WatchConfig.class);
             } catch (Exception e) {
-                EverwynWatch.LOG.error("Could not read {}, using defaults", path, e);
+                // Never write defaults over a file we could not read: keep a copy so the owner's port and passwords are not lost.
+                Path broken = path.resolveSibling(path.getFileName() + ".broken-" + System.currentTimeMillis());
+                try {
+                    Files.copy(path, broken);
+                    EverwynWatch.LOG.error("Could not read {} (a typo in the file?). Your old settings were copied to {}. Fix that file and rename it back. Using defaults for now.", path, broken.getFileName(), e);
+                } catch (IOException copyFail) {
+                    EverwynWatch.LOG.error("Could not read {} and could not back it up, leaving it untouched. Using defaults for now.", path, e);
+                    cfg = new WatchConfig();
+                    cfg.token = randomToken();
+                    cfg.crashKey = newCrashKey();
+                    cfg.ntfyTopic = "everwyn-" + randomToken().substring(0, 16).toLowerCase();
+                    cfg.path = null;
+                    return cfg;
+                }
             }
         }
         if (cfg == null) cfg = new WatchConfig();
