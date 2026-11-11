@@ -1669,26 +1669,18 @@ const SETUP = {
     ember.position.x=.19;cig.add(paper,ember);roomGroup.add(cig);
     roomGroup.userData.jorge={a:jorge.a,cig,lastSmoke:0};
     if (S.step === 0) {
+      // Deterministic, tick-driven introduction. Avoid relying on a cutscene
+      // promise to unlock the door: it could leave step at zero while TeeJay
+      // was already controllable, as seen on mobile.
       P.mesh.visible = false; P.shadow.visible = false;
-      cutscene(async ok => {
-        const carG = roomGroup.userData.tjCar;
-        // Frame the driving arrival rather than the invisible player.
-        // Existing parking-lot geometry, car model and drive-in path remain unchanged.
-        roomGroup.userData.introCarCamera = true;
-        cam.x = -2.5;
-        sfx('car');
-        areaTitle('CLOCKED IN', 'CHAPTER 1: YOU’RE LATE');
-        for (let t = 0; t < 1.8 && ok(); t += 1 / 60) { carG.position.x = lerp(-4, 8.2, 1 - Math.pow(1 - t / 1.8, 3)); await wait(1 / 60); }
-        if (!ok()) return;
-        // Return the camera to TeeJay only after the car has actually parked.
-        roomGroup.userData.introCarCamera = false;
-        sfx('thud'); await wait(0.35); if (!ok()) return;
-        P.x = 8.4; P.z = 2.7; P.mesh.visible = true; P.shadow.visible = true; dust(P.x, P.z, 4);
-        await wait(0.4); if (!ok()) return;
-        await talk([['TeeJay', 'Man, ain’t no way I’m late again.']]);
-        if (!ok()) return;
-        S.step = 1; setObj('Enter the building');
-      });
+      P.x = 8.4; P.z = 2.7;
+      roomGroup.userData.tjCar.position.x = -4;
+      roomGroup.userData.introCarCamera = true;
+      roomGroup.userData.parkingArrival = { elapsed: 0, finished: false };
+      cam.x = -3;
+      cine++; setControls();
+      sfx('car');
+      areaTitle('CLOCKED IN', 'CHAPTER 1: YOU’RE LATE');
     } else { roomGroup.userData.tjCar.position.x = 8.2; setObj('Enter the building'); }
     addObst(8.2, 1.6, 2.7, 1.4, 1.1);
   },
@@ -2863,6 +2855,32 @@ function updateHud(dt) {
   else if (!$('pHud').hidden) $('pHud').hidden = true;
 }
 
+/* ================= parking lot intro state machine ================= */
+function updateParkingArrival(dt) {
+  if (!ROOM || ROOM.id !== 'parking' || !roomGroup || !P || !S) return;
+  const ud = roomGroup.userData, intro = ud.parkingArrival;
+  if (!intro || intro.finished) return;
+  intro.elapsed += dt;
+  // The player stays hidden until the car has physically pulled into its space.
+  const drive = Math.min(1, intro.elapsed / 2.4);
+  const smooth = 1 - Math.pow(1 - drive, 3);
+  ud.tjCar.position.x = lerp(-4, 8.2, smooth);
+  if (intro.elapsed < 2.8) return;
+  intro.finished = true;
+  ud.introCarCamera = false;
+  ud.tjCar.position.x = 8.2;
+  P.x = 8.4; P.z = 2.7; P.vx = 0; P.vz = 0;
+  P.mesh.visible = true; P.shadow.visible = true;
+  S.step = 1; // Release the entrance lock before the dialogue is displayed.
+  saveGame();
+  setObj('Enter the building');
+  dust(P.x, P.z, 4);
+  sfx('thud');
+  cine = Math.max(0, cine - 1);
+  setControls();
+  dialog([['TeeJay', 'Man, ain’t no way I’m late again.']]);
+}
+
 /* ================= loop ================= */
 function tick(dt) {
   if (NETG) { tickGuest(dt); return; }
@@ -2872,6 +2890,7 @@ function tick(dt) {
   if (areaT > 0) { areaT -= dt; if (areaT <= 0) $('area').classList.remove('show'); }
   if (paT > 0) { paT -= dt; if (paT <= 0) $('pa').classList.remove('show'); }
   updateDialog(dt);
+  updateParkingArrival(dt);
   shake = Math.max(0, shake - dt * 1.8); flashA = Math.max(0, flashA - dt * 2.5);
   if (mode === 'play' && S && !ui) S.time += dt;
   if (hitstop > 0) { hitstop -= dt; if (NETH.on) netHostTick(dt); return; }
