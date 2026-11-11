@@ -612,9 +612,9 @@ const ATK = {
 function animSet(cat) {
   const A = ARMS[cat], I = o => PZ(Object.assign({}, A.idle, o));
   const walk = [];
-  for (let i = 0; i < 6; i++) {
-    const a = i / 6 * TAU, c = Math.cos(a), s = Math.sin(a);
-    walk.push(PZ(Object.assign({ fb: [-3.5 * c - 0.3, -Math.max(0, -s) * 2.6], ff: [3.5 * c + 0.3, -Math.max(0, s) * 2.6], by: -Math.abs(s) * 0.9 + 0.5, lean: 0.14 }, A.walk(c))));
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * TAU, c = Math.cos(a), s = Math.sin(a);
+    walk.push(PZ(Object.assign({ fb: [-3.5 * c - 0.3, -Math.max(0, -s) * 2.6], ff: [3.5 * c + 0.3, -Math.max(0, s) * 2.6], by: -Math.abs(s) * 1.05 + 0.45, lean: 0.14 + 0.045 * c }, A.walk(c))));
   }
   const fistLike = cat === 'fist' || cat === 'npc';
   const tuck = { by: 5, lean: 0.95, fb: [-1, -2.5], ff: [2, -3.5], sb: 1.7, eb: 2.3, sf: 1.5, ef: 2.3, wa: 2.2, pv: 7.5 };
@@ -1900,7 +1900,8 @@ function hitHostile(e, dmg, m, dir) {
 }
 function hitFx(x, y, z, dir, big) {
   netEv('hitfx', x, y, z, dir, big); NETH.mute++;
-  sparks(x, y, z + 0.1, big ? 14 : 8, '#ffd8a0', big ? 5 : 4, dir); star(x, y, z, big ? 1.3 : 0.9);
+  sparks(x, y, z + 0.1, big ? 18 : 10, big ? '#ffe19e' : '#ffd8a0', big ? 5.8 : 4, dir); star(x, y, z, big ? 1.5 : 0.95);
+  if (big) ringFx(x, z, 1.35, '#ffdc94', 0.18);
   hitstop = Math.max(hitstop, big ? 0.09 : 0.045); addShake(big ? 0.22 : 0.08); sfx('hit', big);
   NETH.mute--;
 }
@@ -1939,12 +1940,12 @@ function updateNpcs(dt) {
   for (const n of npcs.slice()) {
     const a = n.a; a.t = (a.t || 0) + dt;
     if (n.mode === 'patrol') { const p = n.path[n.pi]; moveTo(a, p[0], p[1], n.speed, dt); if (Math.hypot(a.x - p[0], a.z - p[1]) < 0.3) n.pi = (n.pi + 1) % n.path.length; if (Math.abs(a.vx) > 0.2) a.face = a.vx > 0 ? 1 : -1; }
-    else if (n.mode === 'flee') { moveTo(a, n.target[0], n.target[1], n.speed, dt); if (Math.abs(a.vx) > 0.2) a.face = a.vx > 0 ? 1 : -1; if (Math.hypot(a.x - n.target[0], a.z - n.target[1]) < 0.5 || a.x < -1 || a.x > ROOM.w + 1) { a.remove(); npcs.splice(npcs.indexOf(n), 1); continue; } a.x += a.vx * dt; a.z += a.vz * dt; a.walkPh += Math.hypot(a.vx, a.vz) * dt * 2.3; a.show('walk', Math.floor(a.walkPh) % 6); a.sync(); continue; }
+    else if (n.mode === 'flee') { moveTo(a, n.target[0], n.target[1], n.speed, dt); if (Math.abs(a.vx) > 0.2) a.face = a.vx > 0 ? 1 : -1; if (Math.hypot(a.x - n.target[0], a.z - n.target[1]) < 0.5 || a.x < -1 || a.x > ROOM.w + 1) { a.remove(); npcs.splice(npcs.indexOf(n), 1); continue; } a.x += a.vx * dt; a.z += a.vz * dt; a.walkPh += Math.hypot(a.vx, a.vz) * dt * 2.3; a.show('walk', Math.floor(a.walkPh) % 8); a.sync(); continue; }
     else if (n.mode === 'fight' && n.foe) { a.face = n.foe.a.x > a.x ? 1 : -1; n.ft = (n.ft || 0) - dt; if (n.ft <= 0) { n.ft = 0.45 + rand() * 0.4; n.swing = 0.25; sparks((a.x + n.foe.a.x) / 2, 1.1, a.z, 4, '#ffd8a0', 3); sfx('punch'); } n.swing = (n.swing || 0) - dt; a.vx = 0; a.vz = 0; }
     else { a.vx = approach(a.vx || 0, 0, 10 * dt); a.vz = approach(a.vz || 0, 0, 10 * dt); if (P && Math.abs(P.x - a.x) < 3 && n.mode === 'stand') a.face = P.x < a.x ? -1 : 1; }
     a.x += (a.vx || 0) * dt; a.z += (a.vz || 0) * dt; collide(a);
     const mv = Math.hypot(a.vx || 0, a.vz || 0) > 0.3;
-    if (mv) { a.walkPh += Math.hypot(a.vx, a.vz) * dt * 2.3; a.show('walk', Math.floor(a.walkPh) % 6); }
+    if (mv) { a.walkPh += Math.hypot(a.vx, a.vz) * dt * 2.3; a.show('walk', Math.floor(a.walkPh) % 8); }
     else if (n.mode === 'fight') a.show(n.swing > 0 ? 'a1' : 'idle', n.swing > 0 ? 1 : 0);
     else a.show('idle', Math.floor((time + a.x) * 4) % 4);
     a.sync();
@@ -2025,7 +2026,7 @@ function startRoll(mv) {
   let dx = mv.x, dz = mv.z; if (still) { dx = -P.face; dz = 0; }
   const m = Math.hypot(dx, dz) || 1; P.rollDir = [dx / m, dz / m]; if (!still && Math.abs(dx) > 0.2) P.face = dx > 0 ? 1 : -1;
   Object.assign(P, { state: 'roll', t: 0, rollKind: still ? 'step' : 'roll', rollDur: still ? 0.4 : 0.58, ifs: still ? 0.03 : 0.05, ife: still ? 0.22 : 0.3 });
-  sfx('roll'); dust(P.x, P.z, 4, 2);
+  sfx('roll'); dust(P.x, P.z, still ? 3 : 7, still ? 1.5 : 2.8);
 }
 function rollInvuln() { return P.state === 'roll' && P.t > P.ifs && P.t < P.ife + (P.slack || 0) + (P.pk || PK0).iframe; }
 /* Parry: tap to raise a guard; a strike that lands inside the short active window is turned aside, the attacker is left open, and your next hit is a riposte. */
@@ -2133,7 +2134,7 @@ function updatePlayer(dt) {
         p.t = w * 0.9; const was = p.chargeT || 0; p.chargeT = was + dt; p.cm = 1 + Math.min(1, p.chargeT / 0.7) * 0.7; p.st = Math.max(0, p.st - 14 * dt); p.stDelay = 0.5;
         if (was < 0.7 && p.chargeT >= 0.7) { floatNum(p.x, 2.1, p.z, 'CHARGED', '#ffc23a', 13); sfx('level'); }
       }
-      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * (m.lunge || (m.big ? 3.6 : 1.8)); if (p.wk === 'fists') sfx('punch'); else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } }
+      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * (m.lunge || (m.big ? 3.6 : 1.8)); if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
       if (p.t >= w && p.t <= w + a + 0.02) attackHits(m);
       if (p.t >= w + a * 0.6 && ctl) {
         if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk' && p.mkey !== 'runAtk' && p.mkey !== 'stepAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
@@ -2146,6 +2147,7 @@ function updatePlayer(dt) {
     case 'roll': {
       const stp = p.rollKind === 'step', burst = stp ? 0.24 : 0.36;
       const k = p.t < burst ? 1 - 0.3 * p.t / burst : Math.max(0, 0.7 * (1 - (p.t - burst) / 0.14));
+      if (p.t < burst && Math.floor((p.t - dt) * 24) !== Math.floor(p.t * 24)) dust(p.x, p.z, 1, stp ? 1.0 : 1.5);
       p.vx = p.rollDir[0] * (stp ? 6.2 : 7.2) * k; p.vz = p.rollDir[1] * (stp ? 4.6 : 5.6) * k;
       if (p.t > burst - 0.02 && buf.attack > 0 && ctl) { buf.attack = 0; startAttack(stp ? 'stepAtk' : 'rollAtk'); }
       else if (p.t >= p.rollDur) p.state = 'idle';
@@ -2602,7 +2604,7 @@ function animatePlayer(dt) {
   if (p.riding) { an = 'carry'; fi = 0; }
   else switch (p.state) {
     case 'idle': if (p.carry) { an = 'carry'; fi = 0; } break;
-    case 'walk': p.walkPh += Math.hypot(p.vx, p.vz) * dt * 2.3; an = p.carry ? 'carrywalk' : 'walk'; fi = Math.floor(p.walkPh) % 6; break;
+    case 'walk': { const speed = Math.hypot(p.vx, p.vz); p.walkPh += speed * dt * (p.running ? 3.05 : 2.3); an = p.carry ? 'carrywalk' : 'walk'; fi = Math.floor(p.walkPh) % 8; break; }
     case 'attack': { const m = p.move, w = m.w / p.mspd; an = m.anim; fi = attackFrame((p.sheet.map[an] || []).length, p.t, w, m.a); break; }
     case 'roll': if (p.rollKind === 'step') { an = 'step'; fi = 0; } else { an = 'roll'; fi = Math.min(3, Math.floor(p.t / p.rollDur * 4.4)); } break;
     case 'air': if (p.slamming) { an = 'heavy'; fi = Math.min(1, ((p.sheet.map.heavy || []).length || 1) - 1); } else { an = 'walk'; fi = p.vy > 0 ? 1 : 4; } break;
@@ -2620,7 +2622,7 @@ function animatePlayer(dt) {
 }
 function animateSimple(a) {
   let an = 'idle', fi = Math.floor((time + a.x) * 4) % 4;
-  if (Math.hypot(a.vx || 0, a.vz || 0) > 0.4) { a.walkPh += Math.hypot(a.vx, a.vz) / 60 * 2.3; an = 'walk'; fi = Math.floor(a.walkPh) % 6; }
+  if (Math.hypot(a.vx || 0, a.vz || 0) > 0.4) { a.walkPh += Math.hypot(a.vx, a.vz) / 60 * 2.3; an = 'walk'; fi = Math.floor(a.walkPh) % 8; }
   a.show(an, fi); a.sync();
 }
 function animateHostile(e) {
@@ -2629,7 +2631,7 @@ function animateHostile(e) {
   else if (e.state === 'hurt') an = 'hurt';
   else if (e.state === 'getup') an = 'getup';
   else if (e.seq) { const ph = e.seq[e.si]; an = 'a1'; fi = ph.k === 'wind' ? 0 : ph.k === 'hit' ? 1 : 2; }
-  else if (Math.hypot(e.vx || 0, e.vz || 0) > 0.4) { e.walkPh += Math.hypot(e.vx, e.vz) / 60 * 2.2; an = 'walk'; fi = Math.floor(e.walkPh) % 6; }
+  else if (Math.hypot(e.vx || 0, e.vz || 0) > 0.4) { e.walkPh += Math.hypot(e.vx, e.vz) / 60 * 2.2; an = 'walk'; fi = Math.floor(e.walkPh) % 8; }
   if (!e.defeated && !e.seq && e.state !== 'hurt') e.glow = 0.15 + Math.sin(time * 3 + e.x) * 0.08;
   e.show(an, fi); e.sync(ox);
 }
@@ -2639,7 +2641,7 @@ function animateJose() {
   let an = 'idle', fi = Math.floor(time * 4) % 4, ox = 0;
   if (a.pose && JOSE_POSE[a.pose]) [an, fi] = JOSE_POSE[a.pose];
   else if (J.landing) an = 'getup';
-  else if (Math.hypot(a.vx || 0, a.vz || 0) > 0.4) { a.walkPh += Math.hypot(a.vx, a.vz) / 60 * 2.0; an = 'walk'; fi = Math.floor(a.walkPh) % 6; }
+  else if (Math.hypot(a.vx || 0, a.vz || 0) > 0.4) { a.walkPh += Math.hypot(a.vx, a.vz) / 60 * 2.0; an = 'walk'; fi = Math.floor(a.walkPh) % 8; }
   if (a.pose === 'dizzy' || J.state === 'FORKLIFT_READY') ox = Math.sin(time * 30) * 0.03;
   if (J.state === 'FORKLIFT_READY' && !a.hitT) { a.glow = 0.25 + Math.sin(time * 8) * 0.2; a.glowCol = [1.4, 1.2, 0.2]; }
   else if (!a.pose || (a.pose !== 'cheer' && a.pose !== 'crouch')) { if (J.state !== 'FINAL_DEFEAT') { a.glowCol = [1.3, 0.4, 1.7]; if (!J.atk) a.glow = 0; } }
