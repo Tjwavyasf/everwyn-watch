@@ -634,7 +634,14 @@ const ATK = {
   blade: { a1: SWING.a1, a2: SWING.a2, a3: SWING.a3, a4: SWING.a1, heavy: SWING.heavy, special: SWING.heavy },
   blunt: { a1: BLUNT.a1, a2: BLUNT.a2, a3: BLUNT.a3, a4: BLUNT.a3, heavy: BLUNT.heavy, special: SPIN },
   heavy: { a1: BLUNT.a1, a2: BLUNT.a2, a3: BLUNT.a3, a4: BLUNT.a3, heavy: BLUNT.heavy, special: SPIN },
-  gun: { a1: BLUNT.a1, a2: BLUNT.a2, a3: BLUNT.a3, a4: BLUNT.a3, heavy: BLUNT.heavy, special: SPIN },
+  gun: {
+    shoot: [
+      PZ({ sf: 0.38, ef: 0.55, wa: 0.25, sb: 0.35, eb: 0.55, lean: 0 }),
+      PZ({ sf: 1.42, ef: 0.07, wa: 0.02, sb: 1.27, eb: 0.2, lean: -0.07 }),
+      PZ({ sf: 1.52, ef: 0.02, wa: 0.02, sb: 1.36, eb: 0.15, lean: -0.12, bx: -0.3 }),
+      PZ({ sf: 0.62, ef: 0.60, wa: 0.27, sb: 0.42, eb: 0.5, lean: 0.01 }),
+    ],
+  },
 };
 function animSet(cat) {
   const A = ARMS[cat], I = o => PZ(Object.assign({}, A.idle, o));
@@ -1671,9 +1678,16 @@ const SETUP = {
     if (S.step === 0) {
       P.mesh.visible = false; P.shadow.visible = false;
       cutscene(async ok => {
-        const carG = roomGroup.userData.tjCar; sfx('car');
+        const carG = roomGroup.userData.tjCar;
+        // Begin on the actual driving arrival shot, rather than an off-screen car.
+        carG.position.x = 0.8;
+        roomGroup.userData.arrivalCam = true;
+        cam.x = 1.7;
+        sfx('car');
         areaTitle('CLOCKED IN', 'CHAPTER 1: YOU’RE LATE');
-        for (let t = 0; t < 1.8 && ok(); t += 1 / 60) { carG.position.x = lerp(-4, 8.2, 1 - Math.pow(1 - t / 1.8, 3)); await wait(1 / 60); }
+        for (let t = 0; t < 2.35 && ok(); t += 1 / 60) { carG.position.x = lerp(0.8, 8.2, 1 - Math.pow(1 - t / 2.35, 3)); await wait(1 / 60); }
+        carG.position.x = 8.2;
+        roomGroup.userData.arrivalCam = false;
         if (!ok()) return;
         sfx('thud'); await wait(0.35); if (!ok()) return;
         P.x = 8.4; P.z = 2.7; P.mesh.visible = true; P.shadow.visible = true; dust(P.x, P.z, 4);
@@ -2104,12 +2118,12 @@ function updateStapleBullets(dt){
  stapleBullets=stapleBullets.filter(b=>!b.dead);
 }
 function startAttack(key, ci) {
-  const m = MOVES[key];
+  // A staple gun is raised, fired and lowered, never swung like a melee weapon.
+  const m = P.wk === 'staple' ? Object.assign({}, MOVES[key], { anim: 'shoot', w: 0.22, a: 0.10, r: 0.25, lunge: 0 }) : MOVES[key];
   if(P.wk==='staple'&&(P.reloadT>0||P.ammo<=0)){if(P.ammo<=0)reloadStaple(P);sfx('deny');return false;}
   if (!useSt((WEAPONS[P.wk] || WEAPONS.fists).st * (m.st || 1))) { sfx('deny'); floatNum(P.x, 2, P.z, 'NO STAMINA', '#9fd65a', 11); return false; }
   const mv = moveInput(); if (Math.abs(mv.x) > 0.2) P.face = mv.x > 0 ? 1 : -1;
   Object.assign(P, { state: 'attack', move: m, mkey: key, ci: ci || 0, t: 0, hitSet: new Set(), lunged: false, mspd: (WEAPONS[P.wk] || WEAPONS.fists).speed * (P.pk || PK0).atk, aseq: (P.aseq | 0) + 1, chargeT: 0, cm: 1 });
-  if(P.wk==='staple')shootStaple(P,key);
   return true;
 }
 /* Dodge: committed roll when you push a direction, short backstep when you don't. The invincible window is shorter than the whole move, so mistimed dodges get punished. */
@@ -2229,7 +2243,7 @@ function updatePlayer(dt) {
         p.t = w * 0.9; const was = p.chargeT || 0; p.chargeT = was + dt; p.cm = 1 + Math.min(1, p.chargeT / 0.7) * 0.7; p.st = Math.max(0, p.st - 14 * dt); p.stDelay = 0.5;
         if (was < 0.7 && p.chargeT >= 0.7) { floatNum(p.x, 2.1, p.z, 'CHARGED', '#ffc23a', 13); sfx('level'); }
       }
-      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { /* projectile emitted by startAttack; avoid duplicate muzzle flash */ } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
+      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { shootStaple(p,p.mkey); } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
       if (p.t >= w && p.t <= w + a + 0.02) attackHits(m);
       if (p.t >= w + a * 0.6 && ctl) {
         if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk' && p.mkey !== 'runAtk' && p.mkey !== 'stepAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
@@ -2789,6 +2803,10 @@ function updateCamera(dt) {
   const target = P && mode === 'play' ? (P.riding ? FL : P) : null, hv = halfView(), W = ROOM ? ROOM.w : 20;
   let lo = hv * 0.78 - 0.8, hi = W - hv * 0.78 + 0.8; if (lo > hi) lo = hi = W / 2;
   let tx = target ? target.x : W / 2 + Math.sin(time * 0.15) * 3;
+  // During the introductory drive, frame TeeJay's moving car instead of his invisible player sprite.
+  if (ROOM && ROOM.id === 'parking' && roomGroup && roomGroup.userData.arrivalCam && roomGroup.userData.tjCar) {
+    tx = roomGroup.userData.tjCar.position.x + 1;
+  }
   if (target && J && J.a.mesh.visible && J.state !== 'FINAL_DEFEAT') tx = lerp(tx, J.a.x, 0.25);
   tx = clamp(tx, lo, hi);
   const tz = target ? target.z * 0.55 : 0;
