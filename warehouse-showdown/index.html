@@ -1671,10 +1671,17 @@ const SETUP = {
     if (S.step === 0) {
       P.mesh.visible = false; P.shadow.visible = false;
       cutscene(async ok => {
-        const carG = roomGroup.userData.tjCar; sfx('car');
+        const carG = roomGroup.userData.tjCar;
+        // Frame the driving arrival rather than the invisible player.
+        // Existing parking-lot geometry, car model and drive-in path remain unchanged.
+        roomGroup.userData.introCarCamera = true;
+        cam.x = -2.5;
+        sfx('car');
         areaTitle('CLOCKED IN', 'CHAPTER 1: YOU’RE LATE');
         for (let t = 0; t < 1.8 && ok(); t += 1 / 60) { carG.position.x = lerp(-4, 8.2, 1 - Math.pow(1 - t / 1.8, 3)); await wait(1 / 60); }
         if (!ok()) return;
+        // Return the camera to TeeJay only after the car has actually parked.
+        roomGroup.userData.introCarCamera = false;
         sfx('thud'); await wait(0.35); if (!ok()) return;
         P.x = 8.4; P.z = 2.7; P.mesh.visible = true; P.shadow.visible = true; dust(P.x, P.z, 4);
         await wait(0.4); if (!ok()) return;
@@ -2789,8 +2796,15 @@ function updateCamera(dt) {
   const target = P && mode === 'play' ? (P.riding ? FL : P) : null, hv = halfView(), W = ROOM ? ROOM.w : 20;
   let lo = hv * 0.78 - 0.8, hi = W - hv * 0.78 + 0.8; if (lo > hi) lo = hi = W / 2;
   let tx = target ? target.x : W / 2 + Math.sin(time * 0.15) * 3;
+  // The protagonist is hidden inside the arriving car during the opening cinematic.
+  // Follow that car rather than jumping directly to the player's spawn point.
+  if (ROOM && ROOM.id === 'parking' && roomGroup && roomGroup.userData.introCarCamera && roomGroup.userData.tjCar) {
+    tx = roomGroup.userData.tjCar.position.x + 0.6;
+  }
   if (target && J && J.a.mesh.visible && J.state !== 'FINAL_DEFEAT') tx = lerp(tx, J.a.x, 0.25);
-  tx = clamp(tx, lo, hi);
+  // The usual room-edge camera clamp would hide the incoming car off-screen.
+  const drivingIn = ROOM && ROOM.id === 'parking' && roomGroup && roomGroup.userData.introCarCamera;
+  tx = drivingIn ? clamp(tx, -4, W) : clamp(tx, lo, hi);
   const tz = target ? target.z * 0.55 : 0;
   cam.x += (tx - cam.x) * Math.min(1, dt * 5); cam.z += (tz - cam.z) * Math.min(1, dt * 4);
   const sx = shake > 0 ? (rand() - 0.5) * shake : 0, sy = shake > 0 ? (rand() - 0.5) * shake : 0;
