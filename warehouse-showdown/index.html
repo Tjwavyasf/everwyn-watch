@@ -185,7 +185,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #buildSelect .buildBottom{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#bbc6d7}
 #buildNote{max-width:510px;font-size:13px}
 @media(max-width:700px){#buildCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#buildCards .bc{padding:9px;gap:4px}#buildCards .emoji{font-size:26px}#buildCards .name{font-size:19px}#buildCards .desc{font-size:10px;min-height:0}#buildCards .stat{font-size:10px}#buildSelect h2{font-size:32px}}
-</style>
+#ammoHud{margin-top:7px;padding:7px 12px;width:max-content;background:#091322dd;border:1px solid #ffc23a;border-radius:8px;color:#ffd27a;font:700 13px var(--hud)}#ammoHud small{color:#c4cedc}#ammoHud.low{color:#ff566a}#ammoHud.reloading{color:#7ceaff}</style>
 </head>
 <body>
 <div id="stage">
@@ -198,7 +198,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         <div class="who" id="whoTxt">TEEJAY</div>
         <div class="bar" id="hpBar"><b id="hpLag"></b><i id="hpFill"></i></div>
         <div class="bar" id="stBar"><i id="stFill"></i></div>
-        <div class="bar" id="xpBar"><i id="xpFill"></i></div>
+        <div class="bar" id="xpBar"><i id="xpFill"></i></div><div id="ammoHud" hidden><span id="ammoText">STAPLES 12 / 12</span><small> · R RELOAD</small></div>
         <div id="pHud" hidden><div class="who" id="pWho">FRIEND</div><div class="bar" id="pBar"><i id="pFill"></i></div></div>
       </div>
       <div class="hud-c"><div id="obj" hidden></div><div id="deliv" hidden></div></div>
@@ -227,7 +227,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <button class="b" data-b="parry">PARRY</button>
   <button class="b" data-b="run">RUN</button>
   <button class="b act" data-b="interact" hidden>USE</button>
-  <button class="b warn" data-b="reset" hidden>RESET</button>
+  <button class="b warn" data-b="reset" hidden>RESET</button><button class="b" data-b="reload" hidden>RELOAD</button>
 </div>
 
 <div id="title" class="screen">
@@ -497,6 +497,7 @@ const CHARS = {
   desk1:    { pal: { skin: '#e0b090', hair: '#6a3a20', top: '#7a3a5a', pants: '#2a2a33', boots: '#1a1a1e', glove: '#e0b090' }, hair: 'short', ponytail: true, top: 'jacket', sleeve: 'long', npc: true },
   desk2:    { pal: { skin: '#8a5a3e', hair: '#1a1a1a', top: '#3a5a8a', pants: '#2a2e38', boots: '#141418', glove: '#8a5a3e', accent: '#c02030' }, hair: 'short', top: 'suit', sleeve: 'long', shades: '#b8d8ff', npc: true },
   desk3:    { pal: { skin: '#c8946c', hair: '#3a2a20', top: '#5a6a3a', pants: '#3a3028', boots: '#1a1410', glove: '#c8946c' }, hair: 'bald', top: 'jacket', sleeve: 'long', beard: true, npc: true, bulk: 1.2 },
+  jorge:    { pal: { skin: '#ac7852', hair: '#17161a', top: '#3e4852', pants: '#343740', boots: '#39312b', glove: '#ac7852', accent: '#f4b837', stripe: '#dce4ed' }, hair: 'cap', top: 'vest', sleeve: 'short', bulk: 1.18, beard: true, npc: true },
   floor1:   { pal: { skin: '#b07c5c', hair: '#2a1b14', top: '#4a5262', pants: '#2b2f3a', boots: '#141418', hat: '#c03030', glove: '#b07c5c', accent: '#ffb020', stripe: '#ffffff' }, hair: 'beanie', top: 'vest', sleeve: 'long', npc: true },
   floor2:   { pal: { skin: '#7a5038', hair: '#101010', top: '#5a3a3a', pants: '#25252e', boots: '#c0c0c8', glove: '#7a5038', accent: '#9ad830', stripe: '#ffffff' }, hair: 'mohawk', top: 'vest', sleeve: 'short', npc: true, bulk: 0.95 },
   hostile:  { pal: { skin: '#9a8c84', hair: '#2a1b14', top: '#4a5262', pants: '#2b2f3a', boots: '#141418', hat: '#c03030', glove: '#9a8c84', accent: '#ffb020', stripe: '#ffffff' }, hair: 'beanie', top: 'vest', sleeve: 'long', eye: '#d080ff' },
@@ -1089,7 +1090,7 @@ let shake = 0, hitstop = 0, slow = 0, flashA = 0; const flashCol = new THREE.Col
 let companion = null, J = null, FL = null, alarm = false, alarmT = 0, flickerT = 0, beacons = [];
 const cam = { x: 10, z: 0 };
 const frozen = () => !!ui || transitioning || mode !== 'play';
-function newSave() { return { build: 'cutter', lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
+function newSave() { return { jorgeDone:false, build: 'cutter', lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
 function saveGame() { if (S && !NETG) store('save', S); }
 /* ================= levels, skills, classes ================= */
 const SKILLS = [
@@ -1159,14 +1160,14 @@ function setObj(t) { NETH.obj = t || null; const o = $('obj'); if (!t) { o.hidde
 function setDeliv(t) { NETH.dv = t || null; const d = $('deliv'); d.hidden = !t; d.textContent = t || ''; }
 
 /* ================= input ================= */
-const ACTIONS = ['attack', 'heavy', 'dodge', 'parry', 'interact', 'reset', 'jump'];
+const ACTIONS = ['attack', 'heavy', 'dodge', 'parry', 'interact', 'reset', 'reload', 'jump'];
 const buf = {}; ACTIONS.forEach(a => buf[a] = 0);
 const keys = {}, touchHeld = {};
 const stick = { x: 0, z: 0, id: null, ox: 0, oy: 0 };
 let attackHoldT = -1, heavyFired = false;
 function press(n) { if (n in buf) buf[n] = 0.18; if (n === 'attack') { attackHoldT = 0; heavyFired = false; } }
 function take(n) { if (buf[n] > 0) { buf[n] = 0; return true; } return false; }
-const KEYMAP = { KeyJ: 'attack', KeyZ: 'attack', KeyK: 'heavy', KeyX: 'heavy', Space: 'dodge', ShiftLeft: 'run', ShiftRight: 'run', KeyL: 'parry', KeyQ: 'parry', KeyE: 'interact', Enter: 'interact', KeyR: 'reset', KeyV: 'jump', KeyB: 'jump' };
+const KEYMAP = { KeyJ: 'attack', KeyZ: 'attack', KeyK: 'heavy', KeyX: 'heavy', Space: 'dodge', ShiftLeft: 'run', ShiftRight: 'run', KeyL: 'parry', KeyQ: 'parry', KeyE: 'interact', Enter: 'interact', KeyR: 'reload', KeyV: 'jump', KeyB: 'jump' };
 const MOVEKEYS = { KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0], KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1] };
 window.addEventListener('keydown', e => {
   ensureAudio();
@@ -1181,6 +1182,7 @@ window.addEventListener('keydown', e => {
   if (mode !== 'play' || ui) return;
   if (e.code === 'Escape' || e.code === 'KeyP') { openPause(); e.preventDefault(); return; }
   if (MOVEKEYS[e.code]) { keys[e.code] = true; e.preventDefault(); return; }
+  if (e.code === 'KeyR' && P && P.riding) { e.preventDefault(); if(!e.repeat)press('reset'); return; }
   const k = KEYMAP[e.code];
   if (k) { e.preventDefault(); if (!e.repeat) press(k); keys['act_' + k] = true; }
 });
@@ -1209,7 +1211,7 @@ function layoutControls() {
   put(BTNS.parry, ...at(138, d * 1.75), r, fs);
   put(BTNS.run, ...at(86, d * 1.75), r, fs);
   put(BTNS.interact, ...at(112, d * 1.05), r * 1.08, fs);
-  put(BTNS.reset, ...at(150, d * 1.9), r * 0.9, Math.round(fs * 0.9));
+  put(BTNS.reset, ...at(150, d * 1.9), r * 0.9, Math.round(fs * 0.9));put(BTNS.reload, ...at(48,d*1.8),r*.88,fs);
 }
 function stickAt(cx, cy) {
   const u = parseFloat(getComputedStyle(base).width) / 2, dx = cx - stick.ox, dy = cy - stick.oy, m = Math.hypot(dx, dy), lim = u * 0.75, k = m > lim ? lim / m : 1;
@@ -1390,14 +1392,14 @@ function beginPlay() {
   mode = 'play'; ui = null; show('hud', true);
   if (P) P.remove();
   P = new Actor('teejay', WEAPONS[S && S.build] ? S.build : 'cutter');
-  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
+  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null, ammo:12, reloadT:0 });
   comboN = 0; applyPerks();
   setControls();
   loadCheckpoint();
 }
 function loadCheckpoint() {
   const cp = S.cp; S.step = cp.step; S.delivered = cp.delivered;
-  P.hp = P.maxHp; P.st = P.stMax; P.state = 'idle'; P.inv = 1; P.carry = null; P.riding = false; P.deadT = 0; P.y = 0; P.vy = 0; P.runLock = false; P.running = false; P.parried = false;
+  P.hp = P.maxHp; P.st = P.stMax; P.ammo=12;P.reloadT=0; P.state = 'idle'; P.inv = 1; P.carry = null; P.riding = false; P.deadT = 0; P.y = 0; P.vy = 0; P.runLock = false; P.running = false; P.parried = false;
   enterRoom(cp.room, { x: cp.x, z: cp.z, cp: true });
 }
 function checkpoint(id) {
@@ -1611,7 +1613,7 @@ function clearRoom() {
   if (companion) { companion.remove(); companion = null; }
   if (J) { J.a.remove(); if (J.aura) scene.remove(J.aura); J = null; }
   if (FL) { scene.remove(FL.g); FL = null; }
-  for (const s of shots) scene.remove(s.mesh); shots = [];
+  for (const s of shots) scene.remove(s.mesh); shots = [];clearStapleBullets();
   for (const b of boxes) scene.remove(b.mesh); boxes = [];
   for (const q of quakes) if (q.mesh) scene.remove(q.mesh); quakes = [];
   for (const t of tels) scene.remove(t.m); tels = [];
@@ -1658,6 +1660,14 @@ function addInteract(o) { interacts.push(o); return o; }
 
 const SETUP = {
   parking(at) {
+    const jorge=addNpc('jorge',20.4,-4.6,{face:1});
+    // Character prop: a lit cigarette by Jorge's hand, with intermittent smoke.
+    const cig=new THREE.Group();
+    const paper=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,6),new THREE.MeshBasicMaterial({color:0xe6dfcc}));
+    paper.rotation.z=Math.PI/2;
+    const ember=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),new THREE.MeshBasicMaterial({color:0xff6532}));
+    ember.position.x=.19;cig.add(paper,ember);roomGroup.add(cig);
+    roomGroup.userData.jorge={a:jorge.a,cig,lastSmoke:0};
     if (S.step === 0) {
       P.mesh.visible = false; P.shadow.visible = false;
       cutscene(async ok => {
@@ -2069,11 +2079,37 @@ function slamImpact() {
   if (J && J.a.mesh.visible && near(J.a.x, J.a.z, J.a.rad)) { joseHit(dmg, m, Math.sign(J.a.x - p.x) || p.face); comboHit(); }
   for (const c of crates.slice()) if (near(c.x, c.z, 0.45)) { c.hp -= dmg; sfx('crate'); if (c.hp <= 0) breakCrate(c); }
 }
+const STAPLE_MAG=12;let stapleBullets=[];
+function reloadStaple(p){if(!p||p.wk!=='staple'||p.reloadT>0||p.ammo>=12)return false;p.reloadT=2;sfx('ui');floatNum(p.x,2.1,p.z,'RELOADING','#7ceaff',12);return true;}
+function shootStaple(p,key){
+ if(p.reloadT>0)return false;if(p.ammo<=0){reloadStaple(p);return false;}p.ammo--;
+ const mesh=new THREE.Group(),metal=new THREE.MeshBasicMaterial({color:0xffe9bc});
+ const bar=new THREE.Mesh(new THREE.BoxGeometry(.09,.10,.31),metal),a=new THREE.Mesh(new THREE.BoxGeometry(.20,.04,.045),metal),b=new THREE.Mesh(new THREE.BoxGeometry(.20,.04,.045),metal);
+ a.position.z=-.13;b.position.z=.13;mesh.add(bar,a,b);scene.add(mesh);
+ const bullet={x:p.x+p.face*.6,y:p.y+1.22,z:p.z,dir:p.face,mesh,life:.58,heavy:key==='heavy',damage:(key==='heavy'?24:10)*WEAPONS.staple.dmg*(p.pk||PK0).dmg};
+ stapleBullets.push(bullet);mesh.position.set(bullet.x,bullet.y,bullet.z);sfx('shoot');sparks(bullet.x,bullet.y,bullet.z,4,'#ffe8a1',2,p.face);
+ if(p.ammo===0)reloadStaple(p);return true;
+}
+function clearStapleBullets(){for(const b of stapleBullets){scene.remove(b.mesh);b.mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}stapleBullets=[];}
+function updateStapleBullets(dt){
+ for(const b of stapleBullets){const old=b.x;b.x+=b.dir*18*dt;b.life-=dt;b.mesh.position.set(b.x,b.y,b.z);
+  if(b.life<=0||b.x<X0||b.x>X1){b.dead=true;continue;}
+  const cross=(x,r)=>Math.min(old,b.x)<=x+r&&Math.max(old,b.x)>=x-r;
+  for(const o of OBST){if(cross((o.x0+o.x1)/2,(o.x1-o.x0)/2)&&b.z>=o.z0-.08&&b.z<=o.z1+.08&&b.y<o.h+.3){if(o.crate){o.hp-=b.damage;if(o.hp<=0)breakCrate(o);}b.dead=true;break;}}
+  if(b.dead||NETG)continue;
+  for(const e of enemies){if(!e.defeated&&e.y<1.4&&cross(e.x,e.rad)&&Math.abs(e.z-b.z)<.5){hitHostile(e,b.damage,{big:b.heavy,post:b.heavy?24:12,stun:.32,kb:2},b.dir);comboHit();b.dead=true;break;}}
+  if(!b.dead&&J&&J.a.mesh.visible&&cross(J.a.x,J.a.rad)&&Math.abs(J.a.z-b.z)<.7){joseHit(b.damage,{big:b.heavy,post:b.heavy?24:12,stun:.2,kb:1},b.dir);comboHit();b.dead=true;}
+ }
+ for(const b of stapleBullets.filter(b=>b.dead)){scene.remove(b.mesh);b.mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});}
+ stapleBullets=stapleBullets.filter(b=>!b.dead);
+}
 function startAttack(key, ci) {
   const m = MOVES[key];
+  if(P.wk==='staple'&&(P.reloadT>0||P.ammo<=0)){if(P.ammo<=0)reloadStaple(P);sfx('deny');return false;}
   if (!useSt((WEAPONS[P.wk] || WEAPONS.fists).st * (m.st || 1))) { sfx('deny'); floatNum(P.x, 2, P.z, 'NO STAMINA', '#9fd65a', 11); return false; }
   const mv = moveInput(); if (Math.abs(mv.x) > 0.2) P.face = mv.x > 0 ? 1 : -1;
   Object.assign(P, { state: 'attack', move: m, mkey: key, ci: ci || 0, t: 0, hitSet: new Set(), lunged: false, mspd: (WEAPONS[P.wk] || WEAPONS.fists).speed * (P.pk || PK0).atk, aseq: (P.aseq | 0) + 1, chargeT: 0, cm: 1 });
+  if(P.wk==='staple')shootStaple(P,key);
   return true;
 }
 /* Dodge: committed roll when you push a direction, short backstep when you don't. The invincible window is shorter than the whole move, so mistimed dodges get punished. */
@@ -2116,7 +2152,7 @@ function parryJose(A) {
   if (J.posture >= J.pMax) postureBreak();
 }
 function attackHits(m) {
-  if (NETG) return;
+  if (NETG || P.wk==='staple') return;
   const W = WEAPONS[P.wk] || WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), pk = P.pk || PK0, dmg = m.dmg * W.dmg * (P.mkey === 'heavy' ? (P.cm || 1) * pk.heavy : 1) * pk.dmg * (P.pk ? comboMul() : 1);
   for (const e of enemies) {
     if (e.defeated || P.hitSet.has(e) || (e.state === 'down' && e.y < 0.05)) continue;
@@ -2146,7 +2182,8 @@ function updatePlayer(dt) {
   p.t += dt; p.inv = Math.max(0, p.inv - dt); p.hitT = Math.max(0, (p.hitT || 0) - dt);
   if (inLounge() && p.hp < p.maxHp && p.state !== 'dead') p.hp = Math.min(p.maxHp, p.hp + 8 * dt);
   if (p.stDelay > 0) p.stDelay -= dt; else if (p.state !== 'roll' && p.state !== 'attack') p.st = Math.min(p.stMax, p.st + 48 * (p.pk || PK0).regen * dt);
-  if (attackHoldT >= 0) { if (attackHeld()) { attackHoldT += dt; if (attackHoldT > 0.32 && !heavyFired) { heavyFired = true; buf.heavy = 0.25; } } else attackHoldT = -1; }
+  if (attackHoldT >= 0) { if (attackHeld()) { attackHoldT += dt; if (p.wk!=='staple' && attackHoldT > 0.32 && !heavyFired) { heavyFired = true; buf.heavy = 0.25; } } else attackHoldT = -1; }
+  if(p.wk==='staple'&&p.reloadT>0){p.reloadT=Math.max(0,p.reloadT-dt);if(p.reloadT===0){p.ammo=12;sfx('pickup');floatNum(p.x,2,p.z,'RELOADED','#7ceaff',12);}}
   if (p.riding) { driveForklift(dt); return; }
   const ctl = !cine && !p.goal;
   const mv = ctl ? moveInput() : { x: 0, z: 0, mag: 0 };
@@ -2162,6 +2199,7 @@ function updatePlayer(dt) {
       else if (mv.mag > 0) { p.vx = approach(p.vx, mv.x * spd, 40 * dt); p.vz = approach(p.vz, mv.z * spd * 0.8, 40 * dt); if (Math.abs(mv.x) > 0.15) p.face = mv.x > 0 ? 1 : -1; }
       else { p.vx = approach(p.vx, 0, 30 * dt); p.vz = approach(p.vz, 0, 30 * dt); }
       if (ctl) {
+        if(p.wk==='staple'&&take('reload')) reloadStaple(p);
         if (take('interact')) { if (p.carry && !nearAct) putDown(); else doInteract(); }
         else if (p.carry) { if (take('attack') || take('heavy') || take('dodge') || take('parry') || take('jump')) { floatNum(p.x, 2, p.z, 'HANDS FULL', '#ffc23a', 11); } }
         else if (take('jump')) startJump();
@@ -2191,7 +2229,7 @@ function updatePlayer(dt) {
         p.t = w * 0.9; const was = p.chargeT || 0; p.chargeT = was + dt; p.cm = 1 + Math.min(1, p.chargeT / 0.7) * 0.7; p.st = Math.max(0, p.st - 14 * dt); p.stDelay = 0.5;
         if (was < 0.7 && p.chargeT >= 0.7) { floatNum(p.x, 2.1, p.z, 'CHARGED', '#ffc23a', 13); sfx('level'); }
       }
-      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { sfx('shoot'); sparks(p.x+p.face*0.7,p.y+1.2,p.z,4,'#ffe0a0',3,p.face); } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
+      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { /* projectile emitted by startAttack; avoid duplicate muzzle flash */ } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
       if (p.t >= w && p.t <= w + a + 0.02) attackHits(m);
       if (p.t >= w + a * 0.6 && ctl) {
         if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk' && p.mkey !== 'runAtk' && p.mkey !== 'stepAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
@@ -2265,6 +2303,26 @@ function checkExit(mv) {
   if (!hit) return;
   if (S.step < ex.req) { if (time > lockedBarkT) { lockedBarkT = time + 3; bark(P, ex.locked, 2); } return; }
   if (P.carry) { if (time > lockedBarkT) { lockedBarkT = time + 3; bark(P, 'I should put this box down first.', 2); } return; }
+  if(ROOM.id==='parking'&&!S.jorgeDone){
+    cutscene(async ok=>{
+      const j=roomGroup.userData.jorge;
+      if(j){j.a.face=P.x<j.a.x?-1:1;P.face=j.a.x>P.x?1:-1;}
+      await talk([
+        ['Jorge',"You're always late, bro. Every single shift."],
+        ['TeeJay',"Man, I just got here. Good morning to you too."],
+        ['Jorge',"I already finished half my cigarette waiting on you."],
+        ['Jorge',"Jose been walking around like somebody stole his paycheck."],
+        ['Jorge',"The order desk been calling the floor nonstop. Something's off."],
+        ['Jorge',"I heard a whole pallet crash, but ain't nobody been back there."],
+        ['Jorge',"Even the forklifts been acting weird today."],
+        ['Jorge',"And listen—if the lights start blinking, don't follow nobody into the back."],
+        ['TeeJay',"You telling me all this while taking a smoke break?"],
+        ['Jorge',"Better late than missing, man. Go clock in before they find you."]
+      ]);
+      if(!ok())return;S.jorgeDone=true;saveGame();setObj('Enter the building');sfx('door');fade(()=>enterRoom(ex.to,{}));
+    });
+    return;
+  }
   sfx('door'); fade(() => enterRoom(ex.to, {}));
 }
 
@@ -2620,7 +2678,7 @@ function driveForklift(dt) {
   const ctl = !cine && J && J.state !== 'FORCED_DISMOUNT' && J.state !== 'FORKLIFT_IMPACT' && J.state !== 'FINAL_DEFEAT';
   const mv = ctl ? moveInput() : { x: 0, z: 0, mag: 0 };
   if (ctl && take('interact')) { exitForklift(false); return; }
-  if (ctl && take('reset')) { resetForklift(true); return; }
+  if (ctl && (take('reset') || take('reload'))) { resetForklift(true); return; }
   let target = 0;
   if (mv.mag > 0.2) {
     const want = Math.atan2(mv.z, mv.x); let diff = wrapA(want - FL.h);
@@ -2655,26 +2713,22 @@ function driveForklift(dt) {
 }
 
 /* Build weapon FX: the tape roll physically flies out and reels back on a tether. */
-let tapeVisual = null;
-function updateTapeVisual() {
-  if (!tapeVisual) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.065, 8, 16),new THREE.MeshBasicMaterial({color:0xffbc32}));
-    const g = new THREE.BufferGeometry(), coords = new Float32Array(6);
-    g.setAttribute('position',new THREE.BufferAttribute(coords,3));
-    const cord = new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffd878}));
-    scene.add(ring,cord); tapeVisual={ring,cord,coords,g}; ring.visible=cord.visible=false;
-  }
-  const v=tapeVisual, p=P;
-  const active=!!(p && p.wk==='tape' && p.state==='attack' && p.move && p.t < (p.move.w/p.mspd+p.move.a+p.move.r/p.mspd));
-  v.ring.visible=v.cord.visible=active;
-  if(!active)return;
-  const duration=p.move.w/p.mspd+p.move.a+p.move.r/p.mspd;
-  const phase=Math.min(1,p.t/Math.max(0.12,duration));
-  const travel=Math.sin(Math.PI*phase)*Math.min(4.2,WEAPONS.tape.reach);
-  v.ring.position.set(p.x+p.face*(0.35+travel),1.13,p.z);
-  v.ring.rotation.z+=0.3;
-  const a=v.coords; a[0]=p.x+p.face*0.3;a[1]=1.15;a[2]=p.z;a[3]=v.ring.position.x;a[4]=v.ring.position.y;a[5]=v.ring.position.z;
-  v.g.attributes.position.needsUpdate=true;
+let tapeVisual=null;
+function updateTapeVisual(){
+ if(!tapeVisual){
+  const g=new THREE.Group(),body=new THREE.Mesh(new THREE.CylinderGeometry(.21,.21,.09,24),new THREE.MeshStandardMaterial({color:0xd4a436,roughness:.58}));body.rotation.x=Math.PI/2;
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.19,.055,8,24),new THREE.MeshStandardMaterial({color:0xffc246,roughness:.5}));
+  const hole=new THREE.Mesh(new THREE.CylinderGeometry(.058,.058,.13,12),new THREE.MeshBasicMaterial({color:0x202024}));hole.rotation.x=Math.PI/2;g.add(body,rim,hole);
+  const coords=new Float32Array(63),geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(coords,3));
+  const cord=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x81745e,transparent:true,opacity:.66}));scene.add(g,cord);g.visible=cord.visible=false;tapeVisual={g,cord,geo,coords};
+ }
+ const v=tapeVisual,p=P,active=!!(p&&p.wk==='tape'&&p.state==='attack'&&p.move&&!p.riding);v.g.visible=v.cord.visible=active;if(!active)return;
+ const duration=p.move.w/p.mspd+p.move.a+p.move.r/p.mspd,phase=clamp(p.t/Math.max(duration,.12),0,1);
+ const ease=phase<.43?1-Math.pow(1-phase/.43,3):Math.pow(1-(phase-.43)/.57,2),d=3.7*clamp(ease,0,1);
+ const x=p.x+p.face*(.45+d),y=p.y+1.15+Math.sin(phase*Math.PI)*.12,z=p.z-.06;
+ v.g.position.set(x,y,z);v.g.rotation.z=phase*Math.PI*7*p.face;
+ for(let i=0;i<=20;i++){const t=i/20;v.coords[i*3]=lerp(p.x+p.face*.4,x,t);v.coords[i*3+1]=lerp(p.y+1.15,y,t)-.09*Math.sin(t*Math.PI)*ease;v.coords[i*3+2]=lerp(p.z,z,t);}
+ v.geo.attributes.position.needsUpdate=true;
 }
 /* ================= animation ================= */
 function attackFrame(n, t, w, a) { if (n >= 4) return t < w / 2 ? 0 : t < w ? 1 : t < w + a ? 2 : 3; if (n === 3) return t < w ? 0 : t < w + a ? 1 : 2; return t < w ? 0 : 1; }
@@ -2754,6 +2808,7 @@ function updateEnv(dt) {
   for (const b of beacons) { const on = alarm ? Math.max(0, Math.sin(time * 6 + b.ph)) : 0; if (b.L) b.L.l.intensity = on * 2.2; b.m.material.color.setRGB(0.25 + on * 0.75, 0.05, 0.05); }
   if (roomGroup) {
     const ud = roomGroup.userData;
+    if(ud.jorge){const j=ud.jorge;j.cig.position.set(j.a.x+0.34,1.25,j.a.z+.1);j.cig.rotation.z=-.18;if(time-j.lastSmoke>1.5){j.lastSmoke=time;sparks(j.a.x+.57,1.34,j.a.z+.1,2,'#b0b0b2',.6,0,.5,-1);}}
     if (ud.exitRing) ud.exitRing.material.opacity = ROOM.exit && S && S.step >= ROOM.exit.req && mode === 'play' ? 0.25 + Math.sin(time * 4) * 0.15 : 0;
     if (ud.phones && mode === 'play') { const ring = Math.floor(time * 2) % 5; ud.phones.forEach((m, i) => m.material.color.setHex((ring === i % 5 || ring === (i + 2) % 5) && Math.floor(time * 8) % 2 ? 0xff3030 : 0x401010)); ud.phoneT = (ud.phoneT || 0) - dt; if (ud.phoneT <= 0 && S && S.step < 4) { ud.phoneT = 1.6 + rand(); sfx('phone'); } }
     if (ud.printing > 0) { ud.printing -= dt; ud.paper.position.z = -4.3 + (1.2 - ud.printing) * 0.4; if (rand() < 0.2) sparks(19, 1, -4, 1, '#ffffff', 1, 0, 0.6, 3); }
@@ -2764,6 +2819,7 @@ function updateEnv(dt) {
 const hudCache = {};
 function updateHud(dt) {
   if (!P) return;
+  const ah=$('ammoHud');ah.hidden=P.wk!=='staple';if(P.wk==='staple'){ah.classList.toggle('low',P.ammo<=3);ah.classList.toggle('reloading',P.reloadT>0);$('ammoText').textContent=P.reloadT>0?'RELOADING '+P.reloadT.toFixed(1)+'s':'STAPLES '+(P.ammo??12)+' / 12';BTNS.attack.textContent='SHOOT';BTNS.reload.hidden=!touchUI||P.riding;BTNS.reload.textContent=P.reloadT>0?'RELOAD '+Math.ceil(P.reloadT)+'s':'RELOAD';}else{BTNS.attack.textContent='ATTACK';BTNS.reload.hidden=true;}
   const hf = Math.max(0, P.hp / P.maxHp);
   $('hpFill').style.transform = `scaleX(${hf})`; P.hpLag = Math.max(hf, P.hpLag - dt * 0.4); $('hpLag').style.transform = `scaleX(${P.hpLag})`;
   $('hpBar').classList.toggle('low', hf < 0.25);
@@ -2811,7 +2867,7 @@ function tick(dt) {
   const d = dt * ts;
   if (live) {
     updateWaits(d);
-    updatePlayer(d); updateP2(d); updateCarried(); updateCompanion(d); updateNpcs(d); updateEnemies(d); updateJose(d); updateShots(d); updateQuakes(d);
+    updatePlayer(d); updateP2(d); updateCarried(); updateCompanion(d); updateNpcs(d); updateEnemies(d); updateJose(d); updateShots(d); updateStapleBullets(d); updateQuakes(d);
     outbreakCheck();
   } else if (mode === 'play' && ui === 'defeat') { updatePlayer(d); updateEnemies(d); }
   updateFalling(d); updateSparks(d); updatePools(d); updateNums(d); updateBarks(dt); updateEnv(d);
@@ -2983,7 +3039,7 @@ function guestStart() {
   S = { v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, wave: 0, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } };
   if (P) P.remove();
   P = new Actor('teejay', WEAPONS[S && S.build] ? S.build : 'cutter');
-  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
+  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null, ammo:12, reloadT:0 });
   $('retryBtn').hidden = true;
   setControls();
 }
@@ -3235,7 +3291,7 @@ function enterLounge() {
   mode = 'play'; ui = null; show('hud', true);
   if (P) P.remove();
   P = new Actor('teejay', WEAPONS[S && S.build] ? S.build : 'cutter');
-  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
+  Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null, ammo:12, reloadT:0 });
   netHostBegin(); setControls();
   enterRoom('lounge', { x: 6, z: 0 });
 }
