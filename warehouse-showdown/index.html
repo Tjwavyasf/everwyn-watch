@@ -2654,6 +2654,28 @@ function driveForklift(dt) {
   if (Math.abs(FL.speed) > 3 && rand() < 0.4) dust(FL.x - Math.cos(FL.h) * 0.6, FL.z - Math.sin(FL.h) * 0.5, 1, 1);
 }
 
+/* Build weapon FX: the tape roll physically flies out and reels back on a tether. */
+let tapeVisual = null;
+function updateTapeVisual() {
+  if (!tapeVisual) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.065, 8, 16),new THREE.MeshBasicMaterial({color:0xffbc32}));
+    const g = new THREE.BufferGeometry(), coords = new Float32Array(6);
+    g.setAttribute('position',new THREE.BufferAttribute(coords,3));
+    const cord = new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffd878}));
+    scene.add(ring,cord); tapeVisual={ring,cord,coords,g}; ring.visible=cord.visible=false;
+  }
+  const v=tapeVisual, p=P;
+  const active=!!(p && p.wk==='tape' && p.state==='attack' && p.move && p.t < (p.move.w/p.mspd+p.move.a+p.move.r/p.mspd));
+  v.ring.visible=v.cord.visible=active;
+  if(!active)return;
+  const duration=p.move.w/p.mspd+p.move.a+p.move.r/p.mspd;
+  const phase=Math.min(1,p.t/Math.max(0.12,duration));
+  const travel=Math.sin(Math.PI*phase)*Math.min(4.2,WEAPONS.tape.reach);
+  v.ring.position.set(p.x+p.face*(0.35+travel),1.13,p.z);
+  v.ring.rotation.z+=0.3;
+  const a=v.coords; a[0]=p.x+p.face*0.3;a[1]=1.15;a[2]=p.z;a[3]=v.ring.position.x;a[4]=v.ring.position.y;a[5]=v.ring.position.z;
+  v.g.attributes.position.needsUpdate=true;
+}
 /* ================= animation ================= */
 function attackFrame(n, t, w, a) { if (n >= 4) return t < w / 2 ? 0 : t < w ? 1 : t < w + a ? 2 : 3; if (n === 3) return t < w ? 0 : t < w + a ? 1 : 2; return t < w ? 0 : 1; }
 function animatePlayer(dt) {
@@ -2676,6 +2698,7 @@ function animatePlayer(dt) {
   p.glow = parryActive() ? 0.55 : p.state === 'attack' && p.mkey === 'heavy' && p.t < p.move.w / p.mspd ? 0.4 + (p.chargeT || 0) * 1.1 : 0; p.glowCol = [1.2, 0.8, 0.3];
   if (p.mesh.visible || !cine) p.mesh.visible = !(p.inv > 0 && (p.state === 'idle' || p.state === 'walk') && !p.riding && !cine && Math.floor(time * 24) % 2);
   p.sync();
+  updateTapeVisual();
 }
 function animateSimple(a) {
   let an = 'idle', fi = Math.floor((time + a.x) * 4) % 4;
