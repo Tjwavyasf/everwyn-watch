@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'warehouse-showdown/**'
+      - 'clocked-in/**'
       - '.github/workflows/publish-clocked-in.yml'
   workflow_dispatch:
 permissions:
@@ -25,8 +26,8 @@ jobs:
       - name: Prepare game site
         run: |
           mkdir -p _site/clocked-in
-          cp warehouse-showdown/index.html _site/clocked-in/index.html
-          cp warehouse-showdown/index.html _site/index.html
+          cp clocked-in/index.html _site/clocked-in/index.html
+          cp clocked-in/index.html _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
