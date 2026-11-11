@@ -167,6 +167,24 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #lng .go{font-size:12px;padding:3px 6px;transform:none;text-align:center}#lng .ghost{font-size:10px;padding:3px 6px;border-width:1px}
 #lng button:disabled{opacity:.4;cursor:default}
 #loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:28px;color:var(--vest);background:var(--night)}
+
+#buildSelect{z-index:80;background:radial-gradient(ellipse at top,#342232,#0a0d15 65%);overflow:auto;touch-action:pan-y;padding:20px}
+#buildSelect .bw{max-width:1060px;margin:auto;min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:13px}
+#buildSelect h2{font:clamp(34px,6vw,64px) var(--display);margin:0;color:white}
+#buildSelect .kicker{color:#d0b36e;font-size:12px;letter-spacing:.15em;font-weight:700}
+#buildCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+#buildCards .bc{min-width:0;border:2px solid #495060;border-radius:15px;background:linear-gradient(145deg,#29303b,#10141e);padding:16px 11px;text-align:left;color:white;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+#buildCards .bc.on{border-color:#ffc23a;box-shadow:0 0 25px #ffc23a35;transform:translateY(-2px)}
+#buildCards .emoji{font-size:37px}
+#buildCards .name{font:24px var(--display)}
+#buildCards .type{font-size:11px;color:#ffc23a;font-weight:bold}
+#buildCards .desc{font-size:12px;min-height:53px;line-height:1.45;color:#b9c6d6}
+#buildCards .stat{display:flex;justify-content:space-between;font-size:12px}
+#buildCards .meter{height:5px;border-radius:6px;background:#40485b;overflow:hidden}
+#buildCards .meter i{display:block;height:100%;background:linear-gradient(90deg,#ff8a1f,#ffc23a)}
+#buildSelect .buildBottom{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#bbc6d7}
+#buildNote{max-width:510px;font-size:13px}
+@media(max-width:700px){#buildCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#buildCards .bc{padding:9px;gap:4px}#buildCards .emoji{font-size:26px}#buildCards .name{font-size:19px}#buildCards .desc{font-size:10px;min-height:0}#buildCards .stat{font-size:10px}#buildSelect h2{font-size:32px}}
 </style>
 </head>
 <body>
@@ -223,7 +241,12 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <p class="keys" id="keysHelp"></p>
   </div>
 </div>
-<div id="custom" class="screen" hidden>
+<div id="buildSelect" class="screen" hidden><div class="bw">
+<div class="kicker">CLOCKED IN / SHIFT 01 / LOADOUT</div><h2>CHOOSE YOUR BUILD</h2>
+<p class="kicker">YOUR WEAPON CHANGES YOUR DAMAGE, RANGE, SPEED AND STAMINA.</p>
+<div id="buildCards"></div>
+<div class="buildBottom"><div id="buildNote">Choose your work weapon.</div><div class="row"><button class="ghost" id="buildBack">BACK</button><button class="go" id="buildStart">CLOCK IN</button></div></div>
+</div></div><div id="custom" class="screen" hidden>
   <div class="menu">
     <h2>CUSTOMIZE TEEJAY</h2>
     <div class="nrow"><label for="cName">NAME (SHOWN OVER YOUR HEAD)</label><input id="cName" maxlength="12" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="YOUR NAME (SHOWN OVER YOUR HEAD)" aria-label="Your name"></div>
@@ -460,7 +483,10 @@ function drawWeapon(px, wk, h, ang, s) {
     case 'sledge': group(px, [[P(-3), P(11), 0.95 * s, WPAL.wood], [P(12, -3.6), P(12, 3.6), 2.3 * s, WPAL.iron]]); break;
     case 'wrench': group(px, [[P(-2), P(15), 1.5 * s, WPAL.steel], [P(-1), P(3), 1.7 * s, WPAL.grip], [P(15.5, -4), P(15.5, 4), 1.7 * s, WPAL.steel], [P(16, -3.8), P(19.5, -3.8), 1.3 * s, WPAL.steel], [P(16, 3.8), P(19.5, 3.8), 1.3 * s, WPAL.steel]]); break;
     case 'gun': group(px, [[P(0.3), P(5.2), 1.25 * s, WPAL.dark], [P(0.6), P(0.4, 2.6 * (n[1] > 0 ? 1 : -1)), 1.0 * s, WPAL.dark]]); break;
-    case 'thermos': group(px, [[P(-1, -1.5), P(-1, 3), 1.6 * s, WPAL.green]]); px.cap(...P(-1, -2.4), ...P(-1, -1.6), 1.2 * s, WPAL.steel[1]); break;
+    case 'staple': group(px,[[P(-2),P(4),2.3*s,WPAL.dark],[P(3),P(9),2*s,WPAL.iron],[P(-2,-1),P(-3,-6),1.1*s,WPAL.orange]]);break;
+case 'tape':group(px,[[P(-1),P(7),1.2*s,WPAL.orange]]);ball(px,P(9),3.2*s,WPAL.violet);px.disk(...P(9),1.3*s,u32('#1c2030'));break;
+case 'jolly':group(px,[[P(-5),P(19),1.45*s,WPAL.steel],[P(18),P(20),2*s,WPAL.orange],[P(-5),P(-3),1.8*s,WPAL.iron]]);break;
+case 'thermos': group(px, [[P(-1, -1.5), P(-1, 3), 1.6 * s, WPAL.green]]); px.cap(...P(-1, -2.4), ...P(-1, -1.6), 1.2 * s, WPAL.steel[1]); break;
   }
 }
 
@@ -801,7 +827,7 @@ const ICONS = {};
 function icon(key) {
   if (ICONS[key]) return ICONS[key];
   const px = new Px(24, 24);
-  if (WEAPONS[key] && key !== 'fists') { const len = { cutter: 14, goldcutter: 16, knife: 7.5, pipe: 12, crowbar: 12, sledge: 13, wrench: 18, gun: 5 }[key] || 12; const sc = Math.min(1, 15 / (len + 4)); drawWeapon(px, key, [12 - 5 * sc, 12 + 5 * sc], 2.36, sc); }
+  if (WEAPONS[key] && key !== 'fists') { const len = { cutter: 14, goldcutter: 16, knife: 7.5, pipe: 12, crowbar: 12, sledge: 13, wrench: 18, gun: 5, staple: 11, tape: 11, jolly: 20 }[key] || 12; const sc = Math.min(1, 15 / (len + 4)); drawWeapon(px, key, [12 - 5 * sc, 12 + 5 * sc], 2.36, sc); }
   else if (key === 'fists') { ball(px, [12, 12], 5, tri('#f2eee2')); px.cap(9, 9, 15, 9, 0.5, tri('#f2eee2')[0]); }
   else if (key === 'beans') { for (const [x, y] of [[9, 10], [14, 9], [11, 14], [16, 14], [13, 18]]) { ball(px, [x, y], 2.6, tri('#6a3a1e')); px.cap(x - 1, y - 1, x + 1, y + 1, 0.4, u32('#2a1408')); } }
   else if (key === 'knives') { drawWeapon(px, 'knife', [7, 17], 2.36, 1); drawWeapon(px, 'knife', [11, 19], 2.36, 1); }
@@ -1016,7 +1042,19 @@ const _dw = drawWeapon;
 drawWeapon = function (px, wk, h, ang, s) { if (wk === 'slab') { const d = dirv(ang), n = [-d[1], d[0]]; const P = (k, m) => [h[0] + d[0] * k * s + n[0] * m * s, h[1] + d[1] * k * s + n[1] * m * s]; group(px, [[P(1, -5), P(1, 5), 2.2 * s, WPAL.slab]]); return; } return _dw(px, wk, h, ang, s); };
 
 /* ================= data ================= */
-const WEAPONS = { fists: { name: 'Fists', cat: 'fist', dmg: 1, reach: 0.95, speed: 1.15, z: 0.55, st: 9 }, cutter: { name: 'Box Cutter', cat: 'blade', dmg: 1, reach: 1.2, speed: 1.15, z: 0.6, st: 9 } };
+const WEAPONS = {
+fists:{name:'Fists',cat:'fist',dmg:1,reach:0.95,speed:1.15,z:0.55,st:9},
+cutter:{name:'Box Cutter',cat:'blade',dmg:1.4,reach:1.25,speed:1.25,z:0.62,st:8},
+staple:{name:'Staple Gun',cat:'gun',dmg:1.1,reach:7.4,speed:0.9,z:0.48,st:13,ranged:true},
+tape:{name:'Tape Roll',cat:'blunt',dmg:1.3,reach:4.2,speed:1.08,z:0.8,st:11,ranged:true},
+jolly:{name:'Jolly Staff',cat:'blunt',dmg:1.2,reach:2.4,speed:0.98,z:0.95,st:11}
+};
+const BUILD_DATA=[
+{id:'staple',name:'STAPLE GUN',type:'RANGED',emoji:'🎯',desc:'Long-range precision shots. Keep your distance.',range:'7.4 m',dmg:11,speed:9,dist:10,control:4,detail:'11 light / 26 heavy damage • 13 light stamina'},
+{id:'tape',name:'TAPE ROLL',type:'MID-RANGE YO-YO',emoji:'🪀',desc:'Send the roll out and back. Control the middle distance.',range:'4.2 m',dmg:13,speed:11,dist:6,control:6,detail:'13 light / 31 heavy damage • 11 light stamina'},
+{id:'cutter',name:'BOX CUTTER',type:'CLOSE-RANGE',emoji:'🔪',desc:'Fast cutting combos with huge up-close damage.',range:'1.25 m',dmg:14,speed:13,dist:2,control:5,detail:'14 light / 34 heavy damage • 8 light stamina'},
+{id:'jolly',name:'JOLLY STAFF',type:'STAFF CONTROL',emoji:'🦯',desc:'Heavy staff strikes with a wider hit area.',range:'2.4 m',dmg:12,speed:10,dist:4,control:9,detail:'12 light / 29 heavy damage • 11 light stamina'}
+];
 const MOVES = {
   a1: { anim: 'a1', w: 0.08, a: 0.07, r: 0.17, dmg: 10, kb: 2.5, stun: 0.4, post: 12 },
   a2: { anim: 'a2', w: 0.08, a: 0.07, r: 0.17, dmg: 11, kb: 2.5, stun: 0.4, post: 12 },
@@ -1051,7 +1089,7 @@ let shake = 0, hitstop = 0, slow = 0, flashA = 0; const flashCol = new THREE.Col
 let companion = null, J = null, FL = null, alarm = false, alarmT = 0, flickerT = 0, beacons = [];
 const cam = { x: 10, z: 0 };
 const frozen = () => !!ui || transitioning || mode !== 'play';
-function newSave() { return { lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
+function newSave() { return { build: 'cutter', lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
 function saveGame() { if (S && !NETG) store('save', S); }
 /* ================= levels, skills, classes ================= */
 const SKILLS = [
@@ -1313,7 +1351,7 @@ $('cRand').addEventListener('click', () => {
 function toTitle() {
   netOnTitle();
   mode = 'title'; ui = null; musicMode = 'off'; alarm = false;
-  ['hud', 'defeat', 'pause', 'note', 'dialog', 'end', 'custom'].forEach(id => show(id, false));
+  ['hud', 'defeat', 'pause', 'note', 'dialog', 'end', 'custom', 'buildSelect'].forEach(id => show(id, false));
   show('title', true); setControls(); $('pa').classList.remove('show');
   const sv = load('save', null);
   $('contBtn').hidden = !sv || sv.done;
@@ -1322,17 +1360,36 @@ function toTitle() {
   S = sv || newSave();
   enterRoom('parking', { x: 10, z: 0 }, true);
 }
-$('newBtn').addEventListener('click', () => {
-  ensureAudio(); sfx('ui'); const old = load('save', null); S = newSave();
-  const keep = !!(old && old.done && old.lvl); if (keep) Object.assign(S, { lvl: old.lvl, xp: old.xp, sp: old.sp, sk: old.sk || {}, cls: old.cls || null, boss: old.boss || 0 });
-  saveGame(); show('title', false); beginPlay(); if (keep) toast('PROGRESS KEPT', `LV ${S.lvl}${S.cls ? ' · ' + CLASSES[S.cls].n.toUpperCase() : ''}`);
+let chosenBuild='cutter',keepProgress=false;
+function openBuildSelect(){
+  ui='build';mode='title';show('title',false);show('buildSelect',true);setControls();
+  const root=$('buildCards');root.textContent='';
+  BUILD_DATA.forEach(b=>{
+    const el=document.createElement('button');el.type='button';el.className='bc';el.dataset.build=b.id;
+    const stat=(label,v,max)=>'<div class="stat"><span>'+label+'</span><b>'+v+'</b></div><div class="meter"><i style="width:'+Math.round(v/max*100)+'%"></i></div>';
+    el.innerHTML='<span class="emoji">'+b.emoji+'</span><span class="type">'+b.type+'</span><span class="name">'+b.name+'</span><span class="desc">'+b.desc+'</span>'+stat('LIGHT DAMAGE',b.dmg,16)+stat('ATTACK SPEED',b.speed,15)+stat('RANGE',b.dist,10)+stat('CONTROL',b.control,10)+'<small>'+b.range+' REACH</small>';
+    el.addEventListener('click',()=>{chosenBuild=b.id;root.querySelectorAll('.bc').forEach(e=>e.classList.toggle('on',e===el));$('buildNote').textContent=b.detail;sfx('ui');});
+    root.append(el);
+  });
+  root.querySelector('[data-build="cutter"]').click();
+}
+$('newBtn').addEventListener('click',()=>{
+ ensureAudio();sfx('ui');const old=load('save',null);S=newSave();
+ keepProgress=!!(old&&old.done&&old.lvl);
+ if(keepProgress)Object.assign(S,{lvl:old.lvl,xp:old.xp,sp:old.sp,sk:old.sk||{},cls:old.cls||null,boss:old.boss||0});
+ openBuildSelect();
+});
+$('buildBack').addEventListener('click',()=>{show('buildSelect',false);show('title',true);ui=null;sfx('ui');});
+$('buildStart').addEventListener('click',()=>{
+ S.build=WEAPONS[chosenBuild]?chosenBuild:'cutter';saveGame();show('buildSelect',false);beginPlay();
+ toast('BUILD EQUIPPED',WEAPONS[S.build].name.toUpperCase());
 });
 $('contBtn').addEventListener('click', () => { ensureAudio(); sfx('ui'); S = load('save', null) || newSave(); show('title', false); beginPlay(); });
 function beginPlay() {
   netHostBegin();
   mode = 'play'; ui = null; show('hud', true);
   if (P) P.remove();
-  P = new Actor('teejay', 'cutter');
+  P = new Actor('teejay', WEAPONS[S && S.build] ? S.build : 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
   comboN = 0; applyPerks();
   setControls();
@@ -2060,15 +2117,15 @@ function parryJose(A) {
 }
 function attackHits(m) {
   if (NETG) return;
-  const W = WEAPONS[P.wk] || WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), pk = P.pk || PK0, dmg = m.dmg * (P.mkey === 'heavy' ? (P.cm || 1) * pk.heavy : 1) * pk.dmg * (P.pk ? comboMul() : 1);
+  const W = WEAPONS[P.wk] || WEAPONS.fists, reach = W.reach * (m.big ? 1.12 : 1), pk = P.pk || PK0, dmg = m.dmg * W.dmg * (P.mkey === 'heavy' ? (P.cm || 1) * pk.heavy : 1) * pk.dmg * (P.pk ? comboMul() : 1);
   for (const e of enemies) {
     if (e.defeated || P.hitSet.has(e) || (e.state === 'down' && e.y < 0.05)) continue;
     const fx = (e.x - P.x) * P.face;
-    if (fx > -0.25 && fx < reach + e.rad && Math.abs(e.z - P.z) < W.z && Math.abs(e.y - P.y) < 1.4) { P.hitSet.add(e); hitHostile(e, dmg, m, P.face); comboHit(); }
+    if (fx > -0.25 && fx < reach + e.rad && Math.abs(e.z - P.z) < W.z && Math.abs(e.y - P.y) < 1.4) { P.hitSet.add(e); hitHostile(e, dmg, m, P.face); if(W.ranged)sparks(e.x,e.y+1,e.z,8,P.wk==='staple'?'#ffe8aa':'#ffad32',3); comboHit(); }
   }
   if (J && J.a.mesh.visible && !P.hitSet.has(J)) {
     const a = J.a, fx = (a.x - P.x) * P.face;
-    if (fx > -0.3 && fx < reach + a.rad && Math.abs(a.z - P.z) < W.z + 0.2) { P.hitSet.add(J); joseHit(dmg, m, P.face); comboHit(); }
+    if (fx > -0.3 && fx < reach + a.rad && Math.abs(a.z - P.z) < W.z + 0.2) { P.hitSet.add(J); joseHit(dmg, m, P.face); if(W.ranged)sparks(a.x,a.y+1,a.z,8,'#ffc23a',3); comboHit(); }
   }
   for (const c of crates.slice()) {
     if (P.hitSet.has(c)) continue;
@@ -2134,7 +2191,7 @@ function updatePlayer(dt) {
         p.t = w * 0.9; const was = p.chargeT || 0; p.chargeT = was + dt; p.cm = 1 + Math.min(1, p.chargeT / 0.7) * 0.7; p.st = Math.max(0, p.st - 14 * dt); p.stDelay = 0.5;
         if (was < 0.7 && p.chargeT >= 0.7) { floatNum(p.x, 2.1, p.z, 'CHARGED', '#ffc23a', 13); sfx('level'); }
       }
-      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * (m.lunge || (m.big ? 3.6 : 1.8)); if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
+      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { sfx('shoot'); sparks(p.x+p.face*0.7,p.y+1.2,p.z,4,'#ffe0a0',3,p.face); } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
       if (p.t >= w && p.t <= w + a + 0.02) attackHits(m);
       if (p.t >= w + a * 0.6 && ctl) {
         if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk' && p.mkey !== 'runAtk' && p.mkey !== 'stepAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
@@ -2597,6 +2654,28 @@ function driveForklift(dt) {
   if (Math.abs(FL.speed) > 3 && rand() < 0.4) dust(FL.x - Math.cos(FL.h) * 0.6, FL.z - Math.sin(FL.h) * 0.5, 1, 1);
 }
 
+/* Build weapon FX: the tape roll physically flies out and reels back on a tether. */
+let tapeVisual = null;
+function updateTapeVisual() {
+  if (!tapeVisual) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.065, 8, 16),new THREE.MeshBasicMaterial({color:0xffbc32}));
+    const g = new THREE.BufferGeometry(), coords = new Float32Array(6);
+    g.setAttribute('position',new THREE.BufferAttribute(coords,3));
+    const cord = new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffd878}));
+    scene.add(ring,cord); tapeVisual={ring,cord,coords,g}; ring.visible=cord.visible=false;
+  }
+  const v=tapeVisual, p=P;
+  const active=!!(p && p.wk==='tape' && p.state==='attack' && p.move && p.t < (p.move.w/p.mspd+p.move.a+p.move.r/p.mspd));
+  v.ring.visible=v.cord.visible=active;
+  if(!active)return;
+  const duration=p.move.w/p.mspd+p.move.a+p.move.r/p.mspd;
+  const phase=Math.min(1,p.t/Math.max(0.12,duration));
+  const travel=Math.sin(Math.PI*phase)*Math.min(4.2,WEAPONS.tape.reach);
+  v.ring.position.set(p.x+p.face*(0.35+travel),1.13,p.z);
+  v.ring.rotation.z+=0.3;
+  const a=v.coords; a[0]=p.x+p.face*0.3;a[1]=1.15;a[2]=p.z;a[3]=v.ring.position.x;a[4]=v.ring.position.y;a[5]=v.ring.position.z;
+  v.g.attributes.position.needsUpdate=true;
+}
 /* ================= animation ================= */
 function attackFrame(n, t, w, a) { if (n >= 4) return t < w / 2 ? 0 : t < w ? 1 : t < w + a ? 2 : 3; if (n === 3) return t < w ? 0 : t < w + a ? 1 : 2; return t < w ? 0 : 1; }
 function animatePlayer(dt) {
@@ -2619,6 +2698,7 @@ function animatePlayer(dt) {
   p.glow = parryActive() ? 0.55 : p.state === 'attack' && p.mkey === 'heavy' && p.t < p.move.w / p.mspd ? 0.4 + (p.chargeT || 0) * 1.1 : 0; p.glowCol = [1.2, 0.8, 0.3];
   if (p.mesh.visible || !cine) p.mesh.visible = !(p.inv > 0 && (p.state === 'idle' || p.state === 'walk') && !p.riding && !cine && Math.floor(time * 24) % 2);
   p.sync();
+  updateTapeVisual();
 }
 function animateSimple(a) {
   let an = 'idle', fi = Math.floor((time + a.x) * 4) % 4;
@@ -2902,7 +2982,7 @@ function guestStart() {
   mode = 'play'; ui = null; paused = false; show('hud', true);
   S = { v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, wave: 0, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } };
   if (P) P.remove();
-  P = new Actor('teejay', 'cutter');
+  P = new Actor('teejay', WEAPONS[S && S.build] ? S.build : 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
   $('retryBtn').hidden = true;
   setControls();
@@ -3154,7 +3234,7 @@ function enterLounge() {
   NETH.hasSave = (() => { const sv = load('save', null); return !!sv && !sv.done; })(); NETH.gReady = false;
   mode = 'play'; ui = null; show('hud', true);
   if (P) P.remove();
-  P = new Actor('teejay', 'cutter');
+  P = new Actor('teejay', WEAPONS[S && S.build] ? S.build : 'cutter');
   Object.assign(P, { rad: 0.35, maxHp: 120, hp: 120, stMax: 100, st: 100, inv: 0, hitSet: new Set(), ci: 0, move: null, lie: 0, deadT: 0, stDelay: 0, hpLag: 1, carry: null });
   netHostBegin(); setControls();
   enterRoom('lounge', { x: 6, z: 0 });
