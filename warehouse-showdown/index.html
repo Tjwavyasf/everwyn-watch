@@ -2802,7 +2802,9 @@ function updateCamera(dt) {
     tx = roomGroup.userData.tjCar.position.x + 0.6;
   }
   if (target && J && J.a.mesh.visible && J.state !== 'FINAL_DEFEAT') tx = lerp(tx, J.a.x, 0.25);
-  tx = clamp(tx, lo, hi);
+  // The usual room-edge camera clamp would hide the incoming car off-screen.
+  const drivingIn = ROOM && ROOM.id === 'parking' && roomGroup && roomGroup.userData.introCarCamera;
+  tx = drivingIn ? clamp(tx, -4, W) : clamp(tx, lo, hi);
   const tz = target ? target.z * 0.55 : 0;
   cam.x += (tx - cam.x) * Math.min(1, dt * 5); cam.z += (tz - cam.z) * Math.min(1, dt * 4);
   const sx = shake > 0 ? (rand() - 0.5) * shake : 0, sy = shake > 0 ? (rand() - 0.5) * shake : 0;
