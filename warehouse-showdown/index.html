@@ -497,6 +497,7 @@ const CHARS = {
   desk1:    { pal: { skin: '#e0b090', hair: '#6a3a20', top: '#7a3a5a', pants: '#2a2a33', boots: '#1a1a1e', glove: '#e0b090' }, hair: 'short', ponytail: true, top: 'jacket', sleeve: 'long', npc: true },
   desk2:    { pal: { skin: '#8a5a3e', hair: '#1a1a1a', top: '#3a5a8a', pants: '#2a2e38', boots: '#141418', glove: '#8a5a3e', accent: '#c02030' }, hair: 'short', top: 'suit', sleeve: 'long', shades: '#b8d8ff', npc: true },
   desk3:    { pal: { skin: '#c8946c', hair: '#3a2a20', top: '#5a6a3a', pants: '#3a3028', boots: '#1a1410', glove: '#c8946c' }, hair: 'bald', top: 'jacket', sleeve: 'long', beard: true, npc: true, bulk: 1.2 },
+  jorge:    { pal: { skin: '#ac7852', hair: '#17161a', top: '#3e4852', pants: '#343740', boots: '#39312b', glove: '#ac7852', accent: '#f4b837', stripe: '#dce4ed' }, hair: 'cap', top: 'vest', sleeve: 'short', bulk: 1.18, beard: true, npc: true },
   floor1:   { pal: { skin: '#b07c5c', hair: '#2a1b14', top: '#4a5262', pants: '#2b2f3a', boots: '#141418', hat: '#c03030', glove: '#b07c5c', accent: '#ffb020', stripe: '#ffffff' }, hair: 'beanie', top: 'vest', sleeve: 'long', npc: true },
   floor2:   { pal: { skin: '#7a5038', hair: '#101010', top: '#5a3a3a', pants: '#25252e', boots: '#c0c0c8', glove: '#7a5038', accent: '#9ad830', stripe: '#ffffff' }, hair: 'mohawk', top: 'vest', sleeve: 'short', npc: true, bulk: 0.95 },
   hostile:  { pal: { skin: '#9a8c84', hair: '#2a1b14', top: '#4a5262', pants: '#2b2f3a', boots: '#141418', hat: '#c03030', glove: '#9a8c84', accent: '#ffb020', stripe: '#ffffff' }, hair: 'beanie', top: 'vest', sleeve: 'long', eye: '#d080ff' },
@@ -1089,7 +1090,7 @@ let shake = 0, hitstop = 0, slow = 0, flashA = 0; const flashCol = new THREE.Col
 let companion = null, J = null, FL = null, alarm = false, alarmT = 0, flickerT = 0, beacons = [];
 const cam = { x: 10, z: 0 };
 const frozen = () => !!ui || transitioning || mode !== 'play';
-function newSave() { return { build: 'cutter', lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
+function newSave() { return { jorgeDone:false, build: 'cutter', lvl: 1, xp: 0, sp: 0, sk: {}, cls: null, boss: 0, xpDel: 0, xpCp: {}, v: 1, step: 0, delivered: 0, deaths: 0, time: 0, done: false, cp: { id: 'start', room: 'parking', x: 8, z: 2.5, step: 0, delivered: 0 } }; }
 function saveGame() { if (S && !NETG) store('save', S); }
 /* ================= levels, skills, classes ================= */
 const SKILLS = [
@@ -1658,6 +1659,14 @@ function addInteract(o) { interacts.push(o); return o; }
 
 const SETUP = {
   parking(at) {
+    const jorge=addNpc('jorge',20.4,-4.6,{face:1});
+    // Character prop: a lit cigarette by Jorge's hand, with intermittent smoke.
+    const cig=new THREE.Group();
+    const paper=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,6),new THREE.MeshBasicMaterial({color:0xe6dfcc}));
+    paper.rotation.z=Math.PI/2;
+    const ember=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),new THREE.MeshBasicMaterial({color:0xff6532}));
+    ember.position.x=.19;cig.add(paper,ember);roomGroup.add(cig);
+    roomGroup.userData.jorge={a:jorge.a,cig,lastSmoke:0};
     if (S.step === 0) {
       P.mesh.visible = false; P.shadow.visible = false;
       cutscene(async ok => {
@@ -2293,6 +2302,26 @@ function checkExit(mv) {
   if (!hit) return;
   if (S.step < ex.req) { if (time > lockedBarkT) { lockedBarkT = time + 3; bark(P, ex.locked, 2); } return; }
   if (P.carry) { if (time > lockedBarkT) { lockedBarkT = time + 3; bark(P, 'I should put this box down first.', 2); } return; }
+  if(ROOM.id==='parking'&&!S.jorgeDone){
+    cutscene(async ok=>{
+      const j=roomGroup.userData.jorge;
+      if(j){j.a.face=P.x<j.a.x?-1:1;P.face=j.a.x>P.x?1:-1;}
+      await talk([
+        ['Jorge',"You're always late, bro. Every single shift."],
+        ['TeeJay',"Man, I just got here. Good morning to you too."],
+        ['Jorge',"I already finished half my cigarette waiting on you."],
+        ['Jorge',"Jose been walking around like somebody stole his paycheck."],
+        ['Jorge',"The order desk been calling the floor nonstop. Something's off."],
+        ['Jorge',"I heard a whole pallet crash, but ain't nobody been back there."],
+        ['Jorge',"Even the forklifts been acting weird today."],
+        ['Jorge',"And listen—if the lights start blinking, don't follow nobody into the back."],
+        ['TeeJay',"You telling me all this while taking a smoke break?"],
+        ['Jorge',"Better late than missing, man. Go clock in before they find you."]
+      ]);
+      if(!ok())return;S.jorgeDone=true;saveGame();setObj('Enter the building');sfx('door');fade(()=>enterRoom(ex.to,{}));
+    });
+    return;
+  }
   sfx('door'); fade(() => enterRoom(ex.to, {}));
 }
 
@@ -2778,6 +2807,7 @@ function updateEnv(dt) {
   for (const b of beacons) { const on = alarm ? Math.max(0, Math.sin(time * 6 + b.ph)) : 0; if (b.L) b.L.l.intensity = on * 2.2; b.m.material.color.setRGB(0.25 + on * 0.75, 0.05, 0.05); }
   if (roomGroup) {
     const ud = roomGroup.userData;
+    if(ud.jorge){const j=ud.jorge;j.cig.position.set(j.a.x+0.34,1.25,j.a.z+.1);j.cig.rotation.z=-.18;if(time-j.lastSmoke>1.5){j.lastSmoke=time;sparks(j.a.x+.57,1.34,j.a.z+.1,2,'#b0b0b2',.6,0,.5,-1);}}
     if (ud.exitRing) ud.exitRing.material.opacity = ROOM.exit && S && S.step >= ROOM.exit.req && mode === 'play' ? 0.25 + Math.sin(time * 4) * 0.15 : 0;
     if (ud.phones && mode === 'play') { const ring = Math.floor(time * 2) % 5; ud.phones.forEach((m, i) => m.material.color.setHex((ring === i % 5 || ring === (i + 2) % 5) && Math.floor(time * 8) % 2 ? 0xff3030 : 0x401010)); ud.phoneT = (ud.phoneT || 0) - dt; if (ud.phoneT <= 0 && S && S.step < 4) { ud.phoneT = 1.6 + rand(); sfx('phone'); } }
     if (ud.printing > 0) { ud.printing -= dt; ud.paper.position.z = -4.3 + (1.2 - ud.printing) * 0.4; if (rand() < 0.2) sparks(19, 1, -4, 1, '#ffffff', 1, 0, 0.6, 3); }
