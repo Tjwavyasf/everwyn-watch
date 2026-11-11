@@ -1182,6 +1182,7 @@ window.addEventListener('keydown', e => {
   if (mode !== 'play' || ui) return;
   if (e.code === 'Escape' || e.code === 'KeyP') { openPause(); e.preventDefault(); return; }
   if (MOVEKEYS[e.code]) { keys[e.code] = true; e.preventDefault(); return; }
+  if (e.code === 'KeyR' && P && P.riding) { e.preventDefault(); if(!e.repeat)press('reset'); return; }
   const k = KEYMAP[e.code];
   if (k) { e.preventDefault(); if (!e.repeat) press(k); keys['act_' + k] = true; }
 });
@@ -2228,7 +2229,7 @@ function updatePlayer(dt) {
         p.t = w * 0.9; const was = p.chargeT || 0; p.chargeT = was + dt; p.cm = 1 + Math.min(1, p.chargeT / 0.7) * 0.7; p.st = Math.max(0, p.st - 14 * dt); p.stDelay = 0.5;
         if (was < 0.7 && p.chargeT >= 0.7) { floatNum(p.x, 2.1, p.z, 'CHARGED', '#ffc23a', 13); sfx('level'); }
       }
-      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { /* fired on attack input */ } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
+      if (!p.lunged && p.t >= w) { p.lunged = true; p.vx += p.face * ((WEAPONS[p.wk] || WEAPONS.fists).ranged ? 0 : (m.lunge || (m.big ? 3.6 : 1.8))); if (p.wk === 'staple') { /* projectile emitted by startAttack; avoid duplicate muzzle flash */ } else if (p.wk === 'tape') { sfx('throw'); swipe(p.x+p.face*0.6,p.y+1.1,p.z,p.face,'#ffb82d',!!m.big,0); } else if (p.wk === 'fists') { sfx('punch'); swipe(p.x + p.face * 0.4, p.y + 1.1, p.z, p.face, m.big ? '#ffd28b' : '#f5e9dc', !!m.big, 0); } else { sfx('swing', m.big); swipe(p.x, p.y + 1.15, p.z, p.face, '#d8b0ff', m.big, 0); } if (m.big) { dust(p.x - p.face * 0.35, p.z, 5, 2); addShake(0.045); } }
       if (p.t >= w && p.t <= w + a + 0.02) attackHits(m);
       if (p.t >= w + a * 0.6 && ctl) {
         if (buf.attack > 0 && p.ci < COMBO.length - 1 && p.mkey !== 'heavy' && p.mkey !== 'rollAtk' && p.mkey !== 'runAtk' && p.mkey !== 'stepAtk') { buf.attack = 0; startAttack(COMBO[p.ci + 1], p.ci + 1); }
@@ -2677,7 +2678,7 @@ function driveForklift(dt) {
   const ctl = !cine && J && J.state !== 'FORCED_DISMOUNT' && J.state !== 'FORKLIFT_IMPACT' && J.state !== 'FINAL_DEFEAT';
   const mv = ctl ? moveInput() : { x: 0, z: 0, mag: 0 };
   if (ctl && take('interact')) { exitForklift(false); return; }
-  if (ctl && take('reset')) { resetForklift(true); return; }
+  if (ctl && (take('reset') || take('reload'))) { resetForklift(true); return; }
   let target = 0;
   if (mv.mag > 0.2) {
     const want = Math.atan2(mv.z, mv.x); let diff = wrapA(want - FL.h);
