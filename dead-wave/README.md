@@ -4,6 +4,8 @@ A zombie survival game for phones. Hold the camp through the night: each wave of
 
 Open `index.html` in any phone or desktop browser. No install or build step.
 
+The look is HD-2D: shaded, outlined pixel-art sprites drawn on a low-res canvas, with smooth lighting, glow, smoke, fireflies and a tilt-shift blur layered on top at full resolution. You defend a night camp with a cabin, forge, market stall, animal pen and a watchtower whose archers shoot zombies that come close.
+
 **Controls:** drag anywhere on the screen to move (WASD or arrow keys on a keyboard) · Pause button or Esc · 1/2/3 to pick a level-up card.
 
 ## How it plays
