@@ -30,7 +30,7 @@ jobs:
           cp clocked-in/index.html _site/clocked-in/index.html
           cp clocked-in/index.html _site/index.html
           mkdir -p _site/dead-wave
-          cp dead-wave/index.html _site/dead-wave/index.html
+          cp -r dead-wave/. _site/dead-wave/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

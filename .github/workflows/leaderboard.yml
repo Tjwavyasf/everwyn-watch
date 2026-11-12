@@ -51,7 +51,7 @@ jobs:
           mkdir -p leaderboard-site/clocked-in
           cp warehouse-showdown/index.html leaderboard-site/clocked-in/index.html
           mkdir -p leaderboard-site/dead-wave
-          cp dead-wave/index.html leaderboard-site/dead-wave/index.html
+          cp -r dead-wave/. leaderboard-site/dead-wave/
 
       - uses: actions/upload-pages-artifact@v3
         if: steps.fetch.outputs.ok == 'true'

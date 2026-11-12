@@ -1,0 +1,456 @@
+{
+  "characters": {
+    "survivor": {
+      "frame": [
+        30,
+        38
+      ],
+      "anchor": [
+        15,
+        36
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "variants": [
+        {
+          "name": "Orange",
+          "sheet": "survivor_0.png"
+        },
+        {
+          "name": "Scout",
+          "sheet": "survivor_1.png"
+        },
+        {
+          "name": "Brawler",
+          "sheet": "survivor_2.png"
+        },
+        {
+          "name": "Mystic",
+          "sheet": "survivor_3.png"
+        }
+      ],
+      "drawGun": true,
+      "gun": [
+        20,
+        25
+      ]
+    },
+    "walker": {
+      "frame": [
+        30,
+        38
+      ],
+      "anchor": [
+        15,
+        36
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "variants": [
+        {
+          "name": "Walker 1",
+          "sheet": "walker_0.png"
+        },
+        {
+          "name": "Walker 2",
+          "sheet": "walker_1.png"
+        },
+        {
+          "name": "Walker 3",
+          "sheet": "walker_2.png"
+        },
+        {
+          "name": "Walker 4",
+          "sheet": "walker_3.png"
+        }
+      ]
+    },
+    "runner": {
+      "frame": [
+        30,
+        38
+      ],
+      "anchor": [
+        15,
+        36
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "sheet": "runner.png"
+    },
+    "spitter": {
+      "frame": [
+        30,
+        38
+      ],
+      "anchor": [
+        15,
+        36
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "sheet": "spitter.png"
+    },
+    "bloater": {
+      "frame": [
+        34,
+        36
+      ],
+      "anchor": [
+        17,
+        34
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "sheet": "bloater.png"
+    },
+    "brute": {
+      "frame": [
+        42,
+        46
+      ],
+      "anchor": [
+        21,
+        44
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "sheet": "brute.png"
+    },
+    "boss": {
+      "frame": [
+        65,
+        73
+      ],
+      "anchor": [
+        32.5,
+        71
+      ],
+      "scale": 1,
+      "dirs": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "anims": {
+        "idle": {
+          "row": 0,
+          "frames": 2,
+          "fps": 3
+        },
+        "walk": {
+          "row": 4,
+          "frames": 4,
+          "fps": 9
+        },
+        "run": {
+          "row": 8,
+          "frames": 4,
+          "fps": 14
+        },
+        "attack": {
+          "row": 12,
+          "frames": 2,
+          "fps": 12,
+          "loop": false
+        },
+        "hurt": {
+          "row": 16,
+          "frames": 2,
+          "fps": 10,
+          "loop": false
+        },
+        "roll": {
+          "row": 20,
+          "frames": 4,
+          "fps": 14
+        },
+        "death": {
+          "row": 24,
+          "frames": 6,
+          "fps": 10,
+          "loop": false,
+          "dirs": 1
+        }
+      },
+      "sheet": "boss.png"
+    }
+  }
+}

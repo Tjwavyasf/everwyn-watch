@@ -8,6 +8,10 @@ Open `index.html` in any phone or desktop browser. No install or build step.
 
 Tap **Customize your survivor** on the title screen to pick your build, skin tone, hair style and color, eye color, top (including armor), jacket (including a long coat or cape), bottoms, shoes and extras (glasses, beard, cap or wizard hat). Characters are drawn in a chunky fantasy-RPG pixel style with big heads and eyes. Your look is saved on your device, and teammates see it in co-op. Zombies are random townspeople in the same style.
 
+## Character art (PNG sprite sheets)
+
+Characters can be drawn from PNG sprite sheets with 4-direction idle, walk, run, attack, hurt, roll and death animations. Put the sheets in `sprites/` and describe them in `sprites/manifest.json`. See [sprites/README.md](sprites/README.md) for the layout. Until sheets are added, the game uses its built-in placeholder art. Add `?sprites=sample` to the address to try a sample pack built in the expected layout.
+
 ## Controls
 
 | Phone | Keyboard / mouse | Action |
