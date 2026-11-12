@@ -1,33 +1,32 @@
 # Dead Wave
 
-A zombie survival game for phones. Hold the camp through the night: each wave of zombies comes back with more health, more speed and more of them. Your guns fire on their own, so all you do is move, collect loot, and pick upgrades.
+A top-down zombie survival shooter for phones, in an HD-2D pixel style. The town fell at dusk. Scavenge guns and ammo, board up a house, and outlast wave after wave as the dead get tougher and faster.
 
 Open `index.html` in any phone or desktop browser. No install or build step.
 
-The look is HD-2D: shaded, outlined pixel-art sprites drawn on a low-res canvas, with smooth lighting, glow, smoke, fireflies and a tilt-shift blur layered on top at full resolution. You defend a night camp with a cabin, forge, market stall, animal pen and a watchtower whose archers shoot zombies that come close.
+## Controls
 
-**Controls:** drag anywhere on the screen to move (WASD or arrow keys on a keyboard) · Pause button or Esc · 1/2/3 to pick a level-up card.
+| Phone | Keyboard / mouse | Action |
+|---|---|---|
+| Drag on the left half | WASD | Move |
+| Drag on the right half (hold still to auto-aim) | Mouse + left click | Aim and shoot |
+| Tap your gun | R | Reload |
+| Swap button | Q | Swap between pistol and your other gun |
+| Grenade button | G | Throw a grenade |
+| ROLL | Space | Dodge roll (brief invincibility) |
+| SHOVE | F or right click | Push zombies off you and stun them |
+| RUN | Hold Shift | Sprint |
+| Orange button when it appears | E | Board up a door or window, or swap for a gun on the ground |
+
+Roll, shove and sprint use stamina (yellow bar).
 
 ## How it plays
 
-- **Waves.** Every wave has a set number of zombies. Clear them all to get a coin bonus and a small heal, then the next wave starts. Waves 3+ include a horde that surrounds you. Every 5th wave is a boss: the Abomination charges in a straight line (watch for the red warning) and calls in runners.
-- **Zombies.** Walkers, fast runners, spitters that keep their distance and throw acid, bloaters that explode, and tanky brutes.
-- **Loot.** Zombies drop XP gems (blue, green, red), coins, med kits, magnets (pull in every gem), bombs (clear the screen), rage (double fire rate for 8 seconds), and supply crates (a free upgrade). Brutes and bosses drop crates more often.
-- **Level ups.** Fill the XP bar to pick one of three cards: a new weapon, a weapon level, or a power. You can hold 5 weapons and 5 powers, each up to level 5.
-- **Evolutions.** A level 5 weapon plus its matching power can evolve:
+- **Town:** a new town every run with roads, about 50 houses, a store, a park and a parking lot, plus wrecked and burning cars, streetlights and a minimap. You see through a flashlight in the dark.
+- **Guns and ammo:** the pistol has unlimited reserve ammo. The SMG, shotgun, assault rifle and hunting rifle have limited ammo; when one runs dry you drop back to the pistol. Zombies drop guns, ammo boxes, planks, med kits and grenades, and houses restock loot each wave.
+- **Barricades:** walk into a house and the roof fades away. Stand by a door or window and board it up (up to 3 boards, 1 plank each). Zombies pathfind to you, hammer the boards down and climb in through windows. Brutes break boards fast, and the boss smashes them in one hit.
+- **Waves:** you get 25 seconds to prepare, and 20 seconds between waves. Every 5th wave brings the Abomination.
+- **Perks:** collect gems to level up and choose perks such as Hollow Points, Fast Hands, Ammo Belt, Carpenter, Strong Arm and Marathon.
+- **Armory:** coins carry over between runs. Spend them on permanent upgrades and to unlock a starting gun.
 
-| Weapon | Power | Evolves into |
-|---|---|---|
-| Pistol | Sneakers | Twin Revolvers |
-| SMG | Trigger Finger | Minigun |
-| Shotgun | Hollow Points | Dragon's Breath |
-| Rifle | Scope | Railgun |
-| Grenades | Big Boom | Cluster Bombs |
-| Saw Blades | Body Armor | Buzzsaw Halo |
-| Tesla Coil | Magnet | Storm Coil |
-| Flamethrower | Riot Plate | Inferno |
-| Combat Drone | Bandages | Gunship |
-
-- **Armory.** Coins you collect are kept after each run. Spend them on permanent upgrades (Toughness, Firepower, Quick Feet, Scavenger, Thick Skin, Veteran, Second Wind) and to unlock the Rifle, Tesla Coil, Flamethrower and Combat Drone. You can also choose your starting weapon on the title screen.
-
-Progress (coins, upgrades, best wave) is saved in the browser.
+Progress is saved in the browser.
