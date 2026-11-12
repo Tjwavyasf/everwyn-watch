@@ -4,6 +4,10 @@ A top-down zombie survival shooter for phones, in an HD-2D pixel style. The town
 
 Open `index.html` in any phone or desktop browser. No install or build step.
 
+## Your survivor
+
+Tap **Customize your survivor** on the title screen to pick your build, skin tone, hair style and color, top, jacket, bottoms, shoes and extras (glasses, beard or cap). Your look is saved on your device, and teammates see it in co-op. Zombies are random townspeople in the same style.
+
 ## Controls
 
 | Phone | Keyboard / mouse | Action |
