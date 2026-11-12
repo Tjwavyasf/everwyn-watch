@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["leaderboard-site/**", "warehouse-showdown/**", ".github/workflows/leaderboard.yml"]
+    paths: ["leaderboard-site/**", "warehouse-showdown/**", "dead-wave/**", ".github/workflows/leaderboard.yml"]
 
 permissions:
   contents: read
@@ -50,6 +50,8 @@ jobs:
         run: |
           mkdir -p leaderboard-site/clocked-in
           cp warehouse-showdown/index.html leaderboard-site/clocked-in/index.html
+          mkdir -p leaderboard-site/dead-wave
+          cp dead-wave/index.html leaderboard-site/dead-wave/index.html
 
       - uses: actions/upload-pages-artifact@v3
         if: steps.fetch.outputs.ok == 'true'

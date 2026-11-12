@@ -2,7 +2,7 @@ name: Build mod jar
 
 on:
   push:
-    paths-ignore: ["leaderboard-site/**", "warehouse-showdown/**", ".github/workflows/leaderboard.yml"]
+    paths-ignore: ["leaderboard-site/**", "warehouse-showdown/**", "dead-wave/**", ".github/workflows/leaderboard.yml"]
   workflow_dispatch:
 
 permissions:
