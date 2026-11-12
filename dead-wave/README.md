@@ -10,7 +10,7 @@ Tap **Customize your survivor** on the title screen to pick your build, skin ton
 
 ## Character art (PNG sprite sheets)
 
-Characters can be drawn from PNG sprite sheets with 4-direction idle, walk, run, attack, hurt, roll and death animations. Put the sheets in `sprites/` and describe them in `sprites/manifest.json`. See [sprites/README.md](sprites/README.md) for the layout. Until sheets are added, the game uses its built-in placeholder art. Add `?sprites=sample` to the address to try a sample pack built in the expected layout.
+Characters can be drawn from PNG sprite sheets with 4-direction idle, walk, run, attack, hurt, roll and death animations. Put the sheets in `sprites/` and describe them in `sprites/manifest.json`. See [sprites/README.md](sprites/README.md) for the layout. The game ships with characters built from the Liberated Pixel Cup (LPC) art: 8 survivors to choose from, 6 walker zombies, and a runner, spitter, bloater, brute and boss. Credits and licenses are in [sprites/lpc/CREDITS.md](sprites/lpc/CREDITS.md). If the sheets can't load (for example when opening the file directly), the game falls back to its built-in art.
 
 ## Controls
 

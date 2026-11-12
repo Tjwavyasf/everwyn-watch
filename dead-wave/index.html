@@ -224,6 +224,7 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
       <p class="hint" id="coopInfo" hidden></p>
       <div class="btnrow"><button class="alt" id="armoryBtn">Armory</button><button class="alt" id="soundBtn">Sound on</button></div>
       <p class="hint">Left side: drag to move. Right side: drag to aim and shoot, or hold to auto-aim. Tap your gun to reload.</p>
+      <p class="hint" id="artCredit" hidden>Character art: Liberated Pixel Cup contributors (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0). <a href="sprites/lpc/CREDITS.md" target="_blank" rel="noopener" style="color:var(--gold)">Full credits</a></p>
       <ul class="keys"><li><b>Keyboard</b></li><li>WASD move · mouse aim · click shoot · R reload · Shift run · Space roll · F or right-click shove · E board up / pick up · Q swap · G grenade</li></ul>
     </div>
   </section>
@@ -845,8 +846,8 @@ function sfx(k){
 /* ---------------- canvases ---------------- */
 const app=$('#app'),C=$('#cv'),ctx=C.getContext('2d'),FXC=$('#fx'),fx=FXC.getContext('2d');
 const LM=cnv(8,8),lm=LM.getContext('2d');const MINI=$('#mini'),mctx=MINI.getContext('2d');
-let VW=320,VH=480,KX=2,KY=2,LKX=.5,LKY=.5,DPR=1,CSSW=390,CSSH=844;
-function resize(){const w=app.clientWidth||innerWidth,h=app.clientHeight||innerHeight;CSSW=w;CSSH=h;const sc=Math.max(1.4,Math.min(w,h)/250);
+let VIEWK=250;let VW=320,VH=480,KX=2,KY=2,LKX=.5,LKY=.5,DPR=1,CSSW=390,CSSH=844;
+function resize(){const w=app.clientWidth||innerWidth,h=app.clientHeight||innerHeight;CSSW=w;CSSH=h;const sc=Math.max(1.4,Math.min(w,h)/VIEWK);
   VW=Math.ceil(w/sc);VH=Math.ceil(h/sc);C.width=VW;C.height=VH;ctx.imageSmoothingEnabled=false;
   DPR=Math.min(2,window.devicePixelRatio||1);FXC.width=Math.round(w*DPR);FXC.height=Math.round(h*DPR);
   LM.width=Math.ceil(w/4);LM.height=Math.ceil(h/4);KX=FXC.width/VW;KY=FXC.height/VH;LKX=LM.width/VW;LKY=LM.height/VH}
@@ -1025,7 +1026,7 @@ function fire(){
   if(P.fireT>0||P.reload>0||P.rollT>0||P.action)return;
   const s=curGun(),g=GUNDEF[s.g];
   if(s.mag<=0){if(s.res>0)startReload();else{sfx('empty');P.fireT=.35;if(P.cur===1){P.cur=0;banner('OUT OF AMMO','Back to the pistol')}}return}
-  P.run=false;s.mag--;P.fireT=g.rate;
+  P.run=false;s.mag--;P.fireT=g.rate;P.shootT=.4;
   const a=P.aim,ox=P.x+Math.cos(a)*8,oy=P.y-1+Math.sin(a)*4;
   const as=[];for(let i=0;i<g.pellets;i++)as.push(+(a+rand(-g.spread,g.spread)*(g.pellets>1?1:.6)).toFixed(3));
   const bo={spd:g.spd,dmg:g.dmg*S.dmg,pierce:g.pierce,life:g.life||.9,kb:g.kb,len:s.g==='rifle'?16:g.pellets>1?4:8,col:s.g==='rifle'?'#c8f4ff':'#ffe680',r:s.g==='rifle'?3:2};
@@ -1156,7 +1157,7 @@ function mates(){return NET.role==='guest'?[...OTHERS.values()]:NET.role==='host
 function alivePlayers(){const a=[];if(P&&!P.dead)a.push(P);if(NET.role==='host')for(const r of REMOTES.values())if(r.live&&!r.dead)a.push(r);return a}
 function nearestPlayer(x,y){let best=null,bd=1e18;for(const p of alivePlayers()){const d=d2(x,y,p.x,p.y);if(d<bd){bd=d;best=p}}return best}
 function updLocal(dt){
-  P.fireT-=dt;P.shoveT-=dt;P.rollCD-=dt;if(P.hurtT>0)P.hurtT-=dt;if(P.shoveAnim>0)P.shoveAnim-=dt;if(P.inv>0)P.inv-=dt;if(P.recoil>0)P.recoil-=dt;
+  P.fireT-=dt;P.shoveT-=dt;P.rollCD-=dt;if(P.hurtT>0)P.hurtT-=dt;if(P.shootT>0)P.shootT-=dt;if(P.shoveAnim>0)P.shoveAnim-=dt;if(P.inv>0)P.inv-=dt;if(P.recoil>0)P.recoil-=dt;
   if(P.dead){mvx=mvy=0;P.moving=false;P.running=false;return}
   if(P.reload>0){P.reload-=dt;if(P.reload<=0){P.reload=0;finishReload()}}
   if(P.stamWait>0)P.stamWait-=dt;else P.stam=Math.min(S.stam,P.stam+S.stamRegen*dt);
@@ -1351,9 +1352,9 @@ function drawMate(m){const hc=sheetFor('survivor');
   if(back)gun();drawSet(set,fr,m.x,m.y,face,false);if(!back)gun()}
 function drawPlayer(){
   const hc=sheetFor('survivor');
-  if(hc){const aiming=P.recoil>0||am.on||usingMouse,dir=P.rollT>0?dir4(P.rdx,P.rdy):(aiming||!P.moving)&&!P.running?dir4(Math.cos(P.aim),Math.sin(P.aim),P.dir):dir4(mvx,mvy,P.dir);P.dir=dir;
+  if(hc){const aiming=P.shootT>0||am.on||usingMouse,dir=P.rollT>0?dir4(P.rdx,P.rdy):(aiming||!P.moving)&&!P.running?dir4(Math.cos(P.aim),Math.sin(P.aim),P.dir):dir4(mvx,mvy,P.dir);P.dir=dir;
     P.flash=P.inv>0&&P.rollT<=0&&P.hurtT>0&&!hc.anims.hurt;
-    drawHeroSheet(hc,P,P.look||cleanLook(meta.look),heroAnim(P,{dead:P.dead,roll:P.rollT>0,hurt:P.hurtT>0&&hc.anims.hurt,shoot:P.recoil>0,run:P.running,moving:P.moving}),dir,curGun().g,P.running?(P.face>0?.6:Math.PI-.6):P.aim);return}
+    drawHeroSheet(hc,P,P.look||cleanLook(meta.look),heroAnim(P,{dead:P.dead,roll:P.rollT>0,hurt:P.hurtT>0&&hc.anims.hurt,shoot:P.shootT>0,run:P.running,moving:P.moving}),dir,curGun().g,P.running?(P.face>0?.6:Math.PI-.6):P.aim);return}
   const HS=lookSet(P.look||DEFAULT_LOOK);if(P.dead){drawDown(HS,P.x,P.y);return}
   const flash=P.inv>0&&P.rollT<=0&&Math.floor(G.time*30)%2===0;
   if(P.rollT>0){const k=1-P.rollT/.34;drawSpin(HS,P.x,P.y,(P.rdx>=0?1:-1)*k*TAU,P.rdx);return}
@@ -1625,7 +1626,7 @@ async function loadSheets(){
   for(const[key,def]of Object.entries(man.characters)){if(!SHEET_KEYS.includes(key)){SHEETS.errors.push(key+': unknown character name');continue}
     try{SHEETS.chars[key]=await prepChar(def,base)}catch(e){SHEETS.errors.push(key+': '+e.message)}}
   if(SHEETS.errors.length)console.warn('Sprite sheet problems:\n'+SHEETS.errors.join('\n'));
-  SHEETS.ready=Object.keys(SHEETS.chars).length>0;SHEETS.url=url;
+  SHEETS.ready=Object.keys(SHEETS.chars).length>0;SHEETS.url=url;if(SHEETS.ready&&+man.view>150)VIEWK=Math.min(400,+man.view);resize();if(SHEETS.ready)$('#artCredit').hidden=false;
   if(SHEETS.ready&&!$('#custom').hidden)renderOpts()}
 function sheetFor(type){return SHEETS.chars[type]||null}
 function sheetFrame(c,anim,dir,t){
