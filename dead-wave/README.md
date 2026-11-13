@@ -70,6 +70,14 @@ Tap **PLAY** to open the card screen: your survivor's portrait and name at the t
   - **Forest:** dirt trails through thick woods, a few cabins and campfires.
 - **Sci-fi guns:** the Laser Rifle, Arc Gun (lightning jumps to 3 more targets), Railgun (goes through 12 enemies) and Plasma Cannon (explodes). They drop three times as often against robots and monsters, and you can unlock them in the Armory.
 
+## Home screen
+
+The home screen is a live scene: your survivor standing at a night camp in the woods, with a campfire and a truck with its tail lights on. When friends join your squad, they appear standing next to you with their name tags and outfits, on everyone's screen.
+
+- **Top:** ARMORY, HOME and CHARACTER tabs, plus your name, best wave and coins.
+- **Left:** **Weekly challenges**: four tasks that change every week, such as killing 300 enemies, reaching wave 8 or escaping in Objectives. Each pays coins when done. Below it is the news panel.
+- **Right:** **Mode** and **Enemies · Map** (open the card picker), **Starting gun** (cycles your unlocked guns), **DEPLOY**, **Host squad** / **Join squad** (Host becomes **Invite**, Join becomes **Leave squad**), **Warm-up yard** for the host, and the squad count.
+
 ## Story intros
 
 Every match (except the lobby) opens with a short cinematic: letterbox bars, a place and time caption, typed narration, and camera shots over the real map. It shows the town, the enemies closing in, a scene for the mode, and then swoops to your survivor with the mode's title card. The lore changes with the map (Marrow Creek, Port Halden, Neo-Kessler, Blackpine Woods), the enemies (what the Wave did to them) and the mode. Objectives tells its scenario's story. Tap to speed up the text, or press **SKIP** (Esc on a keyboard). In co-op, the match starts when the host's intro ends. You can turn intros off under **Controls → Story intros**.

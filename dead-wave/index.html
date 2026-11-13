@@ -34,6 +34,31 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .stick{position:absolute;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;pointer-events:none;border:3px solid rgba(242,193,78,.45);background:radial-gradient(rgba(59,50,82,.35),rgba(20,15,31,.15))}
 .stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#8a7ab8,#3b3252);border:2px solid var(--edge);box-shadow:0 0 0 2px rgba(242,193,78,.5)}
 #ctlScr{z-index:60}
+#title.home{display:block;padding:0;overflow:hidden;background:none;pointer-events:none}
+#title.home>*{pointer-events:auto}
+.home .htop{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:max(8px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 8px max(10px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(6,4,10,.85),rgba(6,4,10,0))}
+.home .htabs{display:flex;gap:4px}.home .htabs button{font:700 13px/1 var(--title);letter-spacing:1px;padding:8px 10px;background:none;border:0;color:#c8302e;text-shadow:2px 2px 0 #000}.home .htabs button.on{color:#fff;border-bottom:3px solid #c8302e}
+.home .hlogo{font:700 18px/1 var(--title);color:var(--ink);letter-spacing:2px;text-shadow:2px 2px 0 #000;margin:0 auto}.home .hlogo em{font-style:normal;color:var(--blood)}
+.home .hprof{display:flex;align-items:center;gap:8px;padding:5px 8px;background:linear-gradient(90deg,rgba(110,14,14,.85),rgba(40,6,8,.85));border:1px solid #6a1414}
+.home .hprof div{display:flex;flex-direction:column;gap:2px}.home .hprof b{font:700 12px/1 var(--title);color:#fff}.home .hprof small{font:600 10px/1 var(--ui);color:#e8b0a0}.home .hprof span{display:flex;align-items:center;gap:4px;font:700 13px/1 var(--ui);color:var(--gold)}.home .hprof img{width:16px;height:16px}
+.home .hprof button{font:700 12px/1 var(--ui);padding:5px 7px;background:rgba(0,0,0,.4);border:1px solid #6a1414;color:#fff}
+.home .hpanel{position:absolute;left:max(10px,env(safe-area-inset-left,0px));width:min(33vw,360px);background:rgba(8,6,12,.78);border:1px solid #3a1414}
+.home .hhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;background:linear-gradient(90deg,#8a1414,#4a0a0a)}.home .hhead b{font:700 12px/1 var(--title);color:#fff;letter-spacing:1px}.home .hhead small{font:600 11px/1 var(--ui);color:#f0c8c0}
+.home .hch{top:calc(50px + env(safe-area-inset-top,0px))}
+.home .hch ul{list-style:none;margin:0;padding:6px 8px;display:flex;flex-direction:column;gap:5px}.home .hch li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font:600 12px/1.2 var(--ui);color:#eee}
+.home .hch .rw{display:flex;align-items:center;gap:3px;font:700 11px/1 var(--ui);color:#1a1408;background:#e8c84a;padding:2px 5px}.home .hch .rw img{width:12px;height:12px}.home .hch .pv{font:700 11px/1 var(--ui);color:#bbb;font-variant-numeric:tabular-nums}.home .hch li.done .tx{color:#8fff6a;text-decoration:line-through}
+.home .hnews{bottom:max(14px,env(safe-area-inset-bottom,0px));font:600 12px/1.4 var(--ui);color:#ddd}.home .hnews p{margin:6px 8px}.home .hnews .hint{font-size:10px;color:#999}
+.home .hdeploy{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:max(40px,env(safe-area-inset-bottom,0px));width:min(30vw,290px);display:flex;flex-direction:column;gap:6px}
+.home .hchip{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;background:rgba(90,14,14,.55);border:1px solid #8a2020;color:#fff;text-align:left}.home .hchip span{font:700 10px/1 var(--title);color:#e8a0a0;letter-spacing:1px}.home .hchip b{font:700 13px/1 var(--ui)}
+.home .deploy{margin-top:4px;padding:16px 10px;font:700 26px/1 var(--title);letter-spacing:4px;color:#e8fff8;background:linear-gradient(#3aa890,#1e6a5c);border:2px solid #8af0d8;box-shadow:0 0 22px rgba(80,230,190,.45),inset 0 0 0 2px #14463e;text-shadow:2px 2px 0 #0a2a24}
+.home .deploy:disabled{font-size:14px;filter:grayscale(.6);opacity:.85}
+.home .hrow{display:flex;gap:6px}.home .hrow button,.home .hyard{flex:1;font:700 12px/1 var(--ui);padding:9px 6px;background:rgba(20,10,14,.8);border:1px solid #6a1414;color:#fff}
+.home #coopInfo{display:none}
+.home .hsquad{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;font:700 14px/1 var(--ui);color:#fff;background:rgba(0,0,0,.5);padding:5px 8px}
+@media (orientation:portrait){.home .hlogo{display:none}.home .hpanel{width:auto;right:max(10px,env(safe-area-inset-right,0px))}.home .hnews{display:none}
+  .home .hch{top:calc(46px + env(safe-area-inset-top,0px))}.home .hch ul{max-height:23vh;overflow:auto}
+  .home .hdeploy{left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));width:auto;bottom:max(36px,env(safe-area-inset-bottom,0px))}
+  .home .htabs button{font-size:11px;padding:6px 6px}.home .hprof .snd,.home .hprof div{display:none}.home .htop{gap:4px}.home .hprof{margin-left:auto}}
 body.cutting #hud,body.cutting #banner,body.cutting #pad,body.cutting #cine{display:none!important}
 #cut{position:absolute;inset:0;z-index:35;pointer-events:auto;overflow:hidden}
 #cut .cbar{position:absolute;left:0;right:0;height:13%;background:#000;animation:cbar .8s ease-out both}#cut .cbar.t{top:0}#cut .cbar.b{bottom:0;height:24%}
@@ -296,24 +321,29 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
   <div id="banner" hidden><b id="banT"></b><small id="banS"></small></div>
   <div id="hurtv"></div>
 
-  <section id="title" class="screen">
-    <div class="logo"><h1>DEAD<em>WAVE</em></h1></div>
-    <p class="tag">The town fell at dusk. Scavenge guns, board up a house, and outlast every wave.</p>
-    <div class="panel">
-      <div class="tab gold">SURVIVE THE NIGHT</div>
-      <div class="meta"><span>Best wave <b id="bestWave">0</b></span><span><img class="icoCoin" alt=""><b id="bankT">0</b></span></div>
-      <div hidden><span id="modeName"></span><span id="facName"></span><span id="mapName"></span><p id="modeDesc"></p></div>
-      <div class="label">Starting gun (you always carry a pistol)</div>
-      <div class="starts" id="starts"></div>
-      <button class="big" id="playBtn">PLAY</button>
-      <button class="alt" id="charBtn">Customize your survivor</button>
-      <div class="btnrow"><button class="alt" id="hostBtn">Host co-op</button><button class="alt" id="joinBtn">Join co-op</button></div>
-      <p class="hint" id="coopInfo" hidden></p>
-      <div class="btnrow"><button class="alt" id="armoryBtn">Armory</button><button class="alt" id="ctlBtn">Controls</button><button class="alt" id="soundBtn">Sound on</button></div>
-      <p class="hint">Use the stick to move (push it all the way to sprint). Hold FIRE to shoot: it locks onto the nearest zombie, or drag it to aim yourself.</p>
-      <p class="hint" id="artCredit" hidden>Character art: Liberated Pixel Cup contributors (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0). <a href="sprites/lpc/CREDITS.md" target="_blank" rel="noopener" style="color:var(--gold)">Full credits</a></p>
-      <ul class="keys"><li><b>Keyboard</b></li><li>WASD move · mouse aim · click shoot · R reload · Shift run · Space roll · F or right-click shove · E board up / pick up · Q swap · G grenade</li></ul>
+  <section id="title" class="screen home">
+    <div class="htop">
+      <div class="htabs"><button id="armoryBtn">ARMORY</button><button id="homeTab" class="on">HOME</button><button id="charBtn">CHARACTER</button></div>
+      <div class="hlogo">DEAD<em>WAVE</em></div>
+      <div class="hprof"><div><b id="hName">SURVIVOR</b><small>Best wave <b id="bestWave">0</b></small></div><span><img class="icoCoin" alt=""><b id="bankT">0</b></span><button id="ctlBtn" aria-label="Controls">⚙</button><button id="soundBtn" class="snd">Sound on</button></div>
     </div>
+    <div class="hpanel hch"><div class="hhead"><b>WEEKLY CHALLENGES</b><small id="chExp"></small></div><ul id="chList"></ul></div>
+    <div class="hpanel hnews"><div class="hhead"><b>WELCOME TO DEAD WAVE</b></div>
+      <p>The Wave rolled in at dusk. Pick a mode, an enemy and a map, gear up, and deploy alone or with up to 3 friends (9 in Infection).</p>
+      <p><b>New:</b> story intros, robot and monster factions, four maps, 15 guns with attachments, Infection mode and the warm-up yard.</p>
+      <p class="hint" id="artCredit" hidden>Character art: Liberated Pixel Cup contributors (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0). <a href="sprites/lpc/CREDITS.md" target="_blank" rel="noopener" style="color:var(--gold)">Full credits</a></p>
+    </div>
+    <div class="hdeploy">
+      <button class="hchip" id="playBtn"><span>MODE</span><b id="hMode">Survival</b></button>
+      <button class="hchip" id="hSetChip"><span>ENEMIES · MAP</span><b id="hFacMap">Zombies · Suburbs</b></button>
+      <button class="hchip" id="startChip"><span>STARTING GUN</span><b id="hStart">Pistol only</b></button>
+      <button class="deploy" id="deployBtn">DEPLOY</button>
+      <div class="hrow"><button id="hostBtn">Host squad</button><button id="joinBtn">Join squad</button></div>
+      <button class="hyard" id="yardBtn" hidden>Warm-up yard</button>
+      <p class="hint" id="coopInfo" hidden></p>
+    </div>
+    <div class="hsquad"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="5" cy="5" r="3" fill="currentColor"/><circle cx="11" cy="5" r="3" fill="currentColor"/><rect x="1" y="9" width="8" height="6" rx="2" fill="currentColor"/><rect x="7" y="9" width="8" height="6" rx="2" fill="currentColor"/></svg><span id="hSquad">1/4</span></div>
+    <div hidden><div id="starts"></div><span id="modeName"></span><span id="facName"></span><span id="mapName"></span><p id="modeDesc"></p></div>
   </section>
 
   <section id="custom" class="screen modal" hidden>
@@ -1058,7 +1088,8 @@ function sfx(k){
 const app=$('#app'),C=$('#cv'),ctx=C.getContext('2d'),FXC=$('#fx'),fx=FXC.getContext('2d');
 const LM=cnv(8,8),lm=LM.getContext('2d');const MINI=$('#mini'),mctx=MINI.getContext('2d');
 let VIEWK=250;let VW=320,VH=480,KX=2,KY=2,LKX=.5,LKY=.5,DPR=1,CSSW=390,CSSH=844;
-function resize(){const w=app.clientWidth||innerWidth,h=app.clientHeight||innerHeight;CSSW=w;CSSH=h;const sc=Math.max(1.4,Math.min(w,h)/VIEWK);
+function resize(){resizeCore();if(resize.busy)return;resize.busy=1;try{if(HOME.on&&G.mode==='menu')homeRefresh()}catch(e){}finally{resize.busy=0}}
+function resizeCore(){const w=app.clientWidth||innerWidth,h=app.clientHeight||innerHeight;CSSW=w;CSSH=h;const sc=Math.max(1.4,Math.min(w,h)/VIEWK);
   VW=Math.ceil(w/sc);VH=Math.ceil(h/sc);C.width=VW;C.height=VH;ctx.imageSmoothingEnabled=false;
   DPR=Math.min(2,window.devicePixelRatio||1);FXC.width=Math.round(w*DPR);FXC.height=Math.round(h*DPR);
   LM.width=Math.ceil(w/4);LM.height=Math.ceil(h/4);KX=FXC.width/VW;KY=FXC.height/VH;LKX=LM.width/VW;LKY=LM.height/VH;try{if(!mv.on)restJoy()}catch(e){}}
@@ -1301,6 +1332,7 @@ function useAid(){if(gm()==='infection')return;if(!P||P.dead||G.mode!=='play'||P
 function cancelAid(){P.healT=0}
 function updAid(dt){if(!(P.healT>0))return;if(P.dead||P.rollT>0){P.healT=0;return}let m=null;if(P.healM>=0){m=mates().find(q=>q.id===P.healM);if(!m||!m.dead||d2(m.x,m.y,P.x,P.y)>40*40){P.healT=0;banner('REVIVE STOPPED','Stay next to them.');return}}
   P.healT-=dt;if(P.healT>0)return;P.healT=0;P.aid=Math.max(0,(P.aid|0)-1);sfx('power');
+  chAdd('aid',1);
   if(!m){const h=Math.round(P.maxHp*.6);P.hp=Math.min(P.maxHp,P.hp+h);addNum(P.x,P.y-34,h,'heal');return}
   if(NET.role==='guest')netSend({t:'revive',id:m.id});else reviveMate(m.id,0)}
 function reviveMate(id,by){const who=by===0?MATE_NAMES[0]:(REMOTES.get(by)||{}).name||'A teammate';
@@ -1817,10 +1849,10 @@ function renderCards(){if(!CS.open)return;const c=curCfg();
   $('#mcCode').hidden=!NET.code;$('#mcCode').textContent=NET.code?'ROOM '+NET.code:'';
   $('#mcStart').hidden=ctx==='guest';$('#mcStart').textContent=ctx==='solo'?'PLAY':'START MATCH';
   $('#mcYard').hidden=ctx!=='host';$('#mcYard').textContent=inYard?'BACK TO THE YARD':'WARM UP IN THE YARD';
-  $('#mcInvite').hidden=ctx!=='host';$('#mcBack').textContent=ctx==='solo'?'Back':'Leave room';
+  $('#mcInvite').hidden=ctx!=='host';$('#mcBack').textContent='Back';
   $('#mcWait').hidden=ctx!=='guest';
   for(const b of document.querySelectorAll('#modeScr .mcard'))b.disabled=ctx==='guest'}
-function cfgSend(){if(NET.role!=='host')return;netAll({t:'cfg',mode:meta.mode,fac:meta.fac,map:meta.map,pl:[{name:MATE_NAMES[0]+' (host)',col:0},...[...REMOTES.values()].filter(r=>r.live).map(r=>({name:r.name,col:r.col}))]})}
+function cfgSend(){if(NET.role!=='host')return;netAll({t:'cfg',mode:meta.mode,fac:meta.fac,map:meta.map,pl:[{id:0,name:MATE_NAMES[0],col:0,look:cleanLook(meta.look)},...[...REMOTES.values()].filter(r=>r.live).map(r=>({id:r.id,name:r.name,col:r.col,look:r.look||{}}))]})}
 function drawAvatar(now){if(!CS.open)return;const cv=$('#mcAvatar'),hc=sheetFor('survivor'),x=cv.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,cv.width,cv.height);
   if(hc){const fr=sheetFrame(hc,'idle','down',now/1000);for(const im of sheetImgs(hc,cleanLook(meta.look)))x.drawImage(im,fr.sx+12,fr.sy+10,40,44,0,0,40,44)}
   else{const st=lookSet(cleanLook(meta.look));x.drawImage(st.r[0],7,4)}}
@@ -1881,6 +1913,56 @@ function endCutscene(local){if(!CUT.on)return;CUT.on=false;for(const z of CUT.ac
   if(local&&NET.role==='guest')banner('GET READY','The match starts when the host finishes the intro.')}
 function drawCutPeople(tall){if(!CUT.on||!CUT.showPeople)return;for(const a of CUT.people)tall.push({y:a.y,cutp:a})}
 function drawCutPerson(a){const hc=sheetFor('survivor');if(!hc)return;drawHeroSheet(hc,a,a.look,'idle',a.dir,null,0)}
+
+/* ---------------- home screen ----------------
+   The title screen is a live scene: your survivor at a night camp in the woods (campfire, a truck with its tail lights on).
+   Squad members who join stand next to you, with their name tags and outfits, on everyone's screen. Panels around it:
+   weekly challenges, news, and the deploy panel. */
+const HOME={on:false,built:false,actors:[],lights:[]};
+function homeBuild(){setMap('forest');genTown(9137);HOME.built=true;
+  const open=(tx,ty)=>{for(let y=ty-5;y<=ty+3;y++)for(let x=tx-8;x<=tx+8;x++){const i=ti(x,y);if(i<0||hid[i]>=0||tile[i]>=10&&tile[i]!==TR)return false}return true};
+  let spot=null;for(let r=0;r<60&&!spot;r++)for(let k=0;k<24&&!spot;k++){const a=k/24*TAU,tx=Math.round(MW/2+Math.cos(a)*r),ty=Math.round(MH/2+Math.sin(a)*r);if(open(tx,ty))spot={x:tx*T+8,y:ty*T+8}}
+  if(!spot)spot={x:MW*T/2,y:MH*T/2};FIRES.push({x:spot.x,y:spot.y+6});
+  HOME.spot=spot;HOME.ax=spot.x;HOME.ay=spot.y-16;
+  for(let i=PROPS.length-1;i>=0;i--){const p=PROPS[i];if(Math.abs(p.x-HOME.ax)<130&&p.y>HOME.ay-44&&p.y<HOME.ay+50)PROPS.splice(i,1)}
+  const truck={img:PR.cars[2]||PR.cars[0],x:HOME.ax+40,y:HOME.ay-38};PROPS.push(truck);PROPS.sort((a,b)=>a.y-b.y);
+  HOME.lights=[[truck.x+truck.img.width/2-3,truck.y-8],[truck.x+truck.img.width/2-3,truck.y-14]];chunkCache=new Map()}
+function homeEnter(){if(!HOME.on)HOME.prevView=VIEWK;HOME.on=true;if(!HOME.built||G.map!=='forest')homeBuild();menuZ.length=0;homeRefresh()}
+function homeLeave(){if(!HOME.on)return;HOME.on=false;VIEWK=HOME.prevView||VIEWK;HOME.built=false}
+function squadList(){const look=cleanLook(meta.look);
+  if(NET.role==='host')return[{id:0,name:MATE_NAMES[0],col:0,look,me:1},...[...REMOTES.values()].filter(r=>r.live).map(r=>({id:r.id,name:r.name,col:r.col,look:r.look||{}}))];
+  if(NET.role==='guest'&&G.hostCfg&&G.hostCfg.pl&&G.hostCfg.pl.length)return G.hostCfg.pl.map(p=>({...p,me:p.id===NET.myId||p.col===G.myCol}));
+  return[{id:0,name:'You',col:0,look,me:1}]}
+function homeRefresh(){if(!HOME.on)return;const L=squadList();const order=[];L.forEach((p,i)=>order.push(p));
+  HOME.actors=order.map((p,i)=>{const k=i===0?0:(i%2?-1:1)*Math.ceil(i/2);return{x:HOME.ax+k*30,y:HOME.ay+Math.abs(k)*4,look:p.look,name:p.name,col:p.col,me:p.me,dir:'down',aim:Math.PI/2,anim:0,face:1,moving:false,st:'idle',stT:0}});
+  const wide=CSSW>CSSH,vk=wide?190:150;if(VIEWK!==vk){VIEWK=vk;resizeCore()}HOME.cx=HOME.ax+(wide?10:0);HOME.cy=HOME.ay-(wide?6:14);renderHome()}
+function homeDraw(tall){if(G.mode!=='menu'||!HOME.on)return;for(const a of HOME.actors)tall.push({y:a.y,home:a})}
+function homeDrawActor(a){const hc=sheetFor('survivor');if(hc){drawHeroSheet(hc,a,a.look,'idle','down',null,0);return}const set=lookSet(a.look&&a.look.body!==undefined?a.look:DEFAULT_LOOK);drawSet(set,0,a.x,a.y,1,false)}
+/* weekly challenges */
+const CH_POOL=[{id:'kills',txt:'Kill 300 enemies',n:300,r:150},{id:'wave8',txt:'Reach wave 8 in Survival',n:8,r:200},{id:'boards',txt:'Board up 25 doors or windows',n:25,r:120},
+  {id:'escape',txt:'Escape in Objectives',n:1,r:250},{id:'horde5',txt:'Survive 5 minutes in Horde',n:300,r:200,time:1},{id:'aid',txt:'Use 5 first aid kits',n:5,r:100},
+  {id:'infwin',txt:'Win an Infection round',n:1,r:150},{id:'robots',txt:'Destroy 150 robots',n:150,r:150},{id:'monsters',txt:'Slay 150 monsters',n:150,r:150},{id:'zombies',txt:'Put down 200 zombies',n:200,r:120}];
+const WEEK_MS=7*864e5;
+function weekNo(){return Math.floor((Date.now()+3*864e5)/WEEK_MS)}
+function chWeek(){const w=weekNo();if(!meta.ch||meta.ch.week!==w)meta.ch={week:w,prog:{},done:{}};let s=w*9301+49297;const pool=CH_POOL.slice();const out=[];
+  while(out.length<4&&pool.length){s=(s*9301+49297)%233280;out.push(pool.splice(s%pool.length,1)[0])}return out}
+function chAdd(id,v,max){const list=chWeek(),c=list.find(x=>x.id===id);if(!c||meta.ch.done[id])return;const p=meta.ch.prog;p[id]=max?Math.max(p[id]||0,v):(p[id]||0)+v;
+  if(p[id]>=c.n){meta.ch.done[id]=1;meta.coins+=c.r;HOME.toast=`Challenge complete: ${c.txt} (+${c.r} coins)`}save()}
+function chAfterRun(win){const md=gm();if(md==='lobby')return;const k=G.kills|0;if(k){chAdd('kills',k);chAdd(fac(),k)}
+  if(md==='survival')chAdd('wave8',G.wave|0,1);if(md==='horde')chAdd('horde5',G.hT|0,1);if(md==='objectives'&&win)chAdd('escape',1);if(md==='infection'&&win)chAdd('infwin',1)}
+function renderHome(){if($('#title').hidden&&!HOME.on)return;
+  const list=chWeek(),ms=WEEK_MS-((Date.now()+3*864e5)%WEEK_MS),d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5);$('#chExp').textContent=`Resets in ${d}d ${h}h`;
+  $('#chList').innerHTML=list.map(c=>{const p=Math.min(c.n,(meta.ch.prog[c.id]|0)),done=meta.ch.done[c.id];const pv=c.time?`${Math.floor(p/60)}:${String(p%60).padStart(2,'0')}/${c.n/60}:00`:`${p}/${c.n}`;
+    return`<li class="${done?'done':''}"><span class="rw"><img alt="" src="${ICONURL.coin}">${c.r}</span><span class="tx">${c.txt}</span><span class="pv">${done?'✓':pv}</span></li>`}).join('');
+  const md=MODES.find(m=>m.id===meta.mode)||MODES[0],fc=FACS.find(m=>m.id===meta.fac)||FACS[0],mp=MAPS.find(m=>m.id===meta.map)||MAPS[0];
+  const cfg=NET.role==='guest'&&G.hostCfg?G.hostCfg:{mode:meta.mode,fac:meta.fac,map:meta.map};const md2=MODES.find(m=>m.id===cfg.mode)||md,fc2=FACS.find(m=>m.id===cfg.fac)||fc,mp2=MAPS.find(m=>m.id===cfg.map)||mp;
+  $('#hMode').textContent=md2.name;$('#hFacMap').textContent=`${fc2.name} · ${mp2.short||mp2.name}`;$('#hStart').textContent=meta.start&&GUNDEF[meta.start]&&meta.unlock[meta.start]?GUNDEF[meta.start].name:'Pistol only';
+  const sq=squadList(),cap=(cfg.mode==='infection')?10:4;$('#hSquad').textContent=`${sq.length}/${NET.role?cap:1}`;
+  const db=$('#deployBtn');db.disabled=NET.role==='guest';db.textContent=NET.role==='guest'?'WAITING FOR HOST':'DEPLOY';
+  $('#hostBtn').textContent=NET.role==='host'?`Invite · ${NET.code}`:NET.role==='guest'?`Squad ${NET.code}`:'Host squad';$('#hostBtn').disabled=NET.role==='guest';
+  $('#joinBtn').textContent=NET.role?'Leave squad':'Join squad';$('#yardBtn').hidden=NET.role!=='host';
+  $('#hName').textContent=(NET.role==='guest'?MATE_NAMES[(G.myCol|0)%MATE_NAMES.length]:NET.role==='host'?MATE_NAMES[0]:'Survivor').toUpperCase();
+  if(HOME.toast){banner('CHALLENGE COMPLETE',HOME.toast);HOME.toast=null}}
 
 /* ---------------- input ---------------- */
 const keys={};let mv={on:false},fb={on:false},mouse={x:0,y:0,fire:false,use:false};let mvx=0,mvy=0,usingMouse=false,usingPad=false,AIMZ=null,stickRun=false;
@@ -1983,7 +2065,7 @@ function updLocal(dt){
     P.aim=a===null?face:a;firing=fb.on||gFire}
   else if(ml>.2)P.aim=Math.atan2(my,mx);
   if(P.rollT>0){P.rollT-=dt;P.x+=P.rdx*270*dt;P.y+=P.rdy*270*dt;P.anim+=dt*14}
-  else if(P.action){const op=P.action.op;P.action.t-=dt;if(d2(P.x,P.y,op.tx*T+8,op.ty*T+8)>34*34)P.action=null;else if(P.action.t<=0){P.action=null;if(P.planks>0){const add=op.boards<3;if(add||op.hp<BOARD_HP())P.planks--;if(add)op.boards++;op.hp=op.max=BOARD_HP();sfx('board');woodChips(op);
+  else if(P.action){const op=P.action.op;P.action.t-=dt;if(d2(P.x,P.y,op.tx*T+8,op.ty*T+8)>34*34)P.action=null;else if(P.action.t<=0){P.action=null;if(P.planks>0){const add=op.boards<3;if(add||op.hp<BOARD_HP())P.planks--;if(add){op.boards++;chAdd('boards',1)}op.hp=op.max=BOARD_HP();sfx('board');woodChips(op);
       if(NET.role==='guest')netSend({t:'board',oi:OPENS.indexOf(op),hp:Math.round(BOARD_HP()),add});else for(const z of Z)if(tAt(z.x,z.y)===op.i){op.boards=Math.max(0,op.boards-1)}}}}
   else{let sp=S.spd*(P.healT>0?.45:1)*(infOn()&&infRole(myId())==='i'?1.22:1);if(infOn()&&infRole(myId())==='i'){P.run=false;stickRun=false}if(P.healT>0)firing=false;if(stickRun&&!firing&&P.stam>8)P.run=true;else if(!stickRun&&!usingMouse&&!keys.shift)P.run=false;
     const running=P.run&&ml>.2&&P.stam>0&&!firing;if(running){sp*=1.6;P.stam=Math.max(0,P.stam-20*dt);P.stamWait=.5;if(P.stam<=0)P.run=false}
@@ -2084,7 +2166,7 @@ function bossAI(z,dt,dx,dy,p){const a=z.ai;a.t-=dt;
 
 /* ---------------- menu ---------------- */
 let menuZ=[];
-function updMenu(dt){G.time+=dt;const t=G.time*.05;cam.x=66*T+Math.cos(t)*260;cam.y=66*T+Math.sin(t*1.3)*200;
+function updMenu(dt){G.time+=dt;if(HOME.on){cam.x=HOME.cx;cam.y=HOME.cy;menuZ.length=0;updAmbient(dt);return}const t=G.time*.05;cam.x=66*T+Math.cos(t)*260;cam.y=66*T+Math.sin(t*1.3)*200;
   if(menuZ.length<16){const x=cam.x+rand(-300,300),y=cam.y+rand(-300,300),i=tAt(x,y);if(i>=0&&tile[i]<10&&hid[i]<0)menuZ.push({type:'walker',spr:SPR['walker'+ri(0,NWALK-1)],x,y,a:Math.random()*TAU,anim:0,face:1,hit:0})}
   for(const z of menuZ){z.a+=rand(-1,1)*dt;const nx=z.x+Math.cos(z.a)*12*dt,ny=z.y+Math.sin(z.a)*12*dt;if(solidZ(tAt(nx,ny))){z.a+=Math.PI}else{z.x=nx;z.y=ny}z.face=Math.cos(z.a)>0?1:-1;z.dir=dir4(Math.cos(z.a),Math.sin(z.a),z.dir);z.anim+=dt*2}
   menuZ=menuZ.filter(z=>Math.abs(z.x-cam.x)<500&&Math.abs(z.y-cam.y)<600);
@@ -2130,7 +2212,7 @@ function render(){
   for(const p of PROPS){if(p.x<ox-50||p.x>ox+VW+50||p.y<oy-10||p.y>oy+VH+70)continue;tall.push({y:p.y-(p.deco?6:1),p})}
   for(const z of zs)if(Math.abs(z.x-cam.x)<VW/2+30&&Math.abs(z.y-cam.y)<VH/2+50)tall.push({y:z.y,z});
   if(G.mode!=='menu')for(const k of CORPSES)if(Math.abs(k.x-cam.x)<VW/2+40&&Math.abs(k.y-cam.y)<VH/2+50)tall.push({y:k.y-8,corpse:k});
-  if(showP)tall.push({y:P.y,pl:1});for(const m of MT)tall.push({y:m.y,mate:m});drawCutPeople(tall);
+  if(showP)tall.push({y:P.y,pl:1});for(const m of MT)tall.push({y:m.y,mate:m});drawCutPeople(tall);homeDraw(tall);
   tall.sort((a,b)=>a.y-b.y);
   for(const o of tall){
     if(o.w!==undefined){drawWall(o.w,o.tx,o.ty);continue}
@@ -2141,6 +2223,7 @@ function render(){
       if((z.type==='brute')&&z.hp<z.max){const w=20;ctx.fillStyle='#140f1f';ctx.fillRect(Math.round(z.x-w/2-1),Math.round(z.y-48),w+2,4);ctx.fillStyle='#e04a3a';ctx.fillRect(Math.round(z.x-w/2),Math.round(z.y-47),Math.round(w*z.hp/z.max),2)}continue}
     if(o.mate){drawMate(o.mate);continue}
     if(o.cutp){drawCutPerson(o.cutp);continue}
+    if(o.home){homeDrawActor(o.home);continue}
     if(o.pl)drawPlayer()}
   for(const b of B){const sp=Math.hypot(b.vx,b.vy)||1,ux=b.vx/sp,uy=b.vy/sp;ctx.strokeStyle=b.col;ctx.lineWidth=b.r>2?2:1;ctx.beginPath();ctx.moveTo(b.x,b.y-12);ctx.lineTo(b.x-ux*b.len,b.y-12-uy*b.len);ctx.stroke();ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(b.x)-1,Math.round(b.y-12)-1,2,2)}
   for(const e of EB){const ac=FX_().acid;ctx.fillStyle=ac[0];ctx.fillRect(Math.round(e.x)-3,Math.round(e.y-12)-3,7,7);ctx.fillStyle=ac[1];ctx.fillRect(Math.round(e.x)-2,Math.round(e.y-12)-2,5,5)}
@@ -2192,6 +2275,7 @@ function renderFX(ox,oy,showP){
   const L=(x,y,r,a=1)=>{const R=r*LKX;lm.globalAlpha=a;lm.drawImage(LIGHT,(x-ox)*LKX-R,(y-oy)*LKY-R,R*2,R*2);lm.globalAlpha=1};
   const glows=[];const Gw=(x,y,r,g,a=1)=>glows.push([x,y,r,g,a]);const t=G.time;const zs=G.mode==='menu'?menuZ:Z;
   const cone=(x,y,a)=>{const len=230*LKX;lm.save();lm.translate((x-ox)*LKX,(y-10-oy)*LKY);lm.rotate(a);lm.drawImage(CONE,0,-len/2,len,len);lm.restore()};
+  if(G.mode==='menu'&&HOME.on){for(const a of HOME.actors)L(a.x,a.y-10,64,.95);for(const[x,y]of HOME.lights){L(x,y,34,.6);Gw(x,y,7,'red',.95)}}
   if(showP){L(P.x,P.y-8,58,.9);if(!P.dead)cone(P.x,P.y,P.aim);for(const m of mates()){if(Math.abs(m.x-cam.x)>VW*1.5||Math.abs(m.y-cam.y)>VH*1.5)continue;L(m.x,m.y-8,50,.8);if(!m.dead)cone(m.x,m.y,m.aim)}}else{L(cam.x,cam.y,200,.8)}
   for(const l of LAMPS){if(!l.on||Math.abs(l.x-cam.x)>VW||Math.abs(l.y-cam.y)>VH)continue;const fl=l.flick?(Math.sin(t*20+l.x)>.6?.3:1):1;L(l.x,l.y+30,78,fl);Gw(l.x,l.y,14,l.g||'lamp',.9*fl);if(l.g)Gw(l.x,l.y+30,34,l.g,.35*fl)}
   for(const f of FIRES){if(Math.abs(f.x-cam.x)>VW||Math.abs(f.y-cam.y)>VH)continue;const fl=1+Math.sin(t*11+f.x)*.06+Math.sin(t*27)*.04;L(f.x,f.y,100*fl);Gw(f.x,f.y-6,30*fl,'fire',.9)}
@@ -2211,6 +2295,8 @@ function renderFX(ox,oy,showP){
   for(const r of RINGS){const k=r.t/.2;fx.globalAlpha=k*.8;fx.strokeStyle='#ffffff';fx.lineWidth=2.5*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-10),(18+(1-k)*16)*KX,r.a-.9,r.a+.9);fx.stroke()}
   fx.globalCompositeOperation='source-over';fx.globalAlpha=1;
   if(G.boss&&G.boss.ai.st==='tele'){const z=G.boss;fx.globalAlpha=.3+.25*Math.sin(t*30);fx.strokeStyle='#ff3a2a';fx.lineWidth=z.r*1.6*KX;fx.lineCap='round';fx.beginPath();fx.moveTo(X(z.x),Y(z.y-10));fx.lineTo(X(z.x+z.ai.dx*230),Y(z.y-10+z.ai.dy*230));fx.stroke();fx.lineCap='butt';fx.globalAlpha=1}
+  if(G.mode==='menu'&&HOME.on){fx.textAlign='center';for(const a of HOME.actors){const sx=X(a.x),sy=Y(a.y-48);fx.font=`700 ${11*DPR}px Silkscreen, monospace`;fx.lineWidth=3*DPR;fx.strokeStyle='#000';
+    const t=a.name.toUpperCase();fx.strokeText(t,sx+8*DPR,sy);fx.fillStyle='#fff';fx.fillText(t,sx+8*DPR,sy);const w=fx.measureText(t).width;fx.strokeStyle=MATE_COL[(a.col|0)%MATE_COL.length];fx.lineWidth=2*DPR;fx.beginPath();fx.arc(sx-w/2-2*DPR,sy-4*DPR,6*DPR,0,TAU);fx.stroke();fx.fillStyle='#fff';fx.font=`700 ${8*DPR}px Silkscreen, monospace`;fx.fillText('1',sx-w/2-2*DPR,sy-1*DPR)}}
   if(!showP)return;
   // board progress
   if(P.action){const k=1-P.action.t/P.action.max;fx.strokeStyle='#140f1f';fx.lineWidth=6*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,0,TAU);fx.stroke();fx.strokeStyle='#f2c14e';fx.lineWidth=3.5*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,-Math.PI/2,-Math.PI/2+k*TAU);fx.stroke()}
@@ -2330,7 +2416,7 @@ function hostRecv(id,m){const r=REMOTES.get(id);if(!r||!m||typeof m!=='object')r
     case'dead':if(!r.dead&&gm()==='lobby'){r.dead=true;r.deadAt=G.time;break}if(!r.dead){r.dead=true;r.deadAt=G.time;bannerAll(r.name.toUpperCase()+' IS DOWN','Their gear is on the ground where they fell.');netTo(id,{t:'ban',a:'YOU ARE DOWN',b:'You lost your gear. It is on the ground where you fell.'});if(m.gear)spillGear(m.gear,r.x,r.y)}break;
     case'pz':if(G.mode==='play'){const on=!!m.on;setPause(on,r.name);netAll({t:'pz',on,by:r.name})}break;
     case'skip':if(G.state!=='fight')G.breakT=0;break;
-    case'look':r.look=cleanLook(m.look);netAll({t:'looks',L:allLooks()});break;
+    case'look':r.look=cleanLook(m.look);netAll({t:'looks',L:allLooks()});cfgSend();homeRefresh();break;
   }}
 function allLooks(){const o={0:cleanLook(meta.look)};for(const r of REMOTES.values())if(r.live&&r.look)o[r.id]=r.look;return o}
 async function hostOpen(){
@@ -2374,8 +2460,8 @@ async function joinGo(){
 function guestRecv(m){if(!m||typeof m!=='object')return;
   switch(m.t){
     case'reject':netLost(str(m.why)||'That room is full.');break;
-    case'wait':G.myCol=m.col|0;openCards('guest');break;
-    case'cfg':G.hostCfg={mode:str(m.mode),fac:str(m.fac),map:str(m.map),pl:Array.isArray(m.pl)?m.pl.slice(0,10).map(p=>({name:str(p.name).slice(0,24),col:p.col|0})):[]};renderCards();break;
+    case'wait':G.myCol=m.col|0;$('#lobby').hidden=true;$('#title').hidden=false;homeRefresh();break;
+    case'cfg':G.hostCfg={mode:str(m.mode),fac:str(m.fac),map:str(m.map),pl:Array.isArray(m.pl)?m.pl.slice(0,10).map(p=>({id:p.id|0,name:str(p.name).slice(0,24),col:p.col|0,look:cleanLook(p.look)})):[]};renderCards();homeRefresh();break;
     case'init':G.gm='survival';G.ob=null;G.inf=null;G.myVote=undefined;if(m.ob)obRecv(m.ob);guestStart(m);if(m.L)setLooks(m.L);if(m.pz)setPause(true,'');break;
     case'ob':obRecv(m);break;
     case'inf':if(G.mode==='play'){G.gm='infection';infRecv(m)}break;
@@ -2405,7 +2491,7 @@ function netFx(m){
     PT.push({x:m.x+Math.cos(as[0]||0)*8,y:m.y-12,vx:0,vy:0,t:.05,c:'#fff3b0',s:3,light:1,flash:1});if(Math.abs(m.x-cam.x)<VW&&Math.abs(m.y-cam.y)<VH)sfx(GUNDEF[m.g]?GUNDEF[m.g].snd||m.g:'pistol')}
   else if(m.k==='zap'&&Array.isArray(m.pts))zapFx(m.pts.slice(0,6).map(p=>[+p[0]||0,+p[1]||0]));
   else if(m.k==='boom')fxBoom(m.x,m.y,num(m.r,5,120,40),!!m.g)}
-function guestStart(m){closeCards();
+function guestStart(m){closeCards();homeLeave();
   initAudio();hideAll();$('#lobby').hidden=true;$('#hud').hidden=false;
   G.fac=FACX[m.fac]?m.fac:'zombies';setMap(m.map);$('#bossbar span').textContent=FX_().boss;genTown(m.seed);G.seed=m.seed;GHOSTS.clear();OTHERS.clear();CORPSES.length=0;
   Z=[];B=[];EB=[];DROPS=[];DEC=[];NUM=[];NADES=[];RINGS=[];EXPL=[];SMOKE=[];PT=[];
@@ -2443,12 +2529,13 @@ function netLost(msg){const playing=G.mode!=='menu';netLeave();if(playing)showTi
 function lobbyOpen(){$('#lobby').hidden=false}
 function lobbyView(o){$('#lbTitle').textContent=o.title||'CO-OP';$('#lbMsg').textContent=o.msg||'';const c=$('#lbCode');c.hidden=!o.code;c.textContent=o.code||'';
   $('#lbJoin').hidden=!o.join;$('#lbCopy').hidden=!o.copy;$('#lbStart').hidden=!o.start;$('#lbYard').hidden=!o.start;$('#lbLeave').hidden=!o.leave;$('#lbGo').disabled=!!o.busy;$('#lbPlayers').hidden=!o.players;if(o.players)lobbyRefresh()}
-function lobbyHostView(){if(G.mode==='menu'){openCards('host');return}lobbyView({title:'HOST CO-OP',msg:`Share this code (or the invite link). Up to ${meta.mode==='infection'?9:3} friends can join${meta.mode==='infection'?' (Infection mode)':', even after the game starts'}.`,code:NET.code,copy:true,start:G.mode!=='play',leave:true,players:true})}
-function lobbyRefresh(){cfgSend();renderCards();const ul=$('#lbPlayers');if(!ul)return;const list=[{name:MATE_NAMES[0]+' (host'+(NET.role==='host'?', you':'')+')',col:0}];
+function lobbyHostView(){if(G.mode==='menu'){$('#lobby').hidden=true;$('#title').hidden=false;homeRefresh();return}lobbyView({title:'HOST CO-OP',msg:`Share this code (or the invite link). Up to ${meta.mode==='infection'?9:3} friends can join${meta.mode==='infection'?' (Infection mode)':', even after the game starts'}.`,code:NET.code,copy:true,start:G.mode!=='play',leave:true,players:true})}
+function lobbyRefresh(){cfgSend();renderCards();homeRefresh();const ul=$('#lbPlayers');if(!ul)return;const list=[{name:MATE_NAMES[0]+' (host'+(NET.role==='host'?', you':'')+')',col:0}];
   if(NET.role==='host')for(const r of REMOTES.values())if(r.live)list.push({name:r.name,col:r.col});
   ul.innerHTML=list.map(p=>`<li><i style="background:${MATE_COL[p.col]}"></i>${p.name}</li>`).join('')}
 function coopInfo(){const el=$('#coopInfo');if(!el)return;let t='';if(NET.role==='host'){const n=[...REMOTES.values()].filter(r=>r.live).length;t=`Hosting room ${NET.code} · ${n} friend${n===1?'':'s'} connected. Press PLAY to start.`}else if(NET.role==='guest')t=`Joined room ${NET.code}. Waiting for the host.`;el.textContent=t;el.hidden=!t}
-$('#hostBtn').onclick=hostOpen;$('#joinBtn').onclick=()=>joinOpen();
+$('#hostBtn').onclick=()=>{if(NET.role==='host'){const u=location.origin+location.pathname+'?join='+NET.code;try{navigator.clipboard.writeText(u);banner('INVITE LINK COPIED','Room '+NET.code)}catch(_){banner('ROOM CODE',NET.code)}return}hostOpen()};
+$('#joinBtn').onclick=()=>{if(NET.role){netLeave();renderHome();homeRefresh();return}joinOpen()};
 $('#lbGo').onclick=joinGo;
 $('#lbInput').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')joinGo()});
 $('#lbInput').addEventListener('input',()=>{const i=$('#lbInput');i.value=i.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5)});
@@ -2485,7 +2572,7 @@ async function loadSheets(){
     try{SHEETS.chars[key]=await prepChar(def,base)}catch(e){SHEETS.errors.push(key+': '+e.message)}}
   if(man.factions&&typeof man.factions==='object')for(const[f,defs]of Object.entries(man.factions)){if(!FACX[f])continue;SHEETS.fac[f]={};for(const[k,def]of Object.entries(defs)){if(!SHEET_KEYS.includes(k))continue;try{SHEETS.fac[f][k]=await prepChar(def,base)}catch(e){SHEETS.errors.push(f+'/'+k+': '+e.message)}}}
   if(SHEETS.errors.length)console.warn('Sprite sheet problems:\n'+SHEETS.errors.join('\n'));
-  SHEETS.ready=Object.keys(SHEETS.chars).length>0;SHEETS.url=url;if(SHEETS.ready&&+man.view>150)VIEWK=Math.min(400,+man.view);resize();if(SHEETS.ready)$('#artCredit').hidden=false;
+  SHEETS.ready=Object.keys(SHEETS.chars).length>0;SHEETS.url=url;if(SHEETS.ready&&+man.view>150){if(HOME.on){HOME.prevView=Math.min(400,+man.view)}else VIEWK=Math.min(400,+man.view)}resize();if(SHEETS.ready)$('#artCredit').hidden=false;
   if(SHEETS.ready&&!$('#custom').hidden)renderOpts()}
 function sheetFor(type){if(type!=='survivor'&&fac()!=='zombies'){const f=facSheet(type);if(f)return f}return SHEETS.chars[type]||null}
 function sheetFrame(c,anim,dir,t){
@@ -2663,7 +2750,7 @@ function updHUD(dt){
   if(G.boss)$('#bossfill').style.width=Math.max(0,G.boss.hp/G.boss.max*100)+'%';
   G.miniT-=dt;if(G.miniT<=0){G.miniT=.2;drawMini()}
 }
-function resetRun(){closeCards();LOOKS.clear();CORPSES.length=0;
+function resetRun(){closeCards();homeLeave();LOOKS.clear();CORPSES.length=0;
   G.seed=(Math.random()*1e9|0)||7;G.fac=FACX[meta.fac]?meta.fac:'zombies';setMap(meta.map);$('#bossbar span').textContent=FX_().boss;genTown(G.seed);
   Z=[];B=[];EB=[];DROPS=[];DEC=[];NUM=[];NADES=[];RINGS=[];EXPL=[];SMOKE=[];PT=[];
   Object.assign(G,{mode:'play',wave:0,state:'prep',breakT:25,kills:0,coinsRun:0,shake:0,boss:null,bossCount:0,revived:false,queue:[],modal:false,paused:false,time:0,bossPending:0,flowTile:-1,flowT:0});
@@ -2689,7 +2776,7 @@ function togglePause(){if(G.mode!=='play'||(G.modal&&!G.paused))return;
 function setPause(on,by){if(G.mode!=='play'||on===G.paused)return;$('#quitBtn').textContent=gm()==='lobby'?'Leave the room':NET.role==='guest'?'Leave game':'Give up';G.paused=on;$('#pause').hidden=!on;$('#ctlScr').hidden=true;clearSticks();
   const pb=$('#pauseBy');pb.hidden=!(on&&netOn());if(on&&netOn())pb.textContent=(by?by+' paused the game.':'Game paused.')+' Anyone can resume it for everyone.';
   if(G.paused){const h=Object.keys(P.perks).map(k=>`<span><img alt="" src="${ICONURL[k]}">${PERK[k].name} ${P.perks[k]}</span>`).join('');$('#pauseBuild').innerHTML=h||'<span>No perks yet</span>'}else last=performance.now()}
-function gameOver(win){
+function gameOver(win){G.lastWin=!!win||(gm()==='infection'&&G.inf&&(G.inf.win==='s'?infRole(myId())==='s':infRole(myId())==='i'));
   G.mode='dead';sfx(win?'level':'die');clearSticks();const md=gm();
   $('#oTitle').textContent=win?'YOU ESCAPED':md==='horde'?'OVERRUN':'YOU DIED';$('#oTitle').style.color=win?'#8fff6a':'#ff7a5a';
   if(md==='infection'&&G.inf){const f=G.inf,me=myId(),mine=f.solo&&f.win==='i'?'s':infRole(me),sw=f.win==='s',myWin=sw?mine==='s':mine==='i';
@@ -2700,11 +2787,11 @@ function gameOver(win){
   const t=Math.floor(G.time);$('#oTime').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
   $('#oCoins').textContent=G.coinsRun;$('#oBest').textContent=md==='horde'?((G.hT|0)>(meta.bestHorde|0)?'New best time!':`Best time: ${Math.floor((meta.bestHorde|0)/60)}:${String((meta.bestHorde|0)%60).padStart(2,'0')}`):md==='objectives'?`Escapes: ${meta.escapes|0}`:md==='infection'?'Infection round over.':G.wave>meta.best?'New best wave!':`Best wave: ${meta.best}`;
   $('#reviveBtn').hidden=!(meta.up.wind&&!G.revived)||netOn();$('#lobbyAgain').hidden=NET.role!=='host';const ab=$('#againBtn');ab.disabled=NET.role==='guest';ab.textContent=NET.role==='guest'?'WAITING FOR HOST':'PLAY AGAIN';$('#over').hidden=false;$('#levelup').hidden=true;G.modal=false;bank()}
-function bank(){meta.coins+=G.coinsRun;if(gm()==='survival')meta.best=Math.max(meta.best,G.wave);if(gm()==='horde')meta.bestHorde=Math.max(meta.bestHorde|0,G.hT|0);G.coinsRun=0;save()}
+function bank(){try{chAfterRun(!!G.lastWin)}catch(e){}meta.coins+=G.coinsRun;if(gm()==='survival')meta.best=Math.max(meta.best,G.wave);if(gm()==='horde')meta.bestHorde=Math.max(meta.bestHorde|0,G.hT|0);G.coinsRun=0;save()}
 function revive(){G.revived=true;G.mode='play';P.hp=P.maxHp;P.inv=2;$('#over').hidden=true;
   for(const z of Z){if(z.type==='boss')continue;if(Math.hypot(z.x-P.x,z.y-P.y)<160)hurtZ(z,99999,{crit:false})}explode(P.x,P.y,60,0,{noDmg:true});banner('SECOND WIND','');last=performance.now()}
 function showTitle(){closeCards();G.mode='menu';P=null;if(!tile)genTown();hideAll();coopInfo();$('#hud').hidden=true;$('#banner').hidden=true;$('#title').hidden=false;
-  $('#bestWave').textContent=meta.best;$('#bankT').textContent=meta.coins;renderStarts();soundLabels()}
+  $('#bestWave').textContent=meta.best;$('#bankT').textContent=meta.coins;renderStarts();soundLabels();homeEnter()}
 function renderStarts(){const box=$('#starts');box.innerHTML='';
   for(const id of['none',...Object.keys(GUNLOCK)]){const ok=id==='none'||!!meta.unlock[id];const name=id==='none'?'Pistol only':GUNDEF[id].name;
     const b=document.createElement('button');b.className='wpick'+((meta.start===id||(id==='none'&&!meta.unlock[meta.start]))?' on':'')+(ok?'':' locked');
@@ -2725,7 +2812,12 @@ function renderArmory(){
     b.onclick=()=>{if(meta.coins<cost)return;meta.coins-=cost;meta.unlock[id]=true;meta.start=id;save();sfx('coin');renderArmory();renderStarts()};row.appendChild(b);U.appendChild(row)}}
 function soundLabels(){for(const id of['#soundBtn','#soundBtn2'])$(id).textContent=meta.sound?'Sound on':'Sound off'}
 function toggleSound(){meta.sound=!meta.sound;save();soundLabels();initAudio()}
-$('#playBtn').onclick=()=>{initAudio();if(NET.role==='host')openCards('host');else if(NET.role==='guest')openCards('guest');else openCards('solo')};$('#armoryBtn').onclick=openArmory;
+$('#playBtn').onclick=()=>{initAudio();if(NET.role==='host')openCards('host');else if(NET.role==='guest')openCards('guest');else openCards('solo')};
+$('#hSetChip').onclick=()=>$('#playBtn').onclick();
+$('#deployBtn').onclick=()=>{initAudio();if(NET.role==='guest')return;play()};
+$('#startChip').onclick=()=>{const own=['none',...Object.keys(GUNLOCK).filter(k=>meta.unlock[k])];const i=Math.max(0,own.indexOf(meta.unlock[meta.start]?meta.start:'none'));meta.start=own[(i+1)%own.length];save();renderHome();if(own.length===1)banner('NO GUNS UNLOCKED YET','Buy starting guns in the Armory.')};
+$('#yardBtn').onclick=()=>enterLobby();
+$('#homeTab').onclick=()=>{};$('#armoryBtn').onclick=openArmory;
 $('#armoryBack').onclick=()=>{$('#armory').hidden=true;renderStarts();$('#bankT').textContent=meta.coins};
 $('#soundBtn').onclick=toggleSound;
 function renderMode(){const i=Math.max(0,MODES.findIndex(m=>m.id===meta.mode)),m=MODES[i];$('#modeName').textContent=m.name;$('#modeDesc').textContent=m.desc}
@@ -2738,7 +2830,7 @@ $('#matchDone').onclick=()=>{$('#matchScr').hidden=true};
 $('#mcStart').onclick=()=>{if(CS.ctx==='guest')return;closeCards();if(NET.role==='host'||CS.ctx==='solo')play()};
 $('#mcYard').onclick=()=>{closeCards();if(!(G.mode==='play'&&gm()==='lobby'))enterLobby()};
 $('#mcInvite').onclick=()=>{const u=location.origin+location.pathname+'?join='+NET.code;try{navigator.clipboard.writeText(u);$('#mcInvite').textContent='Link copied'}catch(_){$('#mcInvite').textContent='Code: '+NET.code}setTimeout(()=>{$('#mcInvite').textContent='Invite'},1800)};
-$('#mcBack').onclick=()=>{closeCards();if(CS.ctx==='solo'){if(G.mode==='menu')$('#title').hidden=false;return}const inGame=G.mode!=='menu';if(inGame&&gm()==='lobby'&&NET.role==='host')return;netLeave();showTitle()};
+$('#mcBack').onclick=()=>{closeCards();if(G.mode==='menu'){$('#title').hidden=false;homeRefresh();return}};
 $('#mcAvBtn').onclick=()=>{$('#custom').hidden=false;renderOpts();prevT=0};
 $('#lbYard').onclick=()=>enterLobby();$('#lobbyAgain').onclick=()=>enterLobby();
 /* controls settings */

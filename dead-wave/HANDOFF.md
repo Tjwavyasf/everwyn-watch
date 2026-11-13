@@ -24,6 +24,7 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Card screen (the "lobby / mode select (card screen)" section, `#modeScr`): a stone-hall backdrop (`hallArt`), avatar and name banner, and mode/enemy/map cards with art drawn in code (`CARDART`, `enemyArt`, `MAPART`). Contexts: `solo` (PLAY), `host` (picks are broadcast as `cfg`; START MATCH / yard / invite) and `guest` (read-only, follows `cfg`). PLAY on the title, a ready host room, a waiting guest and the yard's "Pick the match" button all open it.
 - Art slots (the "drop-in art" section): `art/lobby_bg.png` and `art/cards/*.png` replace the code-drawn card art and backdrop (`loadArt`, `artOr`). The shipped files are staged renders from the game made by `tools/render_art.js`, which uses capture-only flags `G.cap` (no reticle, labels or numbers, lighter night) and `G.hideP`. See `art/README.md`.
 - Story intros (the "story intros (cutscenes)" section): `startCutscene` runs after `resetRun` (and in `guestStart` when `init.fresh`). The world is frozen while `CUT.on` (the loop calls `cutTick` instead of `update`). Shots pan `cam`, temporary actors are zombies flagged `cut` (removed at the end) plus survivor stand-ins (`CUT.people`). Lore is in `LORE`. The host's end or skip sends `cut` so guests close theirs. Automated browsers skip intros unless the URL has `?story=1`. The setting is `meta.ctl.story`.
+- Home screen (the "home screen" section, `#title.home`): `homeEnter` builds a camp in an open clearing of a fixed forest town (seed 9137) with a campfire and a truck with red lights. `homeRefresh` lines the squad up (`squadList`: host REMOTES, or the host's `cfg.pl` with looks for guests) and draws them in `render` via `homeDraw`, with name tags and lights in `renderFX`. The zoom is set per orientation. Weekly challenges (`CH_POOL`, `chWeek`, `chAdd`, `chAfterRun`) are stored in `meta.ch`. DEPLOY = `play()`. `#playBtn` and `#hSetChip` open the card picker.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
 - Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
@@ -125,6 +126,7 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `cards_coop.js` | Card lobby over a fake connection: the guest follows the host's picks, can't change them, and joins the match |
 | `cutscene.js` | Survival intro shot by shot (world frozen, then running), and a skipped Robots/Cyberpunk intro (pass the `dead-wave` folder) |
 | `cutscene_coop.js` | Co-op intro: both players get it, and the host's skip starts the match for both |
+| `home.js` | Home screen in landscape and portrait, a squad of 3 standing together over fake connections, DEPLOY starting the match (pass the `dead-wave` folder) |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 
