@@ -55,6 +55,25 @@ Any player can pause, and it pauses the game for everyone. Anyone can resume it.
 
 Co-op only works when the game is opened from its own web address, such as the GitHub Pages link. Previews that block WebRTC, like the Claude artifact viewer, can only play solo.
 
+## Enemies and maps
+
+Pick them on the title screen (or in the lobby's **Match settings**). They work with every mode.
+
+- **Enemies:**
+  - **Zombies:** walkers, runners, spitters, bloaters and brutes. Boss: the Abomination.
+  - **Robots:** drones, hunters, gunners that shoot lasers, bombers and treaded tanks. Boss: the Warmech. A bit tougher and slower.
+  - **Monsters:** giant bugs: crawlers, skitters, acid spitters, bile sacs and armored chargers. Boss: the Brood Queen. A bit weaker and faster.
+- **Maps:**
+  - **Suburbs:** the original town.
+  - **Abandoned City:** grey ruins, burning wrecks, dead trees and very few working lights.
+  - **Cyberpunk City:** dark towers, neon streetlights and rain.
+  - **Forest:** dirt trails through thick woods, a few cabins and campfires.
+- **Sci-fi guns:** the Laser Rifle, Arc Gun (lightning jumps to 3 more targets), Railgun (goes through 12 enemies) and Plasma Cannon (explodes). They drop three times as often against robots and monsters, and you can unlock them in the Armory.
+
+## Lobby
+
+When you host co-op, tap **ENTER LOBBY**. Everyone who joins drops into a warm-up yard: racks with every gun (they refill), attachments, a first aid kit and a few enemies to shoot. You respawn after 3 seconds and keep your gear. The host's bar at the top has **Invite**, **Match settings** (mode, enemies, map) and **START MATCH**. After a match, the host can tap **Back to the lobby** to bring everyone back. Leave the room from the pause menu.
+
 ## Modes
 
 Pick a mode on the title screen with the arrows next to **Mode**. In co-op, the host's mode is used.

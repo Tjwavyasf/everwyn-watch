@@ -17,6 +17,10 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Game modes (the "game modes" section of `index.html`): Survival (waves), Objectives (3 scenarios in `SCEN`, each a chain of collect / switch / hold steps ending in an extraction hold) and Horde (endless ramp, supply drops). The host runs the director (`objUpdate` / `hordeUpdate`) and sends its state to guests as `ob` messages and in `init`. The chosen mode is saved in `meta.mode`.
 - Weapons: 11 guns in `GUNDEF` (`randGun` weights their drops); the launcher's rounds explode where they stop (host side). Attachments in `ATT` (5 slots, `gunStats` folds them into a gun's numbers, saved on each gun slot as `att` and carried by gun drops). First aid kits (`P.aid`, `useAid`) heal or revive a downed mate (`revive` message to the host). Firing without a suppressor adds `G.noise`, which raises the zombie cap in Objectives and Horde.
 - Infection mode (the "infection mode" section of `index.html`): up to 10 players (rooms take 9 guests when the host's mode is Infection; `MATE_NAMES` has 10 colors). The host runs the round (`infUpdate`: intro scene, 30 s run, 5 min hunt, carrier at 2:30, touch to infect, `infShove` stuns, meetings with votes) and sends it in `inf` messages. Roles are s/i/x. Infected players are drawn with the zombie skin tone (`infLook`). Solo is a practice round against AI infected (zombies flagged `inf`).
+- Enemy factions (the "enemy factions" section): zombies use the LPC sheets; robots and monsters are drawn in code by `genChar` / `robo` / `bugDraw` into sheets with the same layout, so `sheetFor` swaps them in transparently. `FACX` holds names, boss names, blood/acid colors and stat tweaks. Chosen with `meta.fac`, sent to guests in `init`.
+- Maps (the "maps" section, before `const CHT`): `THEMES` restyle the same generator (ground textures, house palettes, tree lists and counts, lamps and neon colors, clutter, fires, night tint, rain, fireflies). The forest also swaps 55% of the house lots for woods and campfires. `setMap(id)` runs before `genTown`, and guests get the map in `init`, so layouts match.
+- Sci-fi guns: `laser`, `arc` (`arcChain`, sent as a `zap` fx), `rail`, `plasma` (explosive). `randGun` triples their weight against robots and monsters.
+- Lobby (the "multiplayer lobby" section): `G.gm='lobby'` via `NEXT_GM`. Gun racks refill (`lobbyRack`), a few weak enemies spawn, there is no loot or XP, and you respawn in 3 s without losing gear. The host's in-game `#lobbyBar` has Invite, Match settings (`#matchScr`) and START MATCH. `#lobbyAgain` on the end screen returns everyone to the lobby.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
 - Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
@@ -110,6 +114,10 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `coop_gear.js` | Fake connection: a downed guest's gun keeps its attachments, the host revives the guest with a first aid kit, the guest picks the gun back up |
 | `infection_solo.js` | Infection practice round: opening scene, run, hunt, push stun, getting caught |
 | `infection_coop.js` | Infection with host + 4 guests over fake connections: patient zero, one secret carrier, push stun, infecting, a meeting that quarantines the carrier, end screens |
+| `factions_maps.js` | Each map with each faction (all six enemy types in view), boss names, and the four sci-fi guns' damage |
+| `lobby.js` | Host + guest in the lobby: racks, lobby bar, a death without gear loss, match settings, start, back to the lobby |
+| `wardrobe_http.js` | The wardrobe screen with the real sprite files (pass the `dead-wave` folder, not `index.html`) |
+| `controls_touch.js` | Multi-touch stick + FIRE in portrait and landscape, Controls screen, left-handed layout (pass the `dead-wave` folder) |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 
