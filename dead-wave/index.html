@@ -34,6 +34,11 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .stick{position:absolute;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;pointer-events:none;border:3px solid rgba(242,193,78,.45);background:radial-gradient(rgba(59,50,82,.35),rgba(20,15,31,.15))}
 .stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#8a7ab8,#3b3252);border:2px solid var(--edge);box-shadow:0 0 0 2px rgba(242,193,78,.5)}
 #ctlScr{z-index:60}
+#hud.inf #weap,#hud.inf #reloadBtn,#hud.inf #shoveBtn,#hud.inf .icoPlank,#hud.inf #planks{display:none}
+#hud.inf #fireBtn span{font-size:0}#hud.inf #fireBtn span::after{content:'PUSH';font-size:calc(15px*var(--bs))}
+#meetBtn{margin-top:6px;font:700 12px/1 var(--ui);padding:8px 10px;background:linear-gradient(#ea6448,#b8341f);border:2px solid var(--edge)}
+.meetList{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#cine{position:absolute;inset:0;pointer-events:none}#cine i{position:absolute;left:0;right:0;height:12%;background:#000}#cine i:first-child{top:0}#cine i:last-child{bottom:0}
 .stick.rest{opacity:.45}
 #hud.mouse #joy,#hud.mouse #acts{display:none}
 #fireBtn{position:absolute;right:0;bottom:0;width:calc(92px*var(--bs));height:calc(92px*var(--bs));border-radius:50%;font:700 calc(15px*var(--bs))/1 var(--title);color:#fff;background:radial-gradient(circle at 35% 30%,#f07a5a,#a8301e 70%);border:3px solid var(--edge);box-shadow:inset 0 0 0 3px #ffb06a,0 5px 0 rgba(0,0,0,.45);padding:0;touch-action:none}
@@ -217,7 +222,7 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
   <div id="hud" hidden>
     <div id="xpbar"><i id="xpfill"></i><span id="lvl">LV 1</span></div>
     <div class="toprow">
-      <div id="wavebox" class="chip"><b id="waveno">WAVE 1</b><small id="left"></small><button id="skipBtn" hidden>Start wave now</button><div id="rage" hidden>RAGE x2</div></div>
+      <div id="wavebox" class="chip"><b id="waveno">WAVE 1</b><small id="left"></small><button id="skipBtn" hidden>Start wave now</button><button id="meetBtn" hidden>Emergency meeting</button><div id="rage" hidden>RAGE x2</div></div>
       <div class="tally chip"><span title="Kills"><img class="icoSkull" alt=""><i id="kills" style="font-style:normal">0</i></span><span title="Coins"><img class="icoCoin" alt=""><i id="coins" style="font-style:normal">0</i></span></div>
       <div class="tr"><button id="pauseBtn" aria-label="Pause">II</button><canvas id="mini" width="132" height="132"></canvas></div>
     </div>
@@ -237,6 +242,7 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
     </div>
     <button id="useBtn" hidden>Board up</button>
   </div>
+  <div id="cine" hidden><i></i><i></i></div>
   <div id="banner" hidden><b id="banT"></b><small id="banS"></small></div>
   <div id="hurtv"></div>
 
@@ -310,6 +316,15 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
         <li><b>Controller</b></li><li>Left stick move · right stick aim · RT fire · LT sprint · A roll · B shove · X reload · Y swap · LB grenade · RB use · Start pause</li>
       </ul>
       <button class="big" id="ctlDone">DONE</button>
+    </div>
+  </section>
+
+  <section id="meetScr" class="screen modal" hidden>
+    <div class="panel">
+      <div class="tab" style="color:#ff7a5a">EMERGENCY MEETING</div>
+      <p class="hint" id="meetSub"></p>
+      <div class="meetList" id="meetList"></div>
+      <p class="hint">Time left: <b id="meetT">20s</b></p>
     </div>
   </section>
 
@@ -572,7 +587,7 @@ function person(L,f,Z){return paint(26,36,p=>{
 const LOOKCACHE=new Map();
 function lookSet(L){const k=JSON.stringify(L);let s=LOOKCACHE.get(k);if(!s){s=mkSet(F4.map(f=>person(L,f)));LOOKCACHE.set(k,s);if(LOOKCACHE.size>40)LOOKCACHE.delete(LOOKCACHE.keys().next().value)}return s}
 const LOOKS=new Map();
-function mateSet(m){const l=m.look||LOOKS.get(m.id);return l?lookSet(l):lookSet(MATE_LOOKS[m.col||0])}
+function mateSet(m){const l=m.look||LOOKS.get(m.id);return l?lookSet(l):lookSet(MATE_LOOKS[(m.col||0)%MATE_LOOKS.length])}
 MATE_LOOKS.forEach((l,i)=>SPR['hero'+i]=lookSet(l));SPR.hero=SPR.hero0;
 const NWALK=12,ZSKIN=[{skin:'#86b366',eye:'#ff4a3a'},{skin:'#9ab67a',eye:'#ff4a3a'},{skin:'#7aa070',eye:'#ff6a3a'},{skin:'#a8b890',eye:'#ff4a3a'},{skin:'#8aa680',eye:'#ff3a2a'}];
 for(let i=0;i<NWALK;i++){const L=randomLook();if(L.top===6&&Math.random()<.5)L.top=0;if(L.extra>=3||L.extra===1)L.extra=0;if(L.hc>7)L.hc=L.hc-6;if(L.outer===5)L.outer=0;const Zs=ZSKIN[i%ZSKIN.length];SPR['walker'+i]=mkSet(F4.map(f=>person(L,f,Zs)))}
@@ -1049,7 +1064,7 @@ function spawnZ(type,x,y){
   Z.push(z);return z}
 function addNum(x,y,v,kind){if(NUM.length<80||kind)NUM.push({x,y,v:Math.max(1,Math.round(v)),t:.75,k:kind||''})}
 function hurtZ(z,dmg,o={}){
-  if(z.dead)return;let crit=false;if(o.crit!==false&&Math.random()<S.crit){dmg*=2;crit=true}
+  if(z.dead||z.inf)return;let crit=false;if(o.crit!==false&&Math.random()<S.crit){dmg*=2;crit=true}
   z.hp-=dmg;z.hit=.08;
   if(o.kb&&z.type!=='boss'){const res=z.type==='brute'?.35:1;z.kx+=o.kx*o.kb*res;z.ky+=o.ky*o.kb*res}
   addNum(z.x+rand(-4,4),z.y-z.spr.h+4,dmg,crit?'crit':'');if(NET.role==='host'&&HITS.length<40)HITS.push([Math.round(z.x),Math.round(z.y-z.spr.h+4),Math.max(1,Math.round(dmg)),crit?1:0]);
@@ -1076,7 +1091,7 @@ function fxBoom(x,y,r,green){
   for(let i=0;i<5;i++){const a=Math.random()*TAU;SMOKE.push({x:x+Math.cos(a)*r*.3,y:y-6+Math.sin(a)*r*.2,vx:Math.cos(a)*14,vy:-12-Math.random()*10,r:r*.35,g:r*.5,t:1.4,max:1.4,a:green?.45:.6})}
   for(let i=0;i<16;i++){const a=Math.random()*TAU,s=rand(30,130);PT.push({x,y:y-4,vx:Math.cos(a)*s,vy:Math.sin(a)*s-30,t:rand(.3,.7),c:green?['#d8e060','#a4c040'][i%2]:['#fff3b0','#ffd34a','#ff8a2a','#e04a3a'][i%4],s:2,g:1,light:i<3})}
   DEC.push({x,y,t:10,s:r*.6,c:'#1e1a16',seed:Math.random()*1000|0,scorch:1})}
-function hurtAny(p,dmg){if(p===P)hurtP(dmg);else if(!p.roll)netTo(p.id,{t:'hurt',v:Math.round(dmg)})}
+function hurtAny(p,dmg){if(gm()==='infection'){if(G.inf&&G.inf.ph==='hunt'&&p===P&&!P.rollT&&infRole(0)==='s'){infTurn(0,false,-1)}return}if(p===P)hurtP(dmg);else if(!p.roll)netTo(p.id,{t:'hurt',v:Math.round(dmg)})}
 function explode(x,y,r,dmg,o={}){
   fxBoom(x,y,r,o.enemy);if(NET.role==='host')netAll({t:'fx',k:'boom',x:Math.round(x),y:Math.round(y),r:Math.round(r),g:o.enemy?1:0});
   for(const op of OPENS){if(op.boards>0&&d2(x,y,op.tx*T+8,op.ty*T+8)<(r+8)**2){op.boards--;op.hp=op.boards?(op.max||BOARD_HP()):0;woodChips(op)}}
@@ -1144,7 +1159,7 @@ function attachForce(id){const s=attSwapTarget(id);if(!s)return attach(id);const
 /* first aid kits: hold still-ish for 2.5 s to heal 60% of your health, or to revive a downed teammate next to you */
 const AID_T=2.5;
 function downedMateNear(){for(const m of mates())if(m.dead&&d2(m.x,m.y,P.x,P.y)<28*28)return m;return null}
-function useAid(){if(!P||P.dead||G.mode!=='play'||P.healT>0||P.rollT>0)return;if((P.aid|0)<=0){banner('NO FIRST AID KITS','Search houses and zombies for them.');return}
+function useAid(){if(gm()==='infection')return;if(!P||P.dead||G.mode!=='play'||P.healT>0||P.rollT>0)return;if((P.aid|0)<=0){banner('NO FIRST AID KITS','Search houses and zombies for them.');return}
   const m=downedMateNear();if(!m&&P.hp>=P.maxHp){banner('YOU ARE NOT HURT','');return}P.healT=AID_T;P.healM=m?m.id:-1;P.run=false;sfx('reload')}
 function cancelAid(){P.healT=0}
 function updAid(dt){if(!(P.healT>0))return;if(P.dead||P.rollT>0){P.healT=0;return}let m=null;if(P.healM>=0){m=mates().find(q=>q.id===P.healM);if(!m||!m.dead||d2(m.x,m.y,P.x,P.y)>40*40){P.healT=0;banner('REVIVE STOPPED','Stay next to them.');return}}
@@ -1157,6 +1172,7 @@ function reviveMate(id,by){const who=by===0?MATE_NAMES[0]:(REMOTES.get(by)||{}).
 function swapGun(){if(!P.slots[1]){return}P.cur=1-P.cur;P.reload=0;P.fireT=.15;sfx('reload')}
 function shootBullet(x,y,a,o){B.push({x,y,vx:Math.cos(a)*o.spd,vy:Math.sin(a)*o.spd,dmg:o.dmg,pierce:o.pierce||0,life:o.life||.9,kb:o.kb||20,hits:null,len:o.len||7,col:o.col||'#ffe680',r:o.r||2,vis:!!o.vis,boom:o.boom||0})}
 function fire(){
+  if(gm()==='infection')return;
   if(P.fireT>0||P.reload>0||P.rollT>0||P.action)return;
   const s=curGun(),g=GUNDEF[s.g];
   if(s.mag<=0){if(s.res>0)startReload();else{sfx('empty');P.fireT=.35;if(P.cur===1){P.cur=0;banner('OUT OF AMMO','Back to the pistol')}}return}
@@ -1174,7 +1190,7 @@ function fire(){
   PT.push({x:P.x,y:P.y-12,vx:-Math.sin(a)*40+rand(-10,10),vy:-50,t:.5,c:'#e8c060',s:1,g:1});
   G.shake=Math.max(G.shake,(np>1||heavy||boom?2.5:.8)*st.kick);sfx(st.quiet&&!g.quiet?'quiet':g.snd||s.g);
   if(s.mag===0&&s.res>0)startReload()}
-function throwGren(){if(P.gren<=0||P.action||P.dead)return;P.gren--;const d=Math.min(150,findTargetDist()||130),tx=P.x+Math.cos(P.aim)*d,ty=P.y+Math.sin(P.aim)*d;if(NET.role==='guest')netSend({t:'gren',tx:Math.round(tx),ty:Math.round(ty),dmg:Math.round(130*S.dmg)});else NADES.push({sx:P.x,sy:P.y,tx,ty,t:0,dur:.6,dmg:130*S.dmg});sfx('roll')}
+function throwGren(){if(gm()==='infection')return;if(P.gren<=0||P.action||P.dead)return;P.gren--;const d=Math.min(150,findTargetDist()||130),tx=P.x+Math.cos(P.aim)*d,ty=P.y+Math.sin(P.aim)*d;if(NET.role==='guest')netSend({t:'gren',tx:Math.round(tx),ty:Math.round(ty),dmg:Math.round(130*S.dmg)});else NADES.push({sx:P.x,sy:P.y,tx,ty,t:0,dur:.6,dmg:130*S.dmg});sfx('roll')}
 function findTargetDist(){let best=0;for(const z of Z){const d=Math.hypot(z.x-P.x,z.y-P.y);if(d<170&&Math.abs(angDiff(Math.atan2(z.y-P.y,z.x-P.x),P.aim))<.35&&(!best||d<best))best=d}return best}
 
 /* ---------------- moves ---------------- */
@@ -1182,11 +1198,12 @@ function shove(){
   if(!P||G.mode!=='play'||P.shoveT>0||P.rollT>0||P.stam<8)return;
   if(P.dead)return;P.shoveT=S.shoveCd;P.shoveAnim=.18;useStam(8);sfx('shove');P.action=null;
   const reach=34*(1+.15*plv('arm'));RINGS.push({x:P.x+Math.cos(P.aim)*14,y:P.y-8+Math.sin(P.aim)*10,r:16,t:.2,shove:1,a:P.aim});
+  if(infOn()){if(infRole(myId())!=='s'||G.inf.ph!=='hunt')return;if(NET.role==='guest'){netSend({t:'ishove',a:+P.aim.toFixed(2),x:Math.round(P.x),y:Math.round(P.y)});return}infShove(0,P.x,P.y,P.aim);shoveAt(P.x,P.y,P.aim,S.shove,reach);return}
   if(NET.role==='guest'){netSend({t:'shove',a:+P.aim.toFixed(2),p:S.shove,reach});return}
   shoveAt(P.x,P.y,P.aim,S.shove,reach)}
 function shoveAt(x,y,aim,pow,reach){
   for(const z of query(x,y,reach).slice()){const dx=z.x-x,dy=z.y-y,d=Math.hypot(dx,dy)||1;if(d>14&&Math.abs(angDiff(Math.atan2(dy,dx),aim))>1.1)continue;
-    const f=(z.type==='boss'?0:z.type==='brute'?120:300)*pow;z.kx+=dx/d*f;z.ky+=dy/d*f;z.stun=Math.max(z.stun,z.type==='brute'?.3:.8);z.atk=Math.max(z.atk,.6);hurtZ(z,5*pow,{crit:false})}}
+    const f=(z.type==='boss'?0:z.type==='brute'?120:300)*pow;z.kx+=dx/d*f;z.ky+=dy/d*f;z.stun=Math.max(z.stun,z.inf?INF_STUN:z.type==='brute'?.3:.8);z.atk=Math.max(z.atk,.6);hurtZ(z,5*pow,{crit:false})}}
 function roll(){
   if(!P||G.mode!=='play'||P.dead||P.rollT>0||P.rollCD>0||P.stam<22)return;
   let dx=mvx,dy=mvy;const l=Math.hypot(dx,dy);if(l<.2){dx=Math.cos(P.aim);dy=Math.sin(P.aim)}else{dx/=l;dy/=l}
@@ -1262,7 +1279,8 @@ function banner(t,s){const b=$('#banner');$('#banT').textContent=t;$('#banS').te
    The host (or solo player) runs the director; guests get its state in 'ob' messages. */
 const MODES=[{id:'survival',name:'Survival',desc:'Board up and outlast wave after wave. Every 5th wave brings the Abomination.'},
   {id:'objectives',name:'Objectives',desc:'A story run: scavenge the town, finish a chain of tasks, then hold the extraction point to escape.'},
-  {id:'horde',name:'Horde',desc:'No breaks. One endless stream that grows bigger and faster. Supply drops every 2 minutes.'}];
+  {id:'horde',name:'Horde',desc:'No breaks. One endless stream that grows bigger and faster. Supply drops every 2 minutes.'},
+  {id:'infection',name:'Infection',desc:'Up to 10 players. One of you turns. Push the infected away and survive 5 minutes. Solo is a practice round against AI.'}];
 const gm=()=>G.gm||'survival';
 const OBJITEM={key:'Car keys',fuel:'Fuel can',part:'Radio part',vial:'Medical supplies'};
 const SCEN=[
@@ -1350,6 +1368,93 @@ function obRecv(m){if(m.gm)G.gm=m.gm;if(m.o&&SCEN[m.o.sc|0]){G.ob={sc:m.o.sc|0,i
 function objTargets(){const o=G.ob;if(gm()!=='objectives'||!o||o.i<0||o.i%1)return[];return o.pts.filter(p=>!p.done)}
 function objKind(){const o=G.ob;return o&&o.i>=0&&o.i%1===0?SCEN[o.sc].steps[o.i]:null}
 
+/* ---------------- infection mode ----------------
+   Up to 10 players start together in one house. In a short scene one of them (patient zero) says they don't feel good and
+   collapses. Everyone else gets 30 seconds to run, then patient zero turns. Infected players can't be killed; a touch turns a
+   survivor. Survivors push the infected away, which stuns them for 4 seconds. Survive 5 minutes to win.
+   With 4 or more players one survivor is secretly a carrier who turns halfway through, and each survivor can call one
+   emergency meeting to vote someone into quarantine. Solo is a practice round against AI infected.
+   The host runs the round and sends it to everyone in 'inf' messages; roles: s survivor, i infected, x out (quarantined or joined late). */
+const INF_INTRO=6.5,INF_COLLAPSE=4.8,INF_RUN=30,INF_HUNT=300,INF_STUN=4,INF_TURN=2,CARRIER_AT=150,MEET_T=20;
+function myId(){return NET.role==='guest'?NET.myId:0}
+function infOn(){return gm()==='infection'&&!!G.inf}
+function infRole(id){return G.inf&&G.inf.ro&&G.inf.ro[id]||'s'}
+function nameOf(id){if(id===-1)return'Sam';if(id===0)return MATE_NAMES[0];if(NET.role==='guest'){if(id===NET.myId)return MATE_NAMES[P.col|0];const o=OTHERS.get(id);return o?o.name:'Someone'}const r=REMOTES.get(id);return r?r.name:'Someone'}
+function hostIds(){const a=[0];for(const r of REMOTES.values())if(r.live)a.push(r.id);return a}
+function hostPos(id){if(id===0)return P;return REMOTES.get(id)}
+function infLying(id){const f=G.inf;return!!f&&id===f.pz&&(f.ph==='intro'&&f.t>=INF_COLLAPSE||f.ph==='run')}
+function infBegin(){const ids=hostIds(),solo=ids.length===1;
+  const hs=HOUSES.filter(h=>(h.x1-h.x0)>=5&&(h.y1-h.y0)>=4);const h=hs.length?hs[ri(0,hs.length-1)]:HOUSES[0];const hx=(h.x0+h.x1+1)/2*T,hy=(h.y0+h.y1+1)/2*T;
+  const pz=solo?-1:ids[ri(0,ids.length-1)],ro={},sp={};ids.forEach((id,i)=>{ro[id]='s';const a=i/ids.length*TAU;sp[id]=[Math.round(hx+Math.cos(a)*16),Math.round(hy+Math.sin(a)*12)]});
+  const others=ids.filter(i=>i!==pz),carrier=ids.length>=4?others[ri(0,others.length-1)]:-9;
+  const sA=others[0]!==undefined?others[0]:0,sB=others.length>1?others[1]:sA;
+  G.inf={n:(G.inf&&G.inf.n||0)+1,ph:'intro',t:0,ro,pz,hx,hy,sp,st:{},tu:{},meet:null,used:{},carrier,solo,bots:0,
+    lines:solo?[[.6,0,'Sam? You okay?'],[2.2,-1,"I... I don't feel good."]]:[[.6,sA,'Is everyone here?'],[2,sB,'I think so. Lock the door.'],[3.4,pz,"I... I don't feel good."]],sendT:0};
+  P.x=sp[0][0];P.y=sp[0][1];DROPS=[];Z=[];
+  if(solo){const z=spawnZ('walker',hx+18,hy+4);if(z){z.inf=1;z.stun=999;z.hp=z.max=1e9;G.inf.npc=z}}
+  if(carrier===0)G.inf.iCarry=1;else if(carrier>0)netTo(carrier,{t:'carrier'});
+  G.state='fight';G.breakT=0;$('#skipBtn').hidden=true;infSend(true)}
+function infSend(full){const f=G.inf;if(!f)return;f.sendT=.5;if(NET.role!=='host')return;
+  netAll({t:'inf',n:f.n,ph:f.ph,tm:+f.t.toFixed(2),ro:f.ro,pz:f.pz,hx:Math.round(f.hx),hy:Math.round(f.hy),st:f.st,tu:f.tu,meet:f.meet?{by:f.meet.by,cand:f.meet.cand,t:+f.meet.t.toFixed(1),nv:Object.keys(f.meet.votes).length}:null,lines:full||f.ph==='intro'?f.lines:null,sp:f.ph==='intro'?f.sp:null})}
+function infRecv(m){if(typeof m.n!=='number')return;const fresh=!G.inf||G.inf.n!==m.n;
+  const f=G.inf=fresh?{n:m.n,used:{},st:{},tu:{}}:G.inf;
+  Object.assign(f,{ph:str(m.ph),t:+m.tm||0,ro:m.ro&&typeof m.ro==='object'?m.ro:{},pz:m.pz|0,hx:+m.hx,hy:+m.hy,st:m.st||{},tu:m.tu||{},meet:m.meet||null});
+  if(Array.isArray(m.lines))f.lines=m.lines;
+  if(fresh&&m.sp&&m.sp[NET.myId]){P.x=+m.sp[NET.myId][0];P.y=+m.sp[NET.myId][1];DROPS=[];if(f.iCarry===undefined)f.iCarry=G.carrierNext?1:0;G.carrierNext=0}
+  meetUI()}
+/* host: run the round */
+function infUpdate(dt){const f=G.inf;if(!f)return;
+  f.sendT-=dt;if(f.sendT<=0)infSend();
+  if(f.meet){f.meet.t-=dt;const voters=hostIds().filter(id=>f.ro[id]==='s');if(f.meet.t<=0||voters.every(id=>f.meet.votes[id]!==undefined))meetResolve();return}
+  f.t+=dt;
+  if(f.ph==='intro'){if(f.t>=INF_INTRO){f.ph='run';f.t=0;bannerAll('RUN!',`${nameOf(f.pz)} is turning. You have 30 seconds.`);sfx('boss');infSend(true)}return}
+  if(f.ph==='run'){if(f.t>=INF_RUN){f.ph='hunt';f.t=0;if(f.pz>=0)f.ro[f.pz]='i';f.tu[f.pz]=0;
+      if(f.npc){f.npc.stun=0;f.npc.spd=S.spd*1.02}bannerAll(`${nameOf(f.pz).toUpperCase()} HAS TURNED`,"Don't let them touch you. Push them away to stun them.");sfx('boss');infSend(true)}return}
+  if(f.ph!=='hunt')return;
+  if(f.solo&&f.bots<2&&f.t>60*(f.bots+1)){const z=spawnZ('walker',f.hx,f.hy);if(z){z.inf=1;z.hp=z.max=1e9;z.spd=S.spd*.98;f.bots++;bannerAll('MORE OF THEM','Another infected is loose.')}}
+  if(f.carrier!==-9&&f.ro[f.carrier]==='s'&&f.t>=CARRIER_AT){infTurn(f.carrier,true)}
+  for(const k in f.st)if(f.st[k]<=f.t)delete f.st[k];
+  const ids=hostIds();
+  for(const a of ids){if(f.ro[a]!=='i'||(f.st[a]||0)>f.t||(f.tu[a]||0)>f.t)continue;const pa=hostPos(a);if(!pa)continue;
+    for(const b of ids){if(f.ro[b]!=='s')continue;const pb=hostPos(b);if(!pb||pb.roll)continue;if(d2(pa.x,pa.y,pb.x,pb.y)<12*12)infTurn(b,false,a)}}
+  const surv=ids.filter(id=>f.ro[id]==='s').length;
+  if(!surv)infEnd('i');else if(f.t>=INF_HUNT)infEnd('s')}
+function infTurn(id,carrier,by){const f=G.inf;if(f.ro[id]!=='s')return;f.ro[id]='i';f.tu[id]=f.t+INF_TURN;
+  bannerAll(carrier?`${nameOf(id).toUpperCase()} WAS A CARRIER`:`${nameOf(id).toUpperCase()} IS INFECTED`,carrier?'They were sick the whole time.':`${nameOf(by)} got them.`);sfx('die');infSend()}
+function infShove(by,x,y,a){const f=G.inf;if(!f||f.ph!=='hunt'||f.ro[by]!=='s')return;
+  for(const id of hostIds()){if(id===by||f.ro[id]!=='i')continue;const p=hostPos(id);if(!p)continue;const dx=p.x-x,dy=p.y-y,d=Math.hypot(dx,dy)||1;
+    if(d>34||d>14&&Math.abs(angDiff(Math.atan2(dy,dx),a))>1.2)continue;f.st[id]=f.t+INF_STUN;const px=Math.round(dx/d*26),py=Math.round(dy/d*26);
+    if(id===0){P.stunT=INF_STUN;P.x+=px;P.y+=py;collideT(P,P.r,solidP)}else netTo(id,{t:'stun',s:INF_STUN,dx:px,dy:py});sfx('shove')}
+  infSend()}
+function infEnd(w){const f=G.inf;f.win=w;f.ph='end';const sv=hostIds().filter(id=>f.ro[id]==='s');netAll({t:'over',w:0,k:0,tm:Math.round(f.t),inf:w,ro:f.ro});gameOver(w==='s'&&f.ro[0]==='s')}
+/* emergency meetings: a survivor stops the round, survivors vote, the top pick goes into quarantine (out of the round) */
+function infMeet(by){const f=G.inf;if(!f||f.ph!=='hunt'||f.meet||f.ro[by]!=='s'||f.used[by]||f.solo)return;f.used[by]=1;
+  const cand=hostIds().filter(id=>f.ro[id]==='s');f.meet={by,cand,votes:{},t:MEET_T};bannerAll('EMERGENCY MEETING',`${nameOf(by)} called a meeting.`);sfx('wave');infSend();meetUI()}
+function meetVote(by,id){const f=G.inf;if(!f||!f.meet||f.ro[by]!=='s'||f.meet.votes[by]!==undefined)return;f.meet.votes[by]=(id===-1||f.meet.cand.includes(id))?id:-1;infSend()}
+function meetResolve(){const f=G.inf,c={};for(const v of Object.values(f.meet.votes))c[v]=(c[v]||0)+1;let best=-1,bn=0,tie=false;
+  for(const k in c){const n=c[k];if(n>bn){bn=n;best=+k;tie=false}else if(n===bn)tie=true}
+  if(tie)best=-1;f.meet=null;
+  if(best>=0&&f.ro[best]==='s'){f.ro[best]='x';const was=best===f.carrier;if(was)f.carrier=-9;bannerAll(`${nameOf(best).toUpperCase()} WAS QUARANTINED`,was?'They were the carrier!':'They were not the carrier.')}
+  else bannerAll('NO ONE WAS QUARANTINED',tie?'The vote was tied.':'Most people skipped.');
+  infSend();meetUI();const surv=hostIds().filter(id=>f.ro[id]==='s').length;if(!surv)infEnd('i')}
+function meetUI(){const f=G.inf,el=$('#meetScr');if(!f||!f.meet||G.mode!=='play'){el.hidden=true;G.myVote=undefined;return}el.hidden=false;
+  const me=myId(),canVote=infRole(me)==='s';$('#meetSub').textContent=`${nameOf(f.meet.by)} called it. ${canVote?'Vote to quarantine someone, or skip.':'Only survivors vote.'}`;
+  const box=$('#meetList');if(box.dataset.k!==JSON.stringify(f.meet.cand)+canVote+(G.myVote!==undefined)){box.dataset.k=JSON.stringify(f.meet.cand)+canVote+(G.myVote!==undefined);box.innerHTML='';
+    for(const id of[...f.meet.cand,-1]){const b=document.createElement('button');b.className='alt';b.textContent=id===-1?'Skip':nameOf(id)+(id===me?' (you)':'');b.disabled=!canVote||G.myVote!==undefined;
+      b.onclick=()=>{G.myVote=id;if(NET.role==='guest')netSend({t:'vote',id});else meetVote(0,id);meetUI()};box.appendChild(b)}}
+  $('#meetT').textContent=Math.ceil(f.meet.t)+'s';}
+/* the local player */
+function infBlocked(){const f=G.inf;if(!infOn())return false;const me=myId(),r=infRole(me);
+  return f.ph==='intro'||f.ph==='end'||!!f.meet||me===f.pz&&f.ph==='run'||(P.stunT||0)>0||r==='x'||(f.tu[me]||0)>f.t}
+function infLook(look,id){if(!infOn()||infRole(id)!=='i'&&!infLying(id))return look;const hc=sheetFor('survivor');
+  if(hc&&hc.parts){const L=wdLook(hc,look),zi=Math.max(0,hc.parts.palettes[hc.parts.skin].names.indexOf('Zombie'));return{...look,sheet:{...L,k:zi}}}return look}
+function infLine(){const f=G.inf,me=myId(),r=infRole(me);if(!f)return'';
+  const ids=NET.role==='guest'?[NET.myId,...OTHERS.keys()]:hostIds();const s=ids.filter(id=>f.ro[id]==='s').length,i=ids.filter(id=>f.ro[id]==='i').length+(f.solo?(f.ph==='hunt'?1+f.bots:0):0);
+  const cnt=`${s} survivor${s===1?'':'s'} · ${i} infected`;
+  if(f.ph==='intro')return'Something is wrong…';if(f.ph==='run')return me===f.pz?`You are turning. ${Math.ceil(INF_RUN-f.t)}s`:`RUN! ${Math.ceil(INF_RUN-f.t)}s until they turn`;
+  if(r==='x')return'You are out of this round. '+cnt;if(r==='i')return(P.stunT>0?'Stunned! ':'')+'You are infected: catch the survivors. '+cnt;
+  return(f.iCarry&&f.t<CARRIER_AT?'You are the CARRIER. You turn at 2:30. ':'Avoid the infected. Push them to stun them. ')+cnt}
+
 /* ---------------- input ---------------- */
 const keys={};let mv={on:false},fb={on:false},mouse={x:0,y:0,fire:false,use:false};let mvx=0,mvy=0,usingMouse=false,usingPad=false,AIMZ=null,stickRun=false;
 const joyEl=$('#joy'),pad=$('#pad'),fireEl=$('#fireBtn');
@@ -1382,7 +1487,7 @@ pad.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'){usingMouse=tr
   if(mv.on&&e.pointerId===mv.id)stickMove(e.clientX,e.clientY)});
 const endP=e=>{if(e.pointerType==='mouse'){if(e.button===0)mouse.fire=false;return}if(mv.on&&e.pointerId===mv.id){mv={on:false};restJoy()}};
 pad.addEventListener('pointerup',endP);pad.addEventListener('pointercancel',endP);
-fireEl.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();if(G.mode!=='play'||G.paused||G.modal)return;usingMouse=false;usingPad=false;
+fireEl.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();if(G.mode!=='play'||G.paused||G.modal)return;if(gm()==='infection'){shove();return}usingMouse=false;usingPad=false;
   fb={on:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0,drag:false};fireEl.classList.add('on');try{fireEl.setPointerCapture(e.pointerId)}catch(_){}});
 fireEl.addEventListener('pointermove',e=>{if(!fb.on||e.pointerId!==fb.id)return;fb.dx=e.clientX-fb.ox;fb.dy=e.clientY-fb.oy;if(Math.hypot(fb.dx,fb.dy)>18)fb.drag=true});
 const endF=e=>{if(fb.on&&e.pointerId===fb.id){fb={on:false};fireEl.classList.remove('on')}};
@@ -1405,6 +1510,7 @@ addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
 const tapBtn=(id,fn)=>{$(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();if(G.mode==='play'&&!G.paused&&!G.modal)fn()})};
 tapBtn('#rollBtn',()=>roll());tapBtn('#shoveBtn',()=>shove());tapBtn('#reloadBtn',()=>startReload());tapBtn('#useBtn',()=>doUse());
 tapBtn('#gunBtn',()=>startReload());tapBtn('#aidBtn',()=>useAid());tapBtn('#swapBtn',()=>swapGun());tapBtn('#grenBtn',()=>throwGren());
+$('#meetBtn').addEventListener('pointerdown',e=>{e.stopPropagation();if(!infOn())return;if(NET.role==='guest')netSend({t:'meet'});else infMeet(0)});
 $('#skipBtn').addEventListener('pointerdown',e=>{e.stopPropagation();if(NET.role==='guest'){netSend({t:'skip'});return}if(G.state!=='fight')G.breakT=0});
 
 /* ---------------- ambient ---------------- */
@@ -1427,7 +1533,7 @@ function updLocal(dt){
   if(P.reload>0){P.reload-=dt;if(P.reload<=0){P.reload=0;finishReload()}}
   if(P.stamWait>0)P.stamWait-=dt;else P.stam=Math.min(S.stam,P.stam+S.stamRegen*dt);
   if(S.regen&&P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+S.regen*dt);
-  const blocked=G.modal||G.paused;
+  if(P.stunT>0)P.stunT-=dt;const blocked=G.modal||G.paused||infBlocked();
   let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
   stickRun=false;
   if(mv.on&&(Math.abs(mv.dx)>.12||Math.abs(mv.dy)>.12)){mx=mv.dx;my=mv.dy;stickRun=meta.ctl.sprint&&Math.hypot(mv.dx,mv.dy)>.97}
@@ -1450,7 +1556,7 @@ function updLocal(dt){
   if(P.rollT>0){P.rollT-=dt;P.x+=P.rdx*270*dt;P.y+=P.rdy*270*dt;P.anim+=dt*14}
   else if(P.action){const op=P.action.op;P.action.t-=dt;if(d2(P.x,P.y,op.tx*T+8,op.ty*T+8)>34*34)P.action=null;else if(P.action.t<=0){P.action=null;if(P.planks>0){const add=op.boards<3;if(add||op.hp<BOARD_HP())P.planks--;if(add)op.boards++;op.hp=op.max=BOARD_HP();sfx('board');woodChips(op);
       if(NET.role==='guest')netSend({t:'board',oi:OPENS.indexOf(op),hp:Math.round(BOARD_HP()),add});else for(const z of Z)if(tAt(z.x,z.y)===op.i){op.boards=Math.max(0,op.boards-1)}}}}
-  else{let sp=S.spd*(P.healT>0?.45:1);if(P.healT>0)firing=false;if(stickRun&&!firing&&P.stam>8)P.run=true;else if(!stickRun&&!usingMouse&&!keys.shift)P.run=false;
+  else{let sp=S.spd*(P.healT>0?.45:1)*(infOn()&&infRole(myId())==='i'?1.22:1);if(infOn()&&infRole(myId())==='i'){P.run=false;stickRun=false}if(P.healT>0)firing=false;if(stickRun&&!firing&&P.stam>8)P.run=true;else if(!stickRun&&!usingMouse&&!keys.shift)P.run=false;
     const running=P.run&&ml>.2&&P.stam>0&&!firing;if(running){sp*=1.6;P.stam=Math.max(0,P.stam-20*dt);P.stamWait=.5;if(P.stam<=0)P.run=false}
     P.moving=ml>.1;P.x+=mx*sp*dt;P.y+=my*sp*dt;if(Math.abs(mx)>.1)P.face=mx>0?1:-1;if(P.moving)P.anim+=dt*(running?13:9);P.running=running;
     if(firing)fire()}
@@ -1458,7 +1564,7 @@ function updLocal(dt){
   P.inside=insideHouse(P.x,P.y);
 }
 function updWorld(dt){
-  if(gm()==='objectives')objUpdate(dt);else if(gm()==='horde')hordeUpdate(dt);else updWave(dt);
+  if(gm()==='infection')infUpdate(dt);else if(gm()==='objectives')objUpdate(dt);else if(gm()==='horde')hordeUpdate(dt);else updWave(dt);
   if(NET.role==='host')for(const r of REMOTES.values()){if(!r.live)continue;const k=Math.min(1,dt*14),ox=r.x,oy=r.y;r.x+=(r.tx-r.x)*k;r.y+=(r.ty-r.y)*k;r.anim+=Math.hypot(r.x-ox,r.y-oy)/9}
   G.flowT-=dt;const pt=P.dead?-2:tAt(P.x,P.y);if(pt!==G.flowTile||G.flowT<=0){G.flowTile=pt;G.flowT=REMOTES.size?.3:.5;buildFlow()}
   buildGrid();
@@ -1511,6 +1617,7 @@ function updWorld(dt){
   if(P.dead&&!netOn()&&G.mode==='play')gameOver();
 }
 function updGuest(dt){
+  if(infOn()){const f=G.inf;if(f.meet)f.meet.t=Math.max(0,f.meet.t-dt);else if(f.ph!=='end')f.t+=dt}
   const k=Math.min(1,dt*12);
   for(const z of Z){const ox=z.x,oy=z.y;z.x+=(z.tx-z.x)*k;z.y+=(z.ty-z.y)*k;{const vx=z.tx-z.x,vy=z.ty-z.y;z.moving=Math.abs(vx)+Math.abs(vy)>.6;if(z.moving)z.dir=dir4(vx,vy,z.dir)}z.anim+=Math.max(dt*1.2,Math.hypot(z.x-ox,z.y-oy)/7);if(z.hit>0)z.hit-=dt;if(z.lunge>0)z.lunge-=dt}
   for(const m of OTHERS.values()){const ox=m.x,oy=m.y;m.x+=(m.tx-m.x)*k;m.y+=(m.ty-m.y)*k;m.anim+=Math.hypot(m.x-ox,m.y-oy)/9}
@@ -1532,6 +1639,7 @@ function updShared(dt){
   for(const h of HOUSES){const tgt=h.id===P.inside&&!P.dead?0:1;h.roofA+=(tgt-h.roofA)*Math.min(1,dt*7)}
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*20);
   let fx0=P,look=usingMouse||fb.on?18:0;if(P.dead){const m=mates().find(q=>!q.dead);if(m){fx0=m;look=0}}
+  if(infOn()){look=0;if(G.inf.ph==='intro')fx0={x:G.inf.hx,y:G.inf.hy+10};else if(infRole(myId())==='x'){const m=mates().find(q=>infRole(q.id)!=='x');if(m)fx0=m}}
   cam.x+=(fx0.x+Math.cos(P.aim)*look-cam.x)*Math.min(1,dt*7);cam.y+=(fx0.y-12+Math.sin(P.aim)*look-cam.y)*Math.min(1,dt*7);
   updAmbient(dt);
   useCtx=P.dead?null:findUse();
@@ -1615,20 +1723,23 @@ function render(){
 }
 function drawDown(set,x,y){const c=set.r[0];ctx.globalAlpha=.6;ctx.save();ctx.translate(Math.round(x),Math.round(y-6));ctx.rotate(Math.PI/2);ctx.drawImage(c,-c.width/2|0,-c.height/2|0);ctx.restore();ctx.globalAlpha=1}
 function drawSpin(set,x,y,ang,face){const c=face>=0?set.r[1]:set.l[1];ctx.save();ctx.translate(Math.round(x),Math.round(y-c.height/2+2));ctx.rotate(ang);ctx.drawImage(c,-c.width/2|0,-c.height/2|0);ctx.restore()}
-function mateLook(m){return m.look||LOOKS.get(m.id)||MATE_LOOKS[m.col||0]}
+function mateLook(m){return m.look||LOOKS.get(m.id)||MATE_LOOKS[(m.col||0)%MATE_LOOKS.length]}
 function drawMate(m){const hc=sheetFor('survivor');
   if(hc){const run=m.run&&m.moving,dir=run?(m.face>0?'right':'left'):dir4(Math.cos(m.aim),Math.sin(m.aim),m.dir);m.dir=dir;
-    drawHeroSheet(hc,m,mateLook(m),heroAnim(m,{dead:m.dead,roll:m.roll,run,moving:m.moving}),dir,m.gun,run?(m.face>0?.6:Math.PI-.6):m.aim);return}
+    if(infOn()&&infRole(m.id)==='x')return;
+    drawHeroSheet(hc,m,infLook(mateLook(m),m.id),heroAnim(m,{dead:m.dead||infLying(m.id),roll:m.roll,run,moving:m.moving}),dir,infOn()?null:m.gun,run?(m.face>0?.6:Math.PI-.6):m.aim);return}
   const set=mateSet(m);if(m.dead){drawDown(set,m.x,m.y);return}
   if(m.roll){drawSpin(set,m.x,m.y,(G.time*18%TAU)*(m.face>=0?1:-1),m.face);return}
   const fr=m.moving?Math.floor(m.anim)%4:0,face=m.run?m.face:(Math.cos(m.aim)>=0?1:-1),a=m.run?(m.face>0?.6:Math.PI-.6):m.aim,back=Math.sin(a)<-.3;
   const gun=()=>{const img=GUN[m.gun]||GUN.pistol;ctx.save();ctx.translate(Math.round(m.x+face*5),Math.round(m.y-11));ctx.rotate(a);if(Math.cos(a)<0)ctx.scale(1,-1);ctx.drawImage(img,-2,-Math.floor(img.height/2));ctx.restore()};
+  if(infOn()){if(infRole(m.id)!=='x')drawSet(set,fr,m.x,m.y,face,false);return}
   if(back)gun();drawSet(set,fr,m.x,m.y,face,false);if(!back)gun()}
 function drawPlayer(){
   const hc=sheetFor('survivor');
   if(hc){const aiming=P.shootT>0||fb.on||usingMouse,dir=P.rollT>0?dir4(P.rdx,P.rdy):(aiming||!P.moving)&&!P.running?dir4(Math.cos(P.aim),Math.sin(P.aim),P.dir):dir4(mvx,mvy,P.dir);P.dir=dir;
     P.flash=P.inv>0&&P.rollT<=0&&P.hurtT>0&&!hc.anims.hurt;
-    drawHeroSheet(hc,P,P.look||cleanLook(meta.look),heroAnim(P,{dead:P.dead,roll:P.rollT>0,hurt:P.hurtT>0&&hc.anims.hurt,shoot:P.shootT>0,run:P.running,moving:P.moving}),dir,curGun().g,P.running?(P.face>0?.6:Math.PI-.6):P.aim);return}
+    if(infOn()&&infRole(myId())==='x')ctx.globalAlpha=.35;
+    drawHeroSheet(hc,P,infLook(P.look||cleanLook(meta.look),myId()),heroAnim(P,{dead:P.dead||infLying(myId()),roll:P.rollT>0,hurt:P.hurtT>0&&hc.anims.hurt,shoot:P.shootT>0,run:P.running,moving:P.moving}),dir,infOn()?null:curGun().g,P.running?(P.face>0?.6:Math.PI-.6):P.aim);ctx.globalAlpha=1;return}
   const HS=lookSet(P.look||DEFAULT_LOOK);if(P.dead){drawDown(HS,P.x,P.y);return}
   const flash=P.inv>0&&P.rollT<=0&&Math.floor(G.time*30)%2===0;
   if(P.rollT>0){const k=1-P.rollT/.34;drawSpin(HS,P.x,P.y,(P.rdx>=0?1:-1)*k*TAU,P.rdx);return}
@@ -1636,7 +1747,7 @@ function drawPlayer(){
   const a=P.running?(P.face>0?.6:Math.PI-.6):P.aim,back=Math.sin(a)<-.3;
   const g=curGun().g;
   const gun=()=>{const img=GUN[g],gx=P.x+face*5-(P.recoil>0?Math.cos(a)*2:0),gy=P.y-11;ctx.save();ctx.translate(Math.round(gx),Math.round(gy));ctx.rotate(a);if(Math.cos(a)<0)ctx.scale(1,-1);ctx.drawImage(img,-2,-Math.floor(img.height/2));ctx.restore()};
-  if(back)gun();drawSet(HS,fr,P.x,P.y,face,flash);if(!back)gun();
+  if(infOn()){drawSet(HS,fr,P.x,P.y,face,flash)}else{if(back)gun();drawSet(HS,fr,P.x,P.y,face,flash);if(!back)gun()}
   if(P.shoveAnim>0){ctx.fillStyle='#f6c9a3';ctx.fillRect(Math.round(P.x+Math.cos(P.aim)*10)-2,Math.round(P.y-14+Math.sin(P.aim)*6)-2,4,4)}
 }
 
@@ -1673,6 +1784,13 @@ function renderFX(ox,oy,showP){
   if(P.action){const k=1-P.action.t/P.action.max;fx.strokeStyle='#140f1f';fx.lineWidth=6*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,0,TAU);fx.stroke();fx.strokeStyle='#f2c14e';fx.lineWidth=3.5*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,-Math.PI/2,-Math.PI/2+k*TAU);fx.stroke()}
   if(P.healT>0){const k=1-P.healT/AID_T;fx.strokeStyle='#140f1f';fx.lineWidth=6*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,0,TAU);fx.stroke();fx.strokeStyle='#8fff6a';fx.lineWidth=3.5*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,-Math.PI/2,-Math.PI/2+k*TAU);fx.stroke()}
   if(P.reload>0){const k=1-P.reload/P.reloadMax,w=26*KX,x=X(P.x)-w/2,y=Y(P.y-52);fx.fillStyle='#140f1f';fx.fillRect(x-DPR,y-DPR,w+2*DPR,5*DPR);fx.fillStyle='#f2c14e';fx.fillRect(x,y,w*k,3*DPR)}
+  // infection: names over everyone, speech in the opening scene, stars over stunned players
+  if(infOn()){const f=G.inf,list=[[myId(),P,P.col|0],...mates().map(m=>[m.id,m,m.col|0])];fx.textAlign='center';
+    for(const[id,e,col]of list){const r=infRole(id);if(r==='x'&&id!==myId())continue;const sx=X(e.x),sy=Y(e.y-46);fx.font=`700 ${9*DPR}px Silkscreen, monospace`;fx.lineWidth=3*DPR;fx.strokeStyle='#1a1020';
+      const nm=nameOf(id)+(r==='i'?' ☣':'');fx.strokeText(nm,sx,sy);fx.fillStyle=r==='i'?'#9aff6a':MATE_COL[col%MATE_COL.length];fx.fillText(nm,sx,sy);
+      if((f.st[id]||0)>f.t||id===myId()&&P.stunT>0){for(let k=0;k<3;k++){const a=performance.now()/200+k*TAU/3;fx.fillStyle='#ffe066';fx.fillRect(sx+Math.cos(a)*10*DPR-2*DPR,sy+10*DPR+Math.sin(a)*3*DPR,4*DPR,4*DPR)}}}
+    if(f.ph==='intro'&&f.lines){for(let li=0;li<f.lines.length;li++){const[t0,id,txt]=f.lines[li],t1=li+1<f.lines.length?f.lines[li+1][0]-.1:INF_INTRO;if(f.t<t0||f.t>t1)continue;const e=id===myId()?P:id===-1?f.npc||{x:f.hx+18,y:f.hy+4}:mates().find(m=>m.id===id);if(!e)continue;
+      fx.font=`700 ${10*DPR}px Silkscreen, monospace`;const w=fx.measureText(txt).width+12*DPR,bx=X(e.x)-w/2,by=Y(e.y-62)-14*DPR;fx.fillStyle='rgba(250,246,236,.95)';fx.fillRect(bx,by,w,18*DPR);fx.fillStyle='#1a1020';fx.fillText(txt,X(e.x),by+12*DPR)}}}
   // objective markers: zone rings and switch progress in view, an arrow at the screen edge for the nearest one off screen
   {const tg=objTargets(),st=objKind();if(tg.length&&!P.dead){const pulse=.6+Math.sin(performance.now()/180)*.4;let near=null,nd=1e18;
     for(const p of tg){const sx=X(p.x),sy=Y(p.y),on=sx>0&&sy>0&&sx<FXC.width&&sy<FXC.height;
@@ -1702,7 +1820,7 @@ function renderFX(ox,oy,showP){
   fx.globalAlpha=1;
   // teammate tags
   fx.font=`700 ${9*DPR}px 'Pixelify Sans', sans-serif`;
-  for(const m of mates()){const x=X(m.x),y=Y(m.y-42);fx.lineWidth=3*DPR;fx.strokeStyle='#140f1f';const t=m.name+(m.dead?' (down)':'');fx.strokeText(t,x,y);fx.fillStyle=MATE_COL[m.col||0];fx.fillText(t,x,y);
+  if(!infOn())for(const m of mates()){const x=X(m.x),y=Y(m.y-42);fx.lineWidth=3*DPR;fx.strokeStyle='#140f1f';const t=m.name+(m.dead?' (down)':'');fx.strokeText(t,x,y);fx.fillStyle=MATE_COL[(m.col||0)%MATE_COL.length];fx.fillText(t,x,y);
     const w=22*KX,h=3*DPR;fx.fillStyle='#140f1f';fx.fillRect(x-w/2-DPR,y+6*DPR-DPR,w+2*DPR,h+2*DPR);fx.fillStyle='#45aaff';fx.fillRect(x-w/2,y+6*DPR,w*clamp(m.hp/m.maxHp,0,1),h)}
   // gun pickup labels
   fx.font=`700 ${9*DPR}px 'Pixelify Sans', sans-serif`;
@@ -1711,9 +1829,9 @@ function renderFX(ox,oy,showP){
 }
 function drawMini(){mctx.imageSmoothingEnabled=false;mctx.drawImage(MINIBASE,0,0);
   if(Math.floor(performance.now()/400)%2===0){mctx.fillStyle='#ffe066';for(const p of objTargets())mctx.fillRect(Math.floor(p.x/T)-2,Math.floor(p.y/T)-2,5,5)}mctx.fillStyle='rgba(255,255,255,.18)';mctx.fillRect(VIEW.ox/T,VIEW.oy/T,VW/T,VH/T);
-  mctx.fillStyle='#ff4a3a';for(const z of Z)mctx.fillRect(Math.floor(z.x/T),Math.floor(z.y/T),z.type==='boss'?3:1,z.type==='boss'?3:1);
+  mctx.fillStyle='#ff4a3a';if(!infOn())for(const z of Z)mctx.fillRect(Math.floor(z.x/T),Math.floor(z.y/T),z.type==='boss'?3:1,z.type==='boss'?3:1);
   mctx.fillStyle='#f2c14e';for(const d of DROPS)if(d.type==='gun'||d.type==='ammo')mctx.fillRect(Math.floor(d.x/T),Math.floor(d.y/T),1,1);
-  for(const m of mates()){mctx.fillStyle=MATE_COL[m.col||0];mctx.fillRect(Math.floor(m.x/T)-1,Math.floor(m.y/T)-1,3,3)}
+  if(!infOn())for(const m of mates()){mctx.fillStyle=MATE_COL[(m.col||0)%MATE_COL.length];mctx.fillRect(Math.floor(m.x/T)-1,Math.floor(m.y/T)-1,3,3)}
   mctx.fillStyle='#62ff7a';mctx.fillRect(Math.floor(P.x/T)-1,Math.floor(P.y/T)-1,3,3)}
 
 /* ---------------- online co-op ----------------
@@ -1722,7 +1840,7 @@ function drawMini(){mctx.imageSmoothingEnabled=false;mctx.drawImage(MINIBASE,0,0
    GUESTS move and shoot locally so controls feel instant; they send their pose and shots, and the host decides hits and damage. */
 const NET={role:null,peer:null,conns:new Map(),hostConn:null,code:'',myId:0,nextId:0};
 const REMOTES=new Map(),OTHERS=new Map(),GHOSTS=new Map();
-const MATE_NAMES=['Orange','Blue','Red','White'],MATE_COL=['#ff9a4a','#6aa8ff','#ff6a5a','#e8e8f0'];
+const MATE_NAMES=['Orange','Blue','Red','White','Green','Yellow','Purple','Pink','Cyan','Brown'],MATE_COL=['#ff9a4a','#6aa8ff','#ff6a5a','#e8e8f0','#6ad86a','#f2e04e','#b47aff','#ff8ad0','#5ae0e0','#b08050'];
 const ZKEYS=[...Array.from({length:12},(_,i)=>'walker'+i),'runner','spitter','bloater','brute','boss'];
 const ztype=k=>k.startsWith('walker')?'walker':k;
 const PEER_URLS=['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
@@ -1756,7 +1874,7 @@ function snap(){
   netAll({t:'s',w:[G.wave,G.state,Math.ceil(G.breakT),G.spawnLeft+Z.length,G.boss?Math.round(G.boss.hp/G.boss.max*100):-1],z,p,ob,
     n:NADES.map(n=>[Math.round(n.sx),Math.round(n.sy),Math.round(n.tx),Math.round(n.ty),+(n.t/n.dur).toFixed(2)]),e:EB.map(e=>[Math.round(e.x),Math.round(e.y)]),h:HITS.splice(0)})}
 function sendInit(id){const r=REMOTES.get(id);if(!r)return;for(const o of OPENS){o.sb=o.boards;o.sh=Math.round(o.hp)}
-  netTo(id,{t:'init',seed:G.seed,id,col:r.col,w:[G.wave,G.state,Math.ceil(G.breakT)],x:Math.round(P.x),y:Math.round(P.y),ops:OPENS.map(o=>[o.boards,Math.round(o.hp)]),drops:DROPS.map(dropMsg),L:allLooks(),pz:G.paused,ob:obNet()})}
+  netTo(id,{t:'init',seed:G.seed,id,col:r.col,w:[G.wave,G.state,Math.ceil(G.breakT)],x:Math.round(P.x),y:Math.round(P.y),ops:OPENS.map(o=>[o.boards,Math.round(o.hp)]),drops:DROPS.map(dropMsg),L:allLooks(),pz:G.paused,ob:obNet()});if(G.inf){if(!G.inf.ro[id])G.inf.ro[id]=G.inf.ph==='intro'?'s':'x';infSend(true)}}
 function gameOverAll(){netAll({t:'over',w:G.wave,k:G.kills,tm:Math.round(G.time)});gameOver()}
 function hostRecv(id,m){const r=REMOTES.get(id);if(!r||!m||typeof m!=='object')return;
   switch(m.t){
@@ -1773,6 +1891,9 @@ function hostRecv(id,m){const r=REMOTES.get(id);if(!r||!m||typeof m!=='object')r
     case'shove':if(G.mode==='play'){buildGrid();shoveAt(r.x,r.y,num(m.a,-10,10,0),num(m.p,1,3,1),num(m.reach,20,60,34))}break;
     case'gren':if(G.mode==='play')NADES.push({sx:r.x,sy:r.y,tx:num(m.tx,0,MW*T,r.x),ty:num(m.ty,0,MH*T,r.y),t:0,dur:.6,dmg:num(m.dmg,0,400,130)});break;
     case'revive':if(G.mode==='play')reviveMate(m.id|0,id);break;
+    case'ishove':if(G.mode==='play'&&infOn()){const sx=num(m.x,0,MW*T,r.x),sy=num(m.y,0,MH*T,r.y),ok=d2(sx,sy,r.x,r.y)<60*60;infShove(id,ok?sx:r.x,ok?sy:r.y,num(m.a,-10,10,0))}break;
+    case'meet':if(G.mode==='play'&&infOn())infMeet(id);break;
+    case'vote':if(G.mode==='play'&&infOn())meetVote(id,m.id|0);break;
     case'dropatt':if(G.mode==='play'&&ATT[m.g])drop('att',num(m.x,0,MW*T,r.x),num(m.y,0,MH*T,r.y),1,{g:m.g});break;
     case'dead':if(!r.dead){r.dead=true;r.deadAt=G.time;bannerAll(r.name.toUpperCase()+' IS DOWN','Their gear is on the ground where they fell.');netTo(id,{t:'ban',a:'YOU ARE DOWN',b:'You lost your gear. It is on the ground where you fell.'});if(m.gear)spillGear(m.gear,r.x,r.y)}break;
     case'pz':if(G.mode==='play'){const on=!!m.on;setPause(on,r.name);netAll({t:'pz',on,by:r.name})}break;
@@ -1790,7 +1911,7 @@ async function hostOpen(){
   NET.peer=peer;NET.code=code;NET.role='host';
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
   peer.on('connection',conn=>{
-    if([...REMOTES.values()].length>=3){conn.on('open',()=>{try{conn.send({t:'reject',why:'That room is full (4 players).'})}catch(e){}setTimeout(()=>{try{conn.close()}catch(e){}},400)});return}
+    const capN=meta.mode==='infection'?9:3;if([...REMOTES.values()].length>=capN){conn.on('open',()=>{try{conn.send({t:'reject',why:`That room is full (${capN+1} players).`})}catch(e){}setTimeout(()=>{try{conn.close()}catch(e){}},400)});return}
     const id=++NET.nextId,used=new Set([...REMOTES.values()].map(q=>q.col));let col=1;while(used.has(col))col++;
     const r={id,col,name:MATE_NAMES[col],live:false,x:P?P.x:0,y:P?P.y:0,tx:P?P.x:0,ty:P?P.y:0,aim:0,face:1,moving:false,run:false,roll:false,hp:100,maxHp:100,gun:'pistol',dead:false,anim:0,r:6};
     REMOTES.set(id,r);NET.conns.set(id,conn);
@@ -1822,8 +1943,11 @@ function guestRecv(m){if(!m||typeof m!=='object')return;
   switch(m.t){
     case'reject':netLost(str(m.why)||'That room is full.');break;
     case'wait':lobbyView({title:'CO-OP',msg:`Connected (${m.n|0} players). Waiting for the host to start the game…`,leave:true});break;
-    case'init':G.gm='survival';G.ob=null;if(m.ob)obRecv(m.ob);guestStart(m);if(m.L)setLooks(m.L);if(m.pz)setPause(true,'');break;
+    case'init':G.gm='survival';G.ob=null;G.inf=null;G.myVote=undefined;if(m.ob)obRecv(m.ob);guestStart(m);if(m.L)setLooks(m.L);if(m.pz)setPause(true,'');break;
     case'ob':obRecv(m);break;
+    case'inf':if(G.mode==='play'){G.gm='infection';infRecv(m)}break;
+    case'stun':if(P){P.stunT=num(m.s,0,6,4);P.x+=num(m.dx,-40,40,0);P.y+=num(m.dy,-40,40,0);collideT(P,P.r,solidP);sfx('shove')}break;
+    case'carrier':if(G.inf)G.inf.iCarry=1;else G.carrierNext=1;banner('YOU ARE THE CARRIER',"You will turn at 2:30. Don't let them find out.");break;
     case'looks':setLooks(m.L);break;
     case's':if(G.mode==='play'||G.mode==='dead')applySnap(m);break;
     case'd+':if(tile&&m.d)addNetDrop(m.d);break;
@@ -1838,7 +1962,7 @@ function guestRecv(m){if(!m||typeof m!=='object')return;
     case'ban':banner(str(m.a),str(m.b));break;
     case'pz':setPause(!!m.on,str(m.by));break;
     case'respawn':if(P){P.dead=false;P.hp=P.maxHp*.5;P.x=num(m.x,0,MW*T,P.x)+8;P.y=num(m.y,0,MH*T,P.y)+8;P.inv=2;collideT(P,P.r,solidP)}break;
-    case'over':if(G.mode==='play'){G.wave=m.w|0;G.kills=m.k|0;G.time=m.tm|0;if(m.win)meta.escapes=(meta.escapes|0)+1;gameOver(!!m.win)}break;
+    case'over':if(G.mode==='play'){G.wave=m.w|0;G.kills=m.k|0;G.time=m.tm|0;if(m.win)meta.escapes=(meta.escapes|0)+1;if(m.inf&&G.inf){G.inf.win=m.inf==='s'?'s':'i';if(m.ro)G.inf.ro=m.ro;G.inf.ph='end';gameOver(G.inf.win==='s'&&infRole(NET.myId)==='s')}else gameOver(!!m.win)}break;
   }}
 function setLooks(L){if(!L||typeof L!=='object')return;for(const k in L){const id=+k;if(isFinite(id))LOOKS.set(id,cleanLook(L[k]))}}
 function addNetDrop(d){if(DROPS.some(o=>o.id===d.id))return;DROPS.push({id:d.id,type:d.type,x:d.x,y:d.y,v:d.v,g:d.g,att:cleanAtt(d.att),mag:d.type==='gun'?d.mag:false,ammo:d.ammo,vx:d.vx||0,vy:d.vy||0,t:d.t||0})}
@@ -1859,7 +1983,7 @@ function guestStart(m){
   cam.x=P.x;cam.y=P.y-12;$('#bossbar').hidden=true;$('#skipBtn').hidden=G.state==='fight';clearSticks();
   banner('YOU JOINED','Stick together. Board up a house before the wave hits.');last=performance.now()}
 function applySnap(m){
-  const w=m.w||[];G.wave=w[0];G.state=w[1];G.breakT=w[2];G.netLeft=w[3];$('#skipBtn').hidden=G.state==='fight';
+  const w=m.w||[];G.wave=w[0];G.state=w[1];G.breakT=w[2];G.netLeft=w[3];$('#skipBtn').hidden=G.state==='fight'||gm()==='infection';
   if(w[4]>=0){$('#bossbar').hidden=false;$('#bossfill').style.width=w[4]+'%'}else $('#bossbar').hidden=true;
   const seen=new Set();
   for(const a of m.z||[]){const[id,ki,x,y,f,hp,fl,bd]=a;seen.add(id);let g=GHOSTS.get(id);const sk=ZKEYS[ki]||'walker0',ty=ztype(sk);
@@ -1884,7 +2008,7 @@ function netLost(msg){const playing=G.mode!=='menu';netLeave();if(playing)showTi
 function lobbyOpen(){$('#lobby').hidden=false}
 function lobbyView(o){$('#lbTitle').textContent=o.title||'CO-OP';$('#lbMsg').textContent=o.msg||'';const c=$('#lbCode');c.hidden=!o.code;c.textContent=o.code||'';
   $('#lbJoin').hidden=!o.join;$('#lbCopy').hidden=!o.copy;$('#lbStart').hidden=!o.start;$('#lbLeave').hidden=!o.leave;$('#lbGo').disabled=!!o.busy;$('#lbPlayers').hidden=!o.players;if(o.players)lobbyRefresh()}
-function lobbyHostView(){lobbyView({title:'HOST CO-OP',msg:'Share this code (or the invite link). Up to 3 friends can join, even after the game starts.',code:NET.code,copy:true,start:G.mode!=='play',leave:true,players:true})}
+function lobbyHostView(){lobbyView({title:'HOST CO-OP',msg:`Share this code (or the invite link). Up to ${meta.mode==='infection'?9:3} friends can join${meta.mode==='infection'?' (Infection mode)':', even after the game starts'}.`,code:NET.code,copy:true,start:G.mode!=='play',leave:true,players:true})}
 function lobbyRefresh(){const ul=$('#lbPlayers');if(!ul)return;const list=[{name:MATE_NAMES[0]+' (host'+(NET.role==='host'?', you':'')+')',col:0}];
   if(NET.role==='host')for(const r of REMOTES.values())if(r.live)list.push({name:r.name,col:r.col});
   ul.innerHTML=list.map(p=>`<li><i style="background:${MATE_COL[p.col]}"></i>${p.name}</li>`).join('')}
@@ -1958,7 +2082,7 @@ function drawZombieSheet(c,z){
 function heroAnim(e,{dead,roll,hurt,shoot,run,moving}){return dead?'death':roll?'roll':hurt?'hurt':shoot?'attack':run?'run':moving?'walk':'idle'}
 function drawHeroSheet(c,e,look,st,dir,gunKey,aim){
   const t=animOf(e,st),looping=st==='walk'||st==='run'||st==='idle'||st==='roll'&&(c.anims.roll?c.anims.roll.loop!==false:true);
-  const showGun=c.drawGun&&st!=='death'&&st!=='roll'&&st!=='hurt';
+  const showGun=c.drawGun&&gunKey!==null&&st!=='death'&&st!=='roll'&&st!=='hurt';
   const s=c.scale,gx=e.x+(c.gun[0]-c.ax)*s*(dir==='left'?-1:1),gy=e.y+(c.gun[1]-c.ay)*s;
   const gun=()=>{const img=GUN[gunKey]||GUN.pistol;ctx.save();ctx.translate(Math.round(gx),Math.round(gy));ctx.rotate(aim);if(Math.cos(aim)<0)ctx.scale(1,-1);ctx.drawImage(img,-2,-Math.floor(img.height/2));ctx.restore()};
   if(showGun&&dir==='up')gun();
@@ -2073,7 +2197,11 @@ function updHUD(dt){
   const hud=$('#hud'),cls='mouse'+(usingMouse||usingPad?'':'x')+' lefty'+(meta.ctl.lefty?'':'x')+' bs'+meta.ctl.size;if(hud.dataset.c!==cls){hud.dataset.c=cls;hud.classList.toggle('mouse',usingMouse||usingPad);hud.classList.toggle('lefty',!!meta.ctl.lefty);hud.classList.remove('bs0','bs1','bs2');hud.classList.add('bs'+meta.ctl.size);if(!mv.on)restJoy()}
   {const gn=curGun();fireEl.classList.toggle('empty',!!(gn&&gn.mag<=0&&P.reload<=0))}
   $('#xpfill').style.width=(P.xp/P.need*100).toFixed(1)+'%';setT('#lvl','LV '+P.lvl+(G.queue.length&&netOn()&&G.state==='fight'?' · perk ready after this wave':''));
-  if(gm()==='objectives'){const o=G.ob,n=o?SCEN[o.sc].steps.length:0;setT('#waveno',o&&o.i>=0?`OBJECTIVE ${Math.min(n,Math.floor(o.i)+1)}/${n}`:o?SCEN[o.sc].name:'OBJECTIVES');
+  $('#hud').classList.toggle('inf',gm()==='infection');$('#cine').hidden=!(infOn()&&G.inf.ph==='intro');
+  {const f=G.inf,can=infOn()&&f.ph==='hunt'&&!f.solo&&!f.meet&&infRole(myId())==='s'&&!f.used[myId()];$('#meetBtn').hidden=!can;}
+  if(G.inf&&G.inf.meet)meetUI();
+  if(gm()==='infection'){const f=G.inf,left=f?(f.ph==='hunt'?INF_HUNT-f.t:f.ph==='run'?INF_HUNT:INF_HUNT):INF_HUNT,t=Math.max(0,Math.ceil(left));setT('#waveno','INFECTION · '+Math.floor(t/60)+':'+String(t%60).padStart(2,'0'));setT('#left',infLine())}
+  else if(gm()==='objectives'){const o=G.ob,n=o?SCEN[o.sc].steps.length:0;setT('#waveno',o&&o.i>=0?`OBJECTIVE ${Math.min(n,Math.floor(o.i)+1)}/${n}`:o?SCEN[o.sc].name:'OBJECTIVES');
     setT('#left',P.dead?'You are down. Back in a bit, or when the team finishes an objective.':objLine())}
   else if(gm()==='horde'){const t=Math.floor(G.hT||0);setT('#waveno',G.state==='fight'?'HORDE · LV '+G.wave:'GET READY');
     setT('#left',P.dead?'You are down. Back in 30 seconds if anyone is still standing.':G.state!=='fight'?`They come in ${Math.ceil(G.breakT)}`:`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')} survived · supplies in ${Math.ceil(G.supplyT||0)}s`)}
@@ -2101,12 +2229,12 @@ function resetRun(){LOOKS.clear();CORPSES.length=0;
   if(meta.start&&GUNDEF[meta.start]&&meta.unlock[meta.start]){P.slots[1]=newGun(meta.start,true);P.cur=1}
   for(let i=0;i<(meta.up.vet||0);i++)G.queue.push({title:'VETERAN',sub:'Free perk to start'});
   // starter loot near spawn
-  const sx=P.x,sy=P.y;drop('planks',sx+20,sy+18,3).vx=0;drop('ammo',sx-24,sy+18).vx=0;drop('att',sx,sy+26,1,{g:randAtt()}).vx=0;P.aid=1;
-  restockLoot();
+  if(meta.mode!=='infection'){const sx=P.x,sy=P.y;drop('planks',sx+20,sy+18,3).vx=0;drop('ammo',sx-24,sy+18).vx=0;drop('att',sx,sy+26,1,{g:randAtt()}).vx=0;P.aid=1;
+  restockLoot()}
   cam.x=P.x;cam.y=P.y-12;$('#bossbar').hidden=true;$('#skipBtn').hidden=false;clearSticks();
-  G.gm=MODES.some(m=>m.id===meta.mode)?meta.mode:'survival';G.ob=null;G.cfg=null;G.spawnAcc=0;
+  G.gm=MODES.some(m=>m.id===meta.mode)?meta.mode:'survival';G.ob=null;G.inf=null;G.cfg=null;G.spawnAcc=0;G.myVote=undefined;
   for(const r of REMOTES.values()){r.dead=false;r.x=r.tx=P.x;r.y=r.ty=P.y;if(r.live)sendInit(r.id)}
-  if(gm()==='objectives'){$('#skipBtn').hidden=true;objBegin()}else if(gm()==='horde')hordeBegin();else banner('NIGHT FALLS','Grab planks, find a house and board up the doors and windows.')
+  if(gm()==='infection')infBegin();else if(gm()==='objectives'){$('#skipBtn').hidden=true;objBegin()}else if(gm()==='horde')hordeBegin();else banner('NIGHT FALLS','Grab planks, find a house and board up the doors and windows.')
 }
 function play(){if(NET.role==='guest'){lobbyOpen();lobbyView({title:'CO-OP',msg:'You are in a co-op room. The host starts the game.',leave:true});return}initAudio();if(AC&&AC.state==='suspended')AC.resume();hideAll();$('#hud').hidden=false;resetRun();last=performance.now()}
 function hideAll(){for(const id of['title','armory','levelup','pause','over'])$('#'+id).hidden=true}
@@ -2121,10 +2249,13 @@ function setPause(on,by){if(G.mode!=='play'||on===G.paused)return;$('#quitBtn').
 function gameOver(win){
   G.mode='dead';sfx(win?'level':'die');clearSticks();const md=gm();
   $('#oTitle').textContent=win?'YOU ESCAPED':md==='horde'?'OVERRUN':'YOU DIED';$('#oTitle').style.color=win?'#8fff6a':'#ff7a5a';
-  $('#oWaveL').textContent=md==='objectives'?'Objectives':md==='horde'?'Danger level':'Wave';
-  $('#oWave').textContent=md==='objectives'&&G.ob?(win?SCEN[G.ob.sc].steps.length:Math.max(0,Math.floor(G.ob.i)))+'/'+SCEN[G.ob.sc].steps.length:G.wave;$('#oKills').textContent=G.kills;$('#oLvl').textContent=P.lvl;
+  if(md==='infection'&&G.inf){const f=G.inf,me=myId(),mine=f.solo&&f.win==='i'?'s':infRole(me),sw=f.win==='s',myWin=sw?mine==='s':mine==='i';
+    $('#oTitle').textContent=sw?(mine==='s'?'YOU SURVIVED':'SURVIVORS WIN'):(mine==='i'?'THE INFECTED WIN':'YOU WERE CAUGHT');$('#oTitle').style.color=myWin?'#8fff6a':'#ff7a5a';
+    const bonus=Math.round((myWin?40:10)*(S?S.coin:1));G.coinsRun+=bonus;$('#meetScr').hidden=true}
+  $('#oWaveL').textContent=md==='objectives'?'Objectives':md==='horde'?'Danger level':md==='infection'?'Survivors':'Wave';
+  $('#oWave').textContent=md==='infection'&&G.inf?Object.values(G.inf.ro).filter(r=>r==='s').length:md==='objectives'&&G.ob?(win?SCEN[G.ob.sc].steps.length:Math.max(0,Math.floor(G.ob.i)))+'/'+SCEN[G.ob.sc].steps.length:G.wave;$('#oKills').textContent=G.kills;$('#oLvl').textContent=P.lvl;
   const t=Math.floor(G.time);$('#oTime').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
-  $('#oCoins').textContent=G.coinsRun;$('#oBest').textContent=md==='horde'?((G.hT|0)>(meta.bestHorde|0)?'New best time!':`Best time: ${Math.floor((meta.bestHorde|0)/60)}:${String((meta.bestHorde|0)%60).padStart(2,'0')}`):md==='objectives'?`Escapes: ${meta.escapes|0}`:G.wave>meta.best?'New best wave!':`Best wave: ${meta.best}`;
+  $('#oCoins').textContent=G.coinsRun;$('#oBest').textContent=md==='horde'?((G.hT|0)>(meta.bestHorde|0)?'New best time!':`Best time: ${Math.floor((meta.bestHorde|0)/60)}:${String((meta.bestHorde|0)%60).padStart(2,'0')}`):md==='objectives'?`Escapes: ${meta.escapes|0}`:md==='infection'?'Infection round over.':G.wave>meta.best?'New best wave!':`Best wave: ${meta.best}`;
   $('#reviveBtn').hidden=!(meta.up.wind&&!G.revived)||netOn();const ab=$('#againBtn');ab.disabled=NET.role==='guest';ab.textContent=NET.role==='guest'?'WAITING FOR HOST':'PLAY AGAIN';$('#over').hidden=false;$('#levelup').hidden=true;G.modal=false;bank()}
 function bank(){meta.coins+=G.coinsRun;if(gm()==='survival')meta.best=Math.max(meta.best,G.wave);if(gm()==='horde')meta.bestHorde=Math.max(meta.bestHorde|0,G.hT|0);G.coinsRun=0;save()}
 function revive(){G.revived=true;G.mode='play';P.hp=P.maxHp;P.inv=2;$('#over').hidden=true;
@@ -2169,7 +2300,7 @@ $('#reviveBtn').onclick=revive;$('#againBtn').onclick=play;
 $('#overArmory').onclick=()=>{showTitle();openArmory()};$('#overMenu').onclick=showTitle;
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.modal&&!netOn())togglePause()});
 
-window.__dw={SPR,MATE_LOOKS,SHEETS,CORPSES,lookSet,NET,REMOTES,OTHERS,hostRecv,guestRecv,snap,G,get P(){return P},get Z(){return Z},get OPENS(){return OPENS},get HOUSES(){return HOUSES},get DROPS(){return DROPS},meta,spawnZ,startWave,choose,doUse,shove,roll,fire,cam,tAt,get tile(){return tile},get ctl(){return{AIMZ,fb,mv,usingMouse,usingPad,gun:curGun()}},joyHome,togglePause,get ob(){return G.ob},SCEN,objTargets,objKind,ATT,GUNDEF,gunStats,magOfS,attach,useAid,drop,collect};
+window.__dw={SPR,MATE_LOOKS,SHEETS,CORPSES,lookSet,NET,REMOTES,OTHERS,hostRecv,guestRecv,snap,G,get P(){return P},get Z(){return Z},get OPENS(){return OPENS},get HOUSES(){return HOUSES},get DROPS(){return DROPS},meta,spawnZ,startWave,choose,doUse,shove,roll,fire,cam,tAt,get tile(){return tile},get ctl(){return{AIMZ,fb,mv,usingMouse,usingPad,gun:curGun()}},joyHome,togglePause,get ob(){return G.ob},SCEN,objTargets,objKind,ATT,GUNDEF,gunStats,magOfS,attach,useAid,drop,collect,get inf(){return G.inf},infShove,infMeet,meetVote,shove};
 function start(){loadSheets();showTitle();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);const jc=new URLSearchParams(location.search).get('join');if(jc&&/^[A-Za-z]{5}$/.test(jc))joinOpen(jc)}
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
 })();

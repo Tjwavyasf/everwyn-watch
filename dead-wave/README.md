@@ -41,7 +41,7 @@ The game works in portrait and landscape. Tap **Controls** on the title screen o
 
 Roll, shove and sprint use stamina (yellow bar).
 
-## Online co-op (up to 4 players)
+## Online co-op (up to 4 players, 10 in Infection)
 
 Co-op uses the same connection setup as Clocked In: PeerJS's public matchmaking server, a 5-letter room code, and the same STUN/TURN relay servers so phones on mobile data can still connect.
 
@@ -62,6 +62,20 @@ Pick a mode on the title screen with the arrows next to **Mode**. In co-op, the 
 - **Survival:** the original. Board up and outlast wave after wave, with the Abomination every 5th wave.
 - **Objectives:** a story run with one of three scenarios: *Last Ride* (get an old pickup running), *Mayday* (fix a radio and call in a helicopter) or *Cold Chain* (get medicine to the evac truck). Each is a chain of tasks spread over the town: find items, switch things on by standing at them, and hold a spot while zombies swarm. It ends with an extraction you have to hold to escape. A gold arrow and minimap markers show where to go. Zombies roam all the time and get tougher as you progress. Downed players come back after 40 seconds or when the team finishes a task.
 - **Horde:** no breaks. One endless stream that keeps getting bigger and faster, a supply drop every 2 minutes, and the Abomination at every 5th danger level. Downed players come back after 30 seconds if anyone is still standing. Your best time is saved.
+
+### Infection (up to 10 players)
+
+Host a co-op room with the mode set to **Infection** and up to 9 friends can join.
+
+1. Everyone starts together in one house. In a short scene, one random player (patient zero) says they don't feel good and collapses.
+2. Everyone else gets **30 seconds** to run.
+3. Patient zero turns. Infected players can't be killed, and one touch turns a survivor. Infected players move a bit faster but can't sprint.
+4. Survivors have no guns, but **PUSH** (the big button, F or right-click) knocks an infected player back and stuns them for **4 seconds**. Dodge rolls keep you from being touched.
+5. Survive **5 minutes** and the survivors win. If everyone is caught, the infected win.
+
+With 4 or more players, one survivor is secretly the **carrier**: only they know, and they turn at 2:30. Each survivor can call one **emergency meeting** per round. The game stops and survivors vote to quarantine someone (or skip). Whoever gets the most votes is out of the round, and everyone learns whether they were the carrier.
+
+Playing Infection solo is a practice round against AI infected. Your minimap only shows you, and names float over every player.
 
 ## How it plays
 
