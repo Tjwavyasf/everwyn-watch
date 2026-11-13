@@ -23,17 +23,21 @@ Characters can be drawn from PNG sprite sheets with 4-direction idle, walk, run,
 
 ## Controls
 
-| Phone | Keyboard / mouse | Action |
-|---|---|---|
-| Drag on the left half | WASD | Move |
-| Drag on the right half (hold still to auto-aim) | Mouse + left click | Aim and shoot |
-| Tap your gun | R | Reload |
-| Swap button | Q | Swap between pistol and your other gun |
-| Grenade button | G | Throw a grenade |
-| ROLL | Space | Dodge roll (brief invincibility) |
-| SHOVE | F or right click | Push zombies off you and stun them |
-| RUN | Hold Shift | Sprint |
-| Orange button when it appears | E | Board up a door or window, or swap for a gun on the ground |
+The game works in portrait and landscape. Tap **Controls** on the title screen or in the pause menu to change auto-aim (Off, Assist, Full), switch to left-handed, fix the stick in place, turn push-to-sprint off, or resize the buttons.
+
+| Phone | Keyboard / mouse | Controller | Action |
+|---|---|---|---|
+| Move stick (left side) | WASD | Left stick | Move |
+| Push the stick all the way | Hold Shift | Hold LT | Sprint |
+| Hold FIRE | Mouse + left click | RT | Shoot. On phone and controller it locks onto the nearest zombie (red brackets) |
+| Drag FIRE | Mouse | Right stick | Aim by hand |
+| RELOAD, or tap your gun | R | X | Reload |
+| ROLL | Space | A | Dodge roll (brief invincibility) |
+| SHOVE | F or right click | B | Push zombies off you and stun them |
+| Swap button | Q | Y | Swap between pistol and your other gun |
+| Grenade button | G | LB | Throw a grenade |
+| Orange button when it appears | E | RB | Board up a door or window, or swap for a gun on the ground |
+| Pause button | Esc | Start | Pause |
 
 Roll, shove and sprint use stamina (yellow bar).
 

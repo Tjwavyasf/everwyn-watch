@@ -12,6 +12,7 @@ Everything below is built, tested in a headless browser, and live on `main`:
 
 - Town map, twin-stick shooting, magazines and limited ammo, gun/ammo/plank/med/grenade drops, house loot that restocks each wave.
 - Boardable doors and windows (up to 3 boards). Zombies pathfind to players with a flow field, break boards and climb in.
+- Controls: move stick plus a FIRE button with auto-aim (drag FIRE to aim by hand), RELOAD/ROLL/SHOVE around it, a gamepad, and a Controls screen (auto-aim level, left-handed, fixed stick, push-to-sprint, button size, saved in `meta.ctl`). Works in portrait and landscape. The gamepad code is untested on real hardware.
 - Shove, dodge roll, sprint with stamina; 5 zombie types plus a boss every 5th wave.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.

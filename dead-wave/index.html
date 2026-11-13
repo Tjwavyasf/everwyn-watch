@@ -33,8 +33,13 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #pad{position:absolute;inset:0}
 .stick{position:absolute;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;pointer-events:none;border:3px solid rgba(242,193,78,.45);background:radial-gradient(rgba(59,50,82,.35),rgba(20,15,31,.15))}
 .stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#8a7ab8,#3b3252);border:2px solid var(--edge);box-shadow:0 0 0 2px rgba(242,193,78,.5)}
-#ajoy{border-color:rgba(255,110,80,.5)}
-#ajoy i{background:radial-gradient(circle at 35% 35%,#e07a5a,#7a2a20)}
+#ctlScr{z-index:60}
+.stick.rest{opacity:.45}
+#hud.mouse #joy,#hud.mouse #acts{display:none}
+#fireBtn{position:absolute;right:0;bottom:0;width:calc(92px*var(--bs));height:calc(92px*var(--bs));border-radius:50%;font:700 calc(15px*var(--bs))/1 var(--title);color:#fff;background:radial-gradient(circle at 35% 30%,#f07a5a,#a8301e 70%);border:3px solid var(--edge);box-shadow:inset 0 0 0 3px #ffb06a,0 5px 0 rgba(0,0,0,.45);padding:0;touch-action:none}
+#fireBtn.on{background:radial-gradient(circle at 35% 30%,#ff9a6a,#c83a22 70%);box-shadow:inset 0 0 0 3px #ffe0a0,0 0 18px rgba(255,120,70,.7)}
+#fireBtn.empty{filter:grayscale(.7)}
+#reloadBtn{font-size:calc(9px*var(--bs))}
 
 /* Panels */
 .panel{position:relative;width:min(100%,400px);background:linear-gradient(180deg,#463c62,#2e2645);border:3px solid var(--edge);box-shadow:inset 0 0 0 2px var(--rim),inset 0 0 0 4px #2a2340,0 8px 0 rgba(0,0,0,.45);padding:26px 16px 16px;display:flex;flex-direction:column;gap:14px}
@@ -83,7 +88,28 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .small img{width:26px;height:26px;image-rendering:pixelated}
 .small b{font:700 11px/1 var(--ui)}
 .small.off{opacity:.4}
-#acts{position:absolute;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:9px}
+#hud{--bs:1}
+#hud.bs0{--bs:.85}#hud.bs2{--bs:1.18}
+#acts{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));width:calc(176px*var(--bs));height:calc(170px*var(--bs));pointer-events:none}
+#acts>*{pointer-events:auto}
+#acts .act{position:absolute;width:calc(56px*var(--bs));height:calc(56px*var(--bs))}
+#rollBtn{right:calc(104px*var(--bs));bottom:calc(2px*var(--bs))}
+#shoveBtn{right:calc(86px*var(--bs));bottom:calc(74px*var(--bs))}
+#reloadBtn{right:calc(18px*var(--bs));bottom:calc(106px*var(--bs))}
+#hud.lefty #acts{right:auto;left:max(14px,env(safe-area-inset-left,0px))}
+#hud.lefty #fireBtn{right:auto;left:0}
+#hud.lefty #rollBtn{right:auto;left:calc(104px*var(--bs))}
+#hud.lefty #shoveBtn{right:auto;left:calc(86px*var(--bs))}
+#hud.lefty #reloadBtn{right:auto;left:calc(18px*var(--bs))}
+#hud.lefty #vitals{left:auto;right:max(8px,env(safe-area-inset-right,0px))}
+#hud.lefty #weap{right:auto;left:max(8px,env(safe-area-inset-left,0px))}
+@media (orientation:landscape) and (max-height:520px){
+  #acts{bottom:calc(10px + env(safe-area-inset-bottom,0px));right:calc(max(14px,env(safe-area-inset-right,0px)) + 0px)}
+  #weap,#hud.lefty #weap{right:auto;left:50%;transform:translateX(-50%)}
+  #vitals{bottom:auto;top:calc(62px + env(safe-area-inset-top,0px));left:calc(max(8px,env(safe-area-inset-left,0px)) + 0px)}
+  #useBtn{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  #hud.lefty #vitals{right:auto;left:max(8px,env(safe-area-inset-left,0px))}
+}
 .act{width:58px;height:58px;border-radius:50%;font:700 11px/1 var(--title);background:radial-gradient(circle at 35% 30%,#5e5284,#2e2645);border:3px solid var(--edge);box-shadow:inset 0 0 0 2px var(--rim),0 4px 0 rgba(0,0,0,.4);padding:0}
 .act.on{box-shadow:inset 0 0 0 2px var(--gold),0 0 12px rgba(242,193,78,.6);color:var(--gold)}
 .act.cd{opacity:.45}
@@ -185,8 +211,6 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
   <canvas id="fx"></canvas>
   <div class="dof top"></div><div class="dof bot"></div><div class="vig"></div>
   <div id="pad"></div>
-  <div id="joy" class="stick" hidden><i></i></div>
-  <div id="ajoy" class="stick" hidden><i></i></div>
 
   <div id="hud" hidden>
     <div id="xpbar"><i id="xpfill"></i><span id="lvl">LV 1</span></div>
@@ -201,7 +225,8 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
       <img class="icoLungs" alt="Stamina"><div class="bar"><i id="stFill"></i></div>
       <img class="icoPlank" alt="Planks"><span class="cnt" id="planks">0 planks</span>
     </div>
-    <div id="acts"><button id="rollBtn" class="act">ROLL</button><button id="shoveBtn" class="act">SHOVE</button><button id="runBtn" class="act">RUN</button></div>
+    <div id="joy" class="stick rest"><i></i></div>
+    <div id="acts"><button id="fireBtn" aria-label="Fire"><span>FIRE</span></button><button id="reloadBtn" class="act">RELOAD</button><button id="rollBtn" class="act">ROLL</button><button id="shoveBtn" class="act">SHOVE</button></div>
     <div id="weap">
       <button id="grenBtn" class="chip small" aria-label="Throw grenade"><img class="icoGren" alt=""><b id="grenN">0</b></button>
       <button id="swapBtn" class="chip small" aria-label="Swap weapon"><img id="swapIco" alt=""><b>Swap</b></button>
@@ -224,8 +249,8 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
       <button class="alt" id="charBtn">Customize your survivor</button>
       <div class="btnrow"><button class="alt" id="hostBtn">Host co-op</button><button class="alt" id="joinBtn">Join co-op</button></div>
       <p class="hint" id="coopInfo" hidden></p>
-      <div class="btnrow"><button class="alt" id="armoryBtn">Armory</button><button class="alt" id="soundBtn">Sound on</button></div>
-      <p class="hint">Left side: drag to move. Right side: drag to aim and shoot, or hold to auto-aim. Tap your gun to reload.</p>
+      <div class="btnrow"><button class="alt" id="armoryBtn">Armory</button><button class="alt" id="ctlBtn">Controls</button><button class="alt" id="soundBtn">Sound on</button></div>
+      <p class="hint">Use the stick to move (push it all the way to sprint). Hold FIRE to shoot: it locks onto the nearest zombie, or drag it to aim yourself.</p>
       <p class="hint" id="artCredit" hidden>Character art: Liberated Pixel Cup contributors (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0). <a href="sprites/lpc/CREDITS.md" target="_blank" rel="noopener" style="color:var(--gold)">Full credits</a></p>
       <ul class="keys"><li><b>Keyboard</b></li><li>WASD move · mouse aim · click shoot · R reload · Shift run · Space roll · F or right-click shove · E board up / pick up · Q swap · G grenade</li></ul>
     </div>
@@ -270,13 +295,26 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
     <div id="cards"></div>
   </section>
 
+  <section id="ctlScr" class="screen modal" hidden>
+    <div class="panel">
+      <div class="tab gold">CONTROLS</div>
+      <div class="opts" id="ctlOpts"></div>
+      <ul class="keys">
+        <li><b>Touch</b></li><li>Stick: move, push all the way to sprint · FIRE: hold to shoot, drag it to aim · RELOAD, ROLL, SHOVE · tap your gun to reload · grenade and swap next to it</li>
+        <li><b>Keyboard and mouse</b></li><li>WASD move · mouse aim · click shoot · R reload · Shift run · Space roll · F or right-click shove · E use · Q swap · G grenade · Esc pause</li>
+        <li><b>Controller</b></li><li>Left stick move · right stick aim · RT fire · LT sprint · A roll · B shove · X reload · Y swap · LB grenade · RB use · Start pause</li>
+      </ul>
+      <button class="big" id="ctlDone">DONE</button>
+    </div>
+  </section>
+
   <section id="pause" class="screen modal" hidden>
     <div class="panel">
       <div class="tab">PAUSED</div>
       <div class="label">Your perks</div>
       <div class="build" id="pauseBuild"></div>
       <button class="big" id="resumeBtn">RESUME</button>
-      <div class="btnrow"><button class="alt" id="soundBtn2">Sound on</button><button class="alt" id="quitBtn">Give up</button></div>
+      <div class="btnrow"><button class="alt" id="ctlBtn2">Controls</button><button class="alt" id="soundBtn2">Sound on</button><button class="alt" id="quitBtn">Give up</button></div>
     </div>
   </section>
 
@@ -317,9 +355,9 @@ const hash2=(x,y)=>{let h=(x*374761393+y*668265263)|0;h=Math.imul(h^(h>>>13),127
 
 /* ---------------- save ---------------- */
 const KEY='deadwave.v1';
-const meta={coins:0,best:0,up:{},unlock:{},start:'none',sound:true};
+const meta={coins:0,best:0,up:{},unlock:{},start:'none',sound:true,ctl:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)Object.assign(meta,s)}catch(e){}
-meta.up=meta.up||{};meta.unlock=meta.unlock||{};
+meta.up=meta.up||{};meta.unlock=meta.unlock||{};meta.ctl=Object.assign({aim:2,lefty:false,fixed:false,sprint:true,size:1},meta.ctl||{});
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(meta))}catch(e){}};
 
 /* ---------------- pixel painter ---------------- */
@@ -853,7 +891,7 @@ let VIEWK=250;let VW=320,VH=480,KX=2,KY=2,LKX=.5,LKY=.5,DPR=1,CSSW=390,CSSH=844;
 function resize(){const w=app.clientWidth||innerWidth,h=app.clientHeight||innerHeight;CSSW=w;CSSH=h;const sc=Math.max(1.4,Math.min(w,h)/VIEWK);
   VW=Math.ceil(w/sc);VH=Math.ceil(h/sc);C.width=VW;C.height=VH;ctx.imageSmoothingEnabled=false;
   DPR=Math.min(2,window.devicePixelRatio||1);FXC.width=Math.round(w*DPR);FXC.height=Math.round(h*DPR);
-  LM.width=Math.ceil(w/4);LM.height=Math.ceil(h/4);KX=FXC.width/VW;KY=FXC.height/VH;LKX=LM.width/VW;LKY=LM.height/VH}
+  LM.width=Math.ceil(w/4);LM.height=Math.ceil(h/4);KX=FXC.width/VW;KY=FXC.height/VH;LKX=LM.width/VW;LKY=LM.height/VH;try{if(!mv.on)restJoy()}catch(e){}}
 addEventListener('resize',resize);resize();
 
 /* ---------------- content ---------------- */
@@ -1119,9 +1157,14 @@ let banT=0;
 function banner(t,s){const b=$('#banner');$('#banT').textContent=t;$('#banS').textContent=s||'';b.hidden=false;b.classList.remove('show');void b.offsetWidth;b.classList.add('show');banT=2.2}
 
 /* ---------------- input ---------------- */
-const keys={};let mv={on:false},am={on:false},mouse={x:0,y:0,fire:false,use:false};let mvx=0,mvy=0,usingMouse=false;
-const joyEl=$('#joy'),ajoyEl=$('#ajoy'),pad=$('#pad');
-function clearSticks(){mv={on:false};am={on:false};joyEl.hidden=true;ajoyEl.hidden=true;mouse.fire=false}
+const keys={};let mv={on:false},fb={on:false},mouse={x:0,y:0,fire:false,use:false};let mvx=0,mvy=0,usingMouse=false,usingPad=false,AIMZ=null,stickRun=false;
+const joyEl=$('#joy'),pad=$('#pad'),fireEl=$('#fireBtn');
+const STICK_R=44;
+/* where the move stick rests: bottom corner on the movement side, above the health panel */
+function joyHome(){const land=CSSW>CSSH&&CSSH<=520,lefty=meta.ctl.lefty;const x=land?110:96,y=land?CSSH-112:CSSH-176;return{x:lefty?CSSW-x:x,y}}
+function placeJoy(x,y){joyEl.style.left=x+'px';joyEl.style.top=y+'px'}
+function restJoy(){const h=joyHome();placeJoy(h.x,h.y);joyEl.firstChild.style.transform='';joyEl.classList.add('rest')}
+function clearSticks(){mv={on:false};fb={on:false};fireEl.classList.remove('on');restJoy();mouse.fire=false}
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
   if(G.mode==='play'&&(k==='escape'||k==='p'))togglePause();
   if(!$('#levelup').hidden&&['1','2','3'].includes(k)){choose(+k-1);return}
@@ -1129,19 +1172,44 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
   if(k===' '){e.preventDefault();roll()}if(k==='f')shove();if(k==='r')startReload();if(k==='e')doUse();if(k==='q')swapGun();if(k==='g')throwGren()});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 pad.addEventListener('contextmenu',e=>e.preventDefault());
+/* Touch: the movement half of the screen is the move stick (it jumps to your thumb unless "Fixed" is on);
+   FIRE is held to shoot with auto-aim, or dragged to aim by hand. Mouse and keyboard work as before. */
 pad.addEventListener('pointerdown',e=>{if(G.mode!=='play'||G.modal||G.paused)return;initAudio();
-  if(e.pointerType==='mouse'){usingMouse=true;mouse.x=e.clientX;mouse.y=e.clientY;if(e.button===0)mouse.fire=true;if(e.button===2)shove();return}
-  usingMouse=false;
-  if(e.clientX<CSSW*.5&&!mv.on){mv={on:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0};joyEl.style.left=e.clientX+'px';joyEl.style.top=e.clientY+'px';joyEl.firstChild.style.transform='';joyEl.hidden=false}
-  else if(!am.on){am={on:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0,t:performance.now()};ajoyEl.style.left=e.clientX+'px';ajoyEl.style.top=e.clientY+'px';ajoyEl.firstChild.style.transform='';ajoyEl.hidden=false}
+  if(e.pointerType==='mouse'){usingMouse=true;usingPad=false;mouse.x=e.clientX;mouse.y=e.clientY;if(e.button===0)mouse.fire=true;if(e.button===2)shove();return}
+  usingMouse=false;usingPad=false;
+  const moveSide=meta.ctl.lefty?e.clientX>CSSW*.5:e.clientX<CSSW*.5;
+  if(moveSide&&!mv.on){let ox=e.clientX,oy=e.clientY;
+    if(meta.ctl.fixed){const h=joyHome();if(Math.hypot(ox-h.x,oy-h.y)>STICK_R*2.6)return;ox=h.x;oy=h.y}
+    mv={on:true,id:e.pointerId,ox,oy,dx:0,dy:0};placeJoy(ox,oy);joyEl.classList.remove('rest');stickMove(e.clientX,e.clientY)}
+  else return;
   try{pad.setPointerCapture(e.pointerId)}catch(_){}});
+function stickMove(cx,cy){let dx=cx-mv.ox,dy=cy-mv.oy;const d=Math.hypot(dx,dy);if(d>STICK_R){dx=dx/d*STICK_R;dy=dy/d*STICK_R}mv.dx=dx/STICK_R;mv.dy=dy/STICK_R;mv.full=d>STICK_R*1.05;joyEl.firstChild.style.transform=`translate(${dx}px,${dy}px)`}
 pad.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'){usingMouse=true;mouse.x=e.clientX;mouse.y=e.clientY;return}
-  const st=mv.on&&e.pointerId===mv.id?mv:am.on&&e.pointerId===am.id?am:null;if(!st)return;let dx=e.clientX-st.ox,dy=e.clientY-st.oy;const d=Math.hypot(dx,dy),m=40;if(d>m){dx=dx/d*m;dy=dy/d*m}st.dx=dx/m;st.dy=dy/m;(st===mv?joyEl:ajoyEl).firstChild.style.transform=`translate(${dx}px,${dy}px)`});
-const endP=e=>{if(e.pointerType==='mouse'){if(e.button===0)mouse.fire=false;return}if(mv.on&&e.pointerId===mv.id){mv={on:false};joyEl.hidden=true}if(am.on&&e.pointerId===am.id){am={on:false};ajoyEl.hidden=true}};
+  if(mv.on&&e.pointerId===mv.id)stickMove(e.clientX,e.clientY)});
+const endP=e=>{if(e.pointerType==='mouse'){if(e.button===0)mouse.fire=false;return}if(mv.on&&e.pointerId===mv.id){mv={on:false};restJoy()}};
 pad.addEventListener('pointerup',endP);pad.addEventListener('pointercancel',endP);
+fireEl.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();if(G.mode!=='play'||G.paused||G.modal)return;usingMouse=false;usingPad=false;
+  fb={on:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0,drag:false};fireEl.classList.add('on');try{fireEl.setPointerCapture(e.pointerId)}catch(_){}});
+fireEl.addEventListener('pointermove',e=>{if(!fb.on||e.pointerId!==fb.id)return;fb.dx=e.clientX-fb.ox;fb.dy=e.clientY-fb.oy;if(Math.hypot(fb.dx,fb.dy)>18)fb.drag=true});
+const endF=e=>{if(fb.on&&e.pointerId===fb.id){fb={on:false};fireEl.classList.remove('on')}};
+fireEl.addEventListener('pointerup',endF);fireEl.addEventListener('pointercancel',endF);fireEl.addEventListener('lostpointercapture',endF);
+fireEl.addEventListener('contextmenu',e=>e.preventDefault());
+/* auto-aim: nearest visible zombie, weighted toward where you are facing; keeps its lock so it doesn't flicker */
+function aimTarget(face){const lvl=meta.ctl.aim;if(!lvl)return null;const R=lvl===2?240:180,cone=lvl===2?Math.PI:1.25;let best=null,bs=1e9;
+  for(const z of Z){if(z.dead)continue;const dx=z.x-P.x,dy=z.y-P.y,d=Math.hypot(dx,dy);if(d>R)continue;const df=Math.abs(angDiff(Math.atan2(dy,dx),face));if(df>cone)continue;
+    let sc=d*(1+df/Math.PI*(lvl===2?.8:2));if(z===AIMZ)sc*=.75;if(z.type==='boss')sc*=.9;if(sc<bs&&los(P.x,P.y-6,z.x,z.y-6)){bs=sc;best=z}}
+  return best}
+/* controller (Gamepad API, standard mapping) */
+const GP={prev:[]};
+function pollPad(){const gps=navigator.getGamepads?navigator.getGamepads():[];let g=null;for(const p of gps)if(p&&p.connected&&p.mapping==='standard'){g=p;break}
+  GP.g=g;if(!g)return;const b=i=>!!(g.buttons[i]&&(g.buttons[i].pressed||g.buttons[i].value>.4));const now=g.buttons.map((_,i)=>b(i));const tap=i=>now[i]&&!GP.prev[i];
+  if(now.some(Boolean)||Math.hypot(g.axes[0],g.axes[1])>.3||Math.hypot(g.axes[2]||0,g.axes[3]||0)>.3){usingPad=true;usingMouse=false}
+  if(tap(9)&&G.mode==='play')togglePause();
+  if(G.mode==='play'&&!G.paused&&!G.modal){if(tap(0))roll();if(tap(1))shove();if(tap(2))startReload();if(tap(3))swapGun();if(tap(4))throwGren();if(tap(5))doUse()}
+  GP.prev=now}
 addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
 const tapBtn=(id,fn)=>{$(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();if(G.mode==='play'&&!G.paused&&!G.modal)fn()})};
-tapBtn('#rollBtn',()=>roll());tapBtn('#shoveBtn',()=>shove());tapBtn('#runBtn',()=>{P.run=!P.run});tapBtn('#useBtn',()=>doUse());
+tapBtn('#rollBtn',()=>roll());tapBtn('#shoveBtn',()=>shove());tapBtn('#reloadBtn',()=>startReload());tapBtn('#useBtn',()=>doUse());
 tapBtn('#gunBtn',()=>startReload());tapBtn('#swapBtn',()=>swapGun());tapBtn('#grenBtn',()=>throwGren());
 $('#skipBtn').addEventListener('pointerdown',e=>{e.stopPropagation();if(NET.role==='guest'){netSend({t:'skip'});return}if(G.state!=='fight')G.breakT=0});
 
@@ -1167,23 +1235,31 @@ function updLocal(dt){
   if(S.regen&&P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+S.regen*dt);
   const blocked=G.modal||G.paused;
   let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
-  if(mv.on&&(Math.abs(mv.dx)>.12||Math.abs(mv.dy)>.12)){mx=mv.dx;my=mv.dy}
-  if(blocked){mx=my=0}
+  stickRun=false;
+  if(mv.on&&(Math.abs(mv.dx)>.12||Math.abs(mv.dy)>.12)){mx=mv.dx;my=mv.dy;stickRun=meta.ctl.sprint&&Math.hypot(mv.dx,mv.dy)>.97}
+  const g=GP.g;let gAim=null,gFire=false;
+  if(g){const ax=g.axes[0]||0,ay=g.axes[1]||0;if(Math.hypot(ax,ay)>.18){mx=ax;my=ay}const rx=g.axes[2]||0,ry=g.axes[3]||0;if(Math.hypot(rx,ry)>.35)gAim=Math.atan2(ry,rx);
+    const bt=i=>g.buttons[i]&&(g.buttons[i].pressed||g.buttons[i].value>.3);gFire=bt(7)||(gAim!==null&&Math.hypot(rx,ry)>.85);if(bt(6))stickRun=true}
+  if(blocked){mx=my=0;stickRun=false}
   const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}mvx=mx;mvy=my;
   if(keys.shift!==undefined&&usingMouse)P.run=!!keys.shift;
-  let firing=false;
+  let firing=false;const face=ml>.2?Math.atan2(my,mx):P.aim;
+  AIMZ=!blocked&&!usingMouse?aimTarget(face):null;
   if(blocked){}
   else if(usingMouse){const wx=VIEW.ox+mouse.x/CSSW*VW,wy=VIEW.oy+mouse.y/CSSH*VH+10;P.aim=Math.atan2(wy-P.y,wx-P.x);firing=mouse.fire||keys.j}
-  else if(am.on){const m=Math.hypot(am.dx,am.dy);
-    if(m>.3){let a=Math.atan2(am.dy,am.dx);let best=null,bd=.32;for(const z of Z){const d=Math.hypot(z.x-P.x,z.y-P.y);if(d>240)continue;const df=Math.abs(angDiff(Math.atan2(z.y-P.y,z.x-P.x),a));if(df<bd&&los(P.x,P.y,z.x,z.y)){bd=df;best=z}}if(best)a=Math.atan2(best.y-P.y,best.x-P.x);P.aim=a;firing=true}
-    else if(performance.now()-am.t>120){let best=null,bd=230*230;for(const z of Z){const d=d2(z.x,z.y,P.x,P.y);if(d<bd&&los(P.x,P.y,z.x,z.y)){bd=d;best=z}}if(best){P.aim=Math.atan2(best.y-P.y,best.x-P.x);firing=true}}}
+  else if(fb.on||gFire||gAim!==null){
+    let a=null;const manual=fb.on&&fb.drag?Math.atan2(fb.dy,fb.dx):gAim;
+    if(manual!==null){a=manual;if(meta.ctl.aim){let best=null,bd=.22;for(const z of Z){if(z.dead)continue;const d=Math.hypot(z.x-P.x,z.y-P.y);if(d>240)continue;const df=Math.abs(angDiff(Math.atan2(z.y-P.y,z.x-P.x),a));if(df<bd&&los(P.x,P.y,z.x,z.y)){bd=df;best=z}}if(best){a=Math.atan2(best.y-P.y,best.x-P.x);AIMZ=best}}}
+    else if(AIMZ)a=Math.atan2(AIMZ.y-P.y,AIMZ.x-P.x);
+    P.aim=a===null?face:a;firing=fb.on||gFire}
   else if(ml>.2)P.aim=Math.atan2(my,mx);
   if(P.rollT>0){P.rollT-=dt;P.x+=P.rdx*270*dt;P.y+=P.rdy*270*dt;P.anim+=dt*14}
   else if(P.action){const op=P.action.op;P.action.t-=dt;if(d2(P.x,P.y,op.tx*T+8,op.ty*T+8)>34*34)P.action=null;else if(P.action.t<=0){P.action=null;if(P.planks>0){const add=op.boards<3;if(add||op.hp<BOARD_HP())P.planks--;if(add)op.boards++;op.hp=op.max=BOARD_HP();sfx('board');woodChips(op);
       if(NET.role==='guest')netSend({t:'board',oi:OPENS.indexOf(op),hp:Math.round(BOARD_HP()),add});else for(const z of Z)if(tAt(z.x,z.y)===op.i){op.boards=Math.max(0,op.boards-1)}}}}
-  else{let sp=S.spd;const running=P.run&&ml>.2&&P.stam>0;if(running){sp*=1.6;P.stam=Math.max(0,P.stam-20*dt);P.stamWait=.5;if(P.stam<=0)P.run=false}
+  else{let sp=S.spd;if(stickRun&&!firing&&P.stam>8)P.run=true;else if(!stickRun&&!usingMouse&&!keys.shift)P.run=false;
+    const running=P.run&&ml>.2&&P.stam>0&&!firing;if(running){sp*=1.6;P.stam=Math.max(0,P.stam-20*dt);P.stamWait=.5;if(P.stam<=0)P.run=false}
     P.moving=ml>.1;P.x+=mx*sp*dt;P.y+=my*sp*dt;if(Math.abs(mx)>.1)P.face=mx>0?1:-1;if(P.moving)P.anim+=dt*(running?13:9);P.running=running;
-    if(firing&&!running)fire();else if(firing&&running){P.run=false;fire()}}
+    if(firing)fire()}
   collideT(P,P.r,solidP);
   P.inside=insideHouse(P.x,P.y);
 }
@@ -1260,13 +1336,13 @@ function updShared(dt){
   for(let i=CORPSES.length-1;i>=0;i--)if(G.time-CORPSES[i].t0>10)CORPSES.splice(i,1);
   for(const h of HOUSES){const tgt=h.id===P.inside&&!P.dead?0:1;h.roofA+=(tgt-h.roofA)*Math.min(1,dt*7)}
   if(G.shake>0)G.shake=Math.max(0,G.shake-dt*20);
-  let fx0=P,look=usingMouse||am.on?18:0;if(P.dead){const m=mates().find(q=>!q.dead);if(m){fx0=m;look=0}}
+  let fx0=P,look=usingMouse||fb.on?18:0;if(P.dead){const m=mates().find(q=>!q.dead);if(m){fx0=m;look=0}}
   cam.x+=(fx0.x+Math.cos(P.aim)*look-cam.x)*Math.min(1,dt*7);cam.y+=(fx0.y-12+Math.sin(P.aim)*look-cam.y)*Math.min(1,dt*7);
   updAmbient(dt);
   useCtx=P.dead?null:findUse();
   if(!G.modal&&G.queue.length&&G.mode==='play'&&!P.dead&&(!netOn()||G.state!=='fight'))openPick(G.queue.shift());
 }
-function update(dt){G.time+=dt;updLocal(dt);if(NET.role==='guest')updGuest(dt);else updWorld(dt);if(G.mode==='play'||G.mode==='dead')updShared(dt)}
+function update(dt){G.time+=dt;pollPad();updLocal(dt);if(NET.role==='guest')updGuest(dt);else updWorld(dt);if(G.mode==='play'||G.mode==='dead')updShared(dt)}
 function bossAI(z,dt,dx,dy,p){const a=z.ai;a.t-=dt;
   if(a.st==='chase'){if(a.t<=0&&los(z.x,z.y,p.x,p.y,solidZ)&&Math.hypot(p.x-z.x,p.y-z.y)<220){a.st='tele';a.t=.8;a.dx=dx;a.dy=dy}return z.spd}
   if(a.st==='tele'){if(a.t<=0){a.st='charge';a.t=.6;G.shake=6;sfx('boss')}return 0}
@@ -1355,7 +1431,7 @@ function drawMate(m){const hc=sheetFor('survivor');
   if(back)gun();drawSet(set,fr,m.x,m.y,face,false);if(!back)gun()}
 function drawPlayer(){
   const hc=sheetFor('survivor');
-  if(hc){const aiming=P.shootT>0||am.on||usingMouse,dir=P.rollT>0?dir4(P.rdx,P.rdy):(aiming||!P.moving)&&!P.running?dir4(Math.cos(P.aim),Math.sin(P.aim),P.dir):dir4(mvx,mvy,P.dir);P.dir=dir;
+  if(hc){const aiming=P.shootT>0||fb.on||usingMouse,dir=P.rollT>0?dir4(P.rdx,P.rdy):(aiming||!P.moving)&&!P.running?dir4(Math.cos(P.aim),Math.sin(P.aim),P.dir):dir4(mvx,mvy,P.dir);P.dir=dir;
     P.flash=P.inv>0&&P.rollT<=0&&P.hurtT>0&&!hc.anims.hurt;
     drawHeroSheet(hc,P,P.look||cleanLook(meta.look),heroAnim(P,{dead:P.dead,roll:P.rollT>0,hurt:P.hurtT>0&&hc.anims.hurt,shoot:P.shootT>0,run:P.running,moving:P.moving}),dir,curGun().g,P.running?(P.face>0?.6:Math.PI-.6):P.aim);return}
   const HS=lookSet(P.look||DEFAULT_LOOK);if(P.dead){drawDown(HS,P.x,P.y);return}
@@ -1401,6 +1477,9 @@ function renderFX(ox,oy,showP){
   // board progress
   if(P.action){const k=1-P.action.t/P.action.max;fx.strokeStyle='#140f1f';fx.lineWidth=6*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,0,TAU);fx.stroke();fx.strokeStyle='#f2c14e';fx.lineWidth=3.5*DPR;fx.beginPath();fx.arc(X(P.x),Y(P.y-50),9*DPR,-Math.PI/2,-Math.PI/2+k*TAU);fx.stroke()}
   if(P.reload>0){const k=1-P.reload/P.reloadMax,w=26*KX,x=X(P.x)-w/2,y=Y(P.y-52);fx.fillStyle='#140f1f';fx.fillRect(x-DPR,y-DPR,w+2*DPR,5*DPR);fx.fillStyle='#f2c14e';fx.fillRect(x,y,w*k,3*DPR)}
+  // auto-aim lock
+  if(AIMZ&&!P.dead&&!usingMouse){const z=AIMZ,r=(z.r+5)*KX,cx=X(z.x),cy=Y(z.y-10),k=r*.45,on=fb.on||P.shootT>0;fx.strokeStyle=on?'rgba(255,90,60,.95)':'rgba(255,220,150,.55)';fx.lineWidth=2*DPR;fx.beginPath();
+    for(const[sx,sy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){fx.moveTo(cx+sx*r,cy+sy*(r-k));fx.lineTo(cx+sx*r,cy+sy*r);fx.lineTo(cx+sx*(r-k),cy+sy*r)}fx.stroke()}
   // aim reticle
   if(!P.running&&P.rollT<=0){const rx=X(P.x+Math.cos(P.aim)*56),ry=Y(P.y-12+Math.sin(P.aim)*56);fx.strokeStyle='rgba(255,240,200,.7)';fx.lineWidth=1.5*DPR;fx.beginPath();fx.arc(rx,ry,5*DPR,0,TAU);fx.stroke();fx.fillStyle='rgba(255,240,200,.8)';fx.fillRect(rx-DPR,ry-DPR,2*DPR,2*DPR)}
   // damage numbers
@@ -1775,6 +1854,8 @@ const hudC={};
 const setT=(id,v)=>{if(hudC[id]!==v){hudC[id]=v;$(id).textContent=v}};
 const setH=(id,v)=>{if(hudC[id+'h']!==v){hudC[id+'h']=v;$(id).hidden=v}};
 function updHUD(dt){
+  const hud=$('#hud'),cls='mouse'+(usingMouse||usingPad?'':'x')+' lefty'+(meta.ctl.lefty?'':'x')+' bs'+meta.ctl.size;if(hud.dataset.c!==cls){hud.dataset.c=cls;hud.classList.toggle('mouse',usingMouse||usingPad);hud.classList.toggle('lefty',!!meta.ctl.lefty);hud.classList.remove('bs0','bs1','bs2');hud.classList.add('bs'+meta.ctl.size);if(!mv.on)restJoy()}
+  {const gn=curGun();fireEl.classList.toggle('empty',!!(gn&&gn.mag<=0&&P.reload<=0))}
   $('#xpfill').style.width=(P.xp/P.need*100).toFixed(1)+'%';setT('#lvl','LV '+P.lvl+(G.queue.length&&netOn()&&G.state==='fight'?' · perk ready after this wave':''));
   setT('#waveno',G.wave?'WAVE '+G.wave:'GET READY');
   setT('#left',P.dead?'You are down. Back after this wave.':G.state==='prep'?`Board up a house. Zombies in ${Math.ceil(G.breakT)}`:G.state==='break'?'Next wave in '+Math.ceil(G.breakT):(NET.role==='guest'?G.netLeft:G.spawnLeft+Z.length)+' zombies left');
@@ -1785,7 +1866,7 @@ function updHUD(dt){
   const s=curGun();setT('#gunName',GUNDEF[s.g].name+(P.reload>0?' · reloading':''));setT('#ammo',`${s.mag} | ${s.res===Infinity?'∞':s.res}`);$('#ammo').classList.toggle('empty',s.mag===0);
   if(hudC.gun!==s.g){hudC.gun=s.g;$('#gunIco').src=ICONURL[s.g]}
   const o=P.slots[1-P.cur];const sk=o?o.g:'none';if(hudC.swap!==sk){hudC.swap=sk;$('#swapIco').src=ICONURL[sk]}$('#swapBtn').classList.toggle('off',!o);
-  $('#runBtn').classList.toggle('on',!!P.run);$('#rollBtn').classList.toggle('cd',P.rollCD>0||P.stam<22);$('#shoveBtn').classList.toggle('cd',P.shoveT>0);
+  $('#rollBtn').classList.toggle('cd',P.rollCD>0||P.stam<22);$('#shoveBtn').classList.toggle('cd',P.shoveT>0);
   if(useCtx){setH('#useBtn',false);setT('#useBtn',useCtx.label);$('#useBtn').classList.toggle('dis',!!useCtx.dis)}else setH('#useBtn',true);
   if(G.boss)$('#bossfill').style.width=Math.max(0,G.boss.hp/G.boss.max*100)+'%';
   G.miniT-=dt;if(G.miniT<=0){G.miniT=.2;drawMini()}
@@ -1841,14 +1922,20 @@ function soundLabels(){for(const id of['#soundBtn','#soundBtn2'])$(id).textConte
 function toggleSound(){meta.sound=!meta.sound;save();soundLabels();initAudio()}
 $('#playBtn').onclick=play;$('#armoryBtn').onclick=openArmory;
 $('#armoryBack').onclick=()=>{$('#armory').hidden=true;renderStarts();$('#bankT').textContent=meta.coins};
-$('#soundBtn').onclick=toggleSound;$('#soundBtn2').onclick=toggleSound;
+$('#soundBtn').onclick=toggleSound;
+/* controls settings */
+const CTL_ROWS=[['aim','Auto-aim',['Off','Assist','Full']],['lefty','Hand',['Right-handed','Left-handed']],['fixed','Move stick',['Follows thumb','Fixed']],['sprint','Push to sprint',['Off','On']],['size','Button size',['Small','Normal','Large']]];
+function renderCtl(){const box=$('#ctlOpts');box.innerHTML='';for(const[k,label,names]of CTL_ROWS){const cur=+meta.ctl[k]||0,d=document.createElement('div');d.className='opt';
+  d.innerHTML='<b>'+label+'</b><button aria-label="Previous '+label+'">‹</button><span>'+names[cur]+'</span><button aria-label="Next '+label+'">›</button>';
+  const bs=d.querySelectorAll('button'),step=n=>{let v=((cur+n)%names.length+names.length)%names.length;meta.ctl[k]=typeof meta.ctl[k]==='boolean'?!!v:v;save();renderCtl();$('#hud').dataset.c=''};bs[0].onclick=()=>step(-1);bs[1].onclick=()=>step(1);box.appendChild(d)}}
+const openCtl=()=>{renderCtl();$('#ctlScr').hidden=false};$('#ctlBtn').onclick=openCtl;$('#ctlBtn2').onclick=openCtl;$('#ctlDone').onclick=()=>{$('#ctlScr').hidden=true};$('#soundBtn2').onclick=toggleSound;
 $('#pauseBtn').onclick=togglePause;$('#resumeBtn').onclick=togglePause;
 $('#quitBtn').onclick=()=>{G.paused=false;$('#pause').hidden=true;if(NET.role==='guest'){netLeave();showTitle()}else if(netOn())gameOverAll();else gameOver()};
 $('#reviveBtn').onclick=revive;$('#againBtn').onclick=play;
 $('#overArmory').onclick=()=>{showTitle();openArmory()};$('#overMenu').onclick=showTitle;
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.modal&&!netOn())togglePause()});
 
-window.__dw={SPR,MATE_LOOKS,SHEETS,CORPSES,lookSet,NET,REMOTES,OTHERS,hostRecv,guestRecv,snap,G,get P(){return P},get Z(){return Z},get OPENS(){return OPENS},get HOUSES(){return HOUSES},get DROPS(){return DROPS},meta,spawnZ,startWave,choose,doUse,shove,roll,fire,cam,tAt,get tile(){return tile}};
+window.__dw={SPR,MATE_LOOKS,SHEETS,CORPSES,lookSet,NET,REMOTES,OTHERS,hostRecv,guestRecv,snap,G,get P(){return P},get Z(){return Z},get OPENS(){return OPENS},get HOUSES(){return HOUSES},get DROPS(){return DROPS},meta,spawnZ,startWave,choose,doUse,shove,roll,fire,cam,tAt,get tile(){return tile},get ctl(){return{AIMZ,fb,mv,usingMouse,usingPad,gun:curGun()}},joyHome,togglePause};
 function start(){loadSheets();showTitle();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);const jc=new URLSearchParams(location.search).get('join');if(jc&&/^[A-Za-z]{5}$/.test(jc))joinOpen(jc)}
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
 })();
