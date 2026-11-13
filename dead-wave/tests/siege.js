@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 (async()=>{const b=await chromium.launch();const pg=await b.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
 const errs=[];pg.on('pageerror',e=>errs.push(e.stack));
-await pg.goto('file://'+process.argv[2]);await pg.waitForTimeout(1200);await pg.click('#playBtn');await pg.waitForTimeout(500);
+await pg.goto('file://'+process.argv[2]);await pg.waitForTimeout(1200);await pg.click('#playBtn');await pg.click('#mcStart');await pg.waitForTimeout(500);
 // put player in a house center, board every opening of that house with 3 boards
 await pg.evaluate(()=>{const d=window.__dw,P=d.P;const h=d.HOUSES[5];P.x=((h.x0+h.x1)/2|0)*16+8;P.y=((h.y0+h.y1)/2|0)*16+8;
   for(let k=0;k<3;k++){const i=d.tAt(P.x,P.y);if(d.tile[i]>=10)P.x+=16}

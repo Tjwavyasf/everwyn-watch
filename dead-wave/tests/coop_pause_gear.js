@@ -9,7 +9,7 @@ await Gp.exposeFunction('__toHost',o=>{toH++;H.evaluate(m=>window.__dw.hostRecv(
 await H.evaluate(()=>{const d=window.__dw;d.NET.role='host';d.NET.code='TESTX';const conn={open:true,send:o=>window.__toGuest(o)};d.NET.conns.set(1,conn);d.REMOTES.set(1,{id:1,col:1,name:'Blue',live:false,x:0,y:0,tx:0,ty:0,aim:0,face:1,moving:false,run:false,roll:false,hp:100,maxHp:100,gun:'pistol',dead:false,anim:0,r:6})});
 await Gp.evaluate(()=>{const d=window.__dw;d.NET.role='guest';d.NET.code='TESTX';d.NET.hostConn={open:true,send:o=>window.__toHost(o)};d.NET.hostConn.send({t:'hello',v:1})});
 await H.waitForTimeout(400);
-await H.click('#playBtn');await H.waitForTimeout(1500);
+await H.click('#playBtn');await H.click('#mcStart');await H.waitForTimeout(1500);
 const gs=await Gp.evaluate(()=>{const d=window.__dw;return{mode:d.G.mode,seed:d.G.seed,px:d.P&&Math.round(d.P.x),drops:d.DROPS.length,others:d.OTHERS.size}});
 const hs=await H.evaluate(()=>{const d=window.__dw;return{seed:d.G.seed,drops:d.DROPS.length,remote:[...d.REMOTES.values()].map(r=>[r.live,Math.round(r.x),Math.round(r.y)])}});
 console.log('guest',JSON.stringify(gs),'host',JSON.stringify(hs));

@@ -21,6 +21,7 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Maps (the "maps" section, before `const CHT`): `THEMES` restyle the same generator (ground textures, house palettes, tree lists and counts, lamps and neon colors, clutter, fires, night tint, rain, fireflies). The forest also swaps 55% of the house lots for woods and campfires. `setMap(id)` runs before `genTown`, and guests get the map in `init`, so layouts match.
 - Sci-fi guns: `laser`, `arc` (`arcChain`, sent as a `zap` fx), `rail`, `plasma` (explosive). `randGun` triples their weight against robots and monsters.
 - Lobby (the "multiplayer lobby" section): `G.gm='lobby'` via `NEXT_GM`. Gun racks refill (`lobbyRack`), a few weak enemies spawn, there is no loot or XP, and you respawn in 3 s without losing gear. The host's in-game `#lobbyBar` has Invite, Match settings (`#matchScr`) and START MATCH. `#lobbyAgain` on the end screen returns everyone to the lobby.
+- Card screen (the "lobby / mode select (card screen)" section, `#modeScr`): a stone-hall backdrop (`hallArt`), avatar and name banner, and mode/enemy/map cards with art drawn in code (`CARDART`, `enemyArt`, `MAPART`). Contexts: `solo` (PLAY), `host` (picks are broadcast as `cfg`; START MATCH / yard / invite) and `guest` (read-only, follows `cfg`). PLAY on the title, a ready host room, a waiting guest and the yard's "Pick the match" button all open it.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
 - Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
@@ -118,6 +119,8 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `lobby.js` | Host + guest in the lobby: racks, lobby bar, a death without gear loss, match settings, start, back to the lobby |
 | `wardrobe_http.js` | The wardrobe screen with the real sprite files (pass the `dead-wave` folder, not `index.html`) |
 | `controls_touch.js` | Multi-touch stick + FIRE in portrait and landscape, Controls screen, left-handed layout (pass the `dead-wave` folder) |
+| `cards.js` | Card screen in portrait and landscape: pick cards, start (pass the `dead-wave` folder) |
+| `cards_coop.js` | Card lobby over a fake connection: the guest follows the host's picks, can't change them, and joins the match |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 

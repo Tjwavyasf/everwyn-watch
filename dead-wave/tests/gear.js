@@ -2,7 +2,7 @@
 const {chromium}=require('playwright');
 (async()=>{const b=await chromium.launch();const pg=await b.newPage({viewport:{width:390,height:844}});const errs=[];pg.on('pageerror',e=>errs.push(e.stack));
 await pg.goto('file://'+process.argv[2]);await pg.waitForTimeout(800);
-await pg.click('#playBtn');await pg.waitForTimeout(800);
+await pg.click('#playBtn');await pg.click('#mcStart');await pg.waitForTimeout(800);
 console.log('start',JSON.stringify(await pg.evaluate(()=>({aid:__dw.P.aid,att:__dw.DROPS.filter(d=>d.type==='att').length}))));
 // every gun fires at a zombie
 const res=await pg.evaluate(async()=>{const d=__dw,P=d.P,out={};P.hp=P.maxHp=99999;

@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const errs=[];pg.on('pageerror',e=>errs.push(e.stack));pg.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
 const t0=Date.now();await pg.goto('file://'+process.argv[2]);await pg.waitForTimeout(1500);console.log('load',Date.now()-t0);
 await pg.screenshot({path:'k1.png'});
-await pg.click('#playBtn');await pg.waitForTimeout(800);
+await pg.click('#playBtn');await pg.click('#mcStart');await pg.waitForTimeout(800);
 await pg.screenshot({path:'k2.png'});
 // walk into nearest house door: teleport next to a door to test boarding
 const info=await pg.evaluate(()=>{const d=window.__dw,P=d.P;let best=null,bd=1e9;for(const o of d.OPENS){if(o.kind!=='door'||o.vert)continue;const x=o.tx*16+8,y=o.ty*16+8,dd=(x-P.x)**2+(y-P.y)**2;if(dd<bd){bd=dd;best=o}}

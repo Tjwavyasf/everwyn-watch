@@ -12,8 +12,7 @@ for(let i=0;i<N;i++){const id=i+1,G=Gs[i];
     d.REMOTES.set(id,{id,col:id,name:['Orange','Blue','Red','White','Green'][id],live:false,x:0,y:0,tx:0,ty:0,aim:0,face:1,moving:false,run:false,roll:false,hp:100,maxHp:100,gun:'pistol',dead:false,anim:0,r:6})},id);
   await G.evaluate(()=>{const d=window.__dw;d.NET.role='guest';d.NET.code='TESTX';d.NET.hostConn={open:true,send:o=>window.__toHost(o)};d.NET.hostConn.send({t:'hello',v:1})})}
 await H.waitForTimeout(500);
-for(let i=0;i<3;i++)await H.click('#modeNext');
-await H.click('#playBtn');await H.waitForTimeout(2500);
+await H.click('#playBtn');await H.click('[data-mode="infection"]');await H.click('#mcStart');await H.waitForTimeout(2500);
 const all=[H,...Gs];
 const role=pg=>pg.evaluate(()=>{const f=window.__dw.inf;const me=window.__dw.NET.role==='guest'?window.__dw.NET.myId:0;return f?{me,ph:f.ph,pz:f.pz,r:f.ro[me],carry:!!f.iCarry,left:document.querySelector('#left').textContent}:null});
 const rs=[];for(const pg of all)rs.push(await role(pg));console.log('intro',JSON.stringify(rs.map(r=>[r.me,r.ph,r.r,r.carry])),'pz',rs[0].pz);

@@ -2,9 +2,9 @@
 const {chromium}=require('playwright');
 (async()=>{const b=await chromium.launch();const pg=await b.newPage({viewport:{width:390,height:844}});const errs=[];pg.on('pageerror',e=>errs.push(e.stack));
 await pg.goto('file://'+process.argv[2]);await pg.waitForTimeout(800);
-for(let i=0;i<3;i++)await pg.click('#modeNext');
-console.log('mode:',await pg.textContent('#modeName'));
-await pg.click('#playBtn');await pg.waitForTimeout(3600);
+await pg.click('#playBtn');await pg.click('[data-mode="infection"]');
+console.log('mode:',await pg.textContent('#mcBanner'));
+await pg.click('#mcStart');await pg.waitForTimeout(3600);
 const s=()=>pg.evaluate(()=>{const f=__dw.inf;return{ph:f.ph,t:+f.t.toFixed(1),role:f.ro[0],cine:!document.querySelector('#cine').hidden,hud:document.querySelector('#waveno').textContent,left:document.querySelector('#left').textContent,inHouse:__dw.P.inside>=0,z:__dw.Z.length}});
 console.log('intro',JSON.stringify(await s()));await pg.screenshot({path:'inf_intro.png'});
 await pg.waitForTimeout(3500);console.log('run',JSON.stringify(await s()),'banner',await pg.textContent('#banT'));

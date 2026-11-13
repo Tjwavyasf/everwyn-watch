@@ -7,7 +7,7 @@ async function run(b,name,vw,vh){
   await pg.route('http://dw.test/**',r=>{const u=new URL(r.request().url());let p=path.join(ROOT,decodeURIComponent(u.pathname));if(p.endsWith('/'))p+='index.html';
     if(!fs.existsSync(p))return r.fulfill({status:404,body:''});const ct=p.endsWith('.png')?'image/png':p.endsWith('.json')?'application/json':'text/html';r.fulfill({status:200,body:fs.readFileSync(p),contentType:ct})});
   await pg.goto('http://dw.test/');await pg.waitForTimeout(2000);
-  await pg.click('#playBtn');await pg.waitForTimeout(800);
+  await pg.click('#playBtn');await pg.click('#mcStart');await pg.waitForTimeout(800);
   console.log(await pg.evaluate(()=>({hud:document.querySelector('#hud').className,c:__dw.ctl.usingMouse})));
   const cdp=await ctx.newCDPSession(pg);
   const fb=await pg.locator('#fireBtn').boundingBox();const fx=fb.x+fb.width/2,fy=fb.y+fb.height/2;

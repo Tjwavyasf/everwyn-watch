@@ -9,7 +9,7 @@ await Gp.exposeFunction('__toHost',o=>{toH++;H.evaluate(m=>window.__dw.hostRecv(
 await H.evaluate(()=>{const d=window.__dw;d.NET.role='host';d.NET.code='TESTX';const conn={open:true,send:o=>window.__toGuest(o)};d.NET.conns.set(1,conn);d.REMOTES.set(1,{id:1,col:1,name:'Blue',live:false,x:0,y:0,tx:0,ty:0,aim:0,face:1,moving:false,run:false,roll:false,hp:100,maxHp:100,gun:'pistol',dead:false,anim:0,r:6})});
 await Gp.evaluate(()=>{const d=window.__dw;d.NET.role='guest';d.NET.code='TESTX';d.NET.hostConn={open:true,send:o=>window.__toHost(o)};d.NET.hostConn.send({t:'hello',v:1})});
 await H.waitForTimeout(400);
-await H.click('#modeNext');await H.click('#playBtn');await H.waitForTimeout(5500);
+await H.click('#playBtn');await H.click('[data-mode="objectives"]');await H.click('#mcStart');await H.waitForTimeout(5500);
 await H.evaluate(()=>{const P=__dw.P;P.hp=P.maxHp=99999});
 const gob=await Gp.evaluate(()=>({ob:!!__dw.ob,sc:__dw.ob&&__dw.ob.sc,wave:document.querySelector('#waveno').textContent,left:document.querySelector('#left').textContent,targets:__dw.objTargets().length}));
 const hob=await H.evaluate(()=>({sc:__dw.ob.sc,i:__dw.ob.i,k:__dw.objKind().k,targets:__dw.objTargets().length}));

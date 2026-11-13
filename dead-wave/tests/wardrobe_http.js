@@ -11,6 +11,6 @@ for(let t=0;t<6;t++){const tb=await pg.$$('.wtabs button');await tb[t].click();a
   for(let k=0;k<3;k++){const n=(await pg.$$('#opts .opt button')).length;for(let i=1;i<n;i+=2){const all=await pg.$$('#opts .opt button');if(all[i])await all[i].click()}}
   await pg.waitForTimeout(800);await pg.screenshot({path:'w_tab'+t+'.png'})}
 for(let i=0;i<4;i++){await pg.click('#cRand');await pg.waitForTimeout(1200);await pg.locator('#cprev').screenshot({path:'r'+i+'.png'})}
-await pg.click('#cDone');await pg.click('#playBtn');await pg.waitForTimeout(2500);await pg.screenshot({path:'game.png'});
+await pg.click('#cDone');await pg.click('#playBtn');await pg.click('#mcStart');await pg.waitForTimeout(2500);await pg.screenshot({path:'game.png'});
 console.log(await pg.evaluate(()=>JSON.stringify(window.__dw.P.look.sheet)));
 console.log('ERR',errs.join('\n'));await b.close()})();

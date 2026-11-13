@@ -6,9 +6,7 @@ const god=()=>pg.evaluate(()=>{const P=__dw.P;if(P){P.hp=P.maxHp=99999;P.inv=9}}
 const tp=(x,y)=>pg.evaluate(([x,y])=>{const P=__dw.P;P.x=x;P.y=y},[x,y]);
 // ---- objectives ----
 await pg.goto(url);await pg.waitForTimeout(800);
-await pg.click('#modeNext');
-console.log('mode row:',await pg.textContent('#modeName'));
-await pg.click('#playBtn');await pg.waitForTimeout(500);await god();
+await pg.click('#playBtn');await pg.click('[data-mode="objectives"]');console.log('mode card:',await pg.textContent('#mcBanner'));await pg.click('#mcStart');await pg.waitForTimeout(500);await god();
 console.log('intro:',await pg.textContent('#banT'),'|',await pg.textContent('#left'));
 await pg.waitForTimeout(4500);await god();
 await pg.screenshot({path:'obj_start.png'});
@@ -26,9 +24,9 @@ await pg.waitForTimeout(500);
 console.log('end screen:',await pg.textContent('#oTitle'),await pg.textContent('#oWaveL'),await pg.textContent('#oWave'),'coins',await pg.textContent('#oCoins'),'|',await pg.textContent('#oBest'));
 await pg.screenshot({path:'obj_win.png'});
 // ---- horde ----
-await pg.click('#overMenu');await pg.waitForTimeout(300);await pg.click('#modeNext');
-console.log('mode row:',await pg.textContent('#modeName'),'|',await pg.textContent('#modeDesc'));
-await pg.click('#playBtn');await pg.waitForTimeout(500);await god();
+await pg.click('#overMenu');await pg.waitForTimeout(300);await pg.click('#playBtn');await pg.click('[data-mode="horde"]');
+console.log('mode card:',await pg.textContent('#mcBanner'),'|',await pg.textContent('#mcDesc'));
+await pg.click('#mcStart');await pg.waitForTimeout(500);await god();
 console.log('horde prep:',await pg.textContent('#waveno'),'|',await pg.textContent('#left'));
 await pg.evaluate(()=>{__dw.G.breakT=0});await pg.waitForTimeout(4000);await god();
 console.log('horde:',await pg.textContent('#waveno'),'|',await pg.textContent('#left'),'zombies',await pg.evaluate(()=>__dw.Z.length));

@@ -57,7 +57,7 @@ Co-op only works when the game is opened from its own web address, such as the G
 
 ## Enemies and maps
 
-Pick them on the title screen (or in the lobby's **Match settings**). They work with every mode.
+Tap **PLAY** to open the card screen: your survivor's portrait and name at the top, then a card for each mode, enemy type and map. Tap a card to pick it, then **PLAY**. Tap the portrait to change your look. Enemies and maps work with every mode.
 
 - **Enemies:**
   - **Zombies:** walkers, runners, spitters, bloaters and brutes. Boss: the Abomination.
@@ -72,7 +72,7 @@ Pick them on the title screen (or in the lobby's **Match settings**). They work 
 
 ## Lobby
 
-When you host co-op, tap **ENTER LOBBY**. Everyone who joins drops into a warm-up yard: racks with every gun (they refill), attachments, a first aid kit and a few enemies to shoot. You respawn after 3 seconds and keep your gear. The host's bar at the top has **Invite**, **Match settings** (mode, enemies, map) and **START MATCH**. After a match, the host can tap **Back to the lobby** to bring everyone back. Leave the room from the pause menu.
+When you host co-op, the card screen becomes the lobby: the room code is under your name, the players in the room are listed, and only the host can pick cards (guests see the host's picks live). The host taps **START MATCH**, or **WARM UP IN THE YARD** to take everyone into a warm-up yard: racks with every gun (they refill), attachments, a first aid kit and a few enemies to shoot. You respawn after 3 seconds and keep your gear. The host's bar at the top has **Invite**, **Pick the match** (back to the cards) and **START MATCH**. After a match, the host can tap **Back to the lobby** to bring everyone back. Leave the room from the pause menu.
 
 ## Modes
 

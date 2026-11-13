@@ -20,10 +20,10 @@ await H.waitForTimeout(1500);const dead=await H.evaluate(()=>window.__dw.P.dead)
 console.log('lobby death: was down',dead,'now',JSON.stringify(await H.evaluate(()=>({dead:window.__dw.P.dead,slots:window.__dw.P.slots.map(s=>s.g),over:!document.querySelector('#over').hidden}))));
 // host picks Horde, Robots, Cyberpunk and starts
 await H.evaluate(()=>{const m=window.__dw.meta;m.mode='survival';m.fac='zombies';m.map='suburb'});
-await H.click('#lbbSet');await H.waitForTimeout(200);
-const rowBtn=async(r,n)=>{for(let k=0;k<n;k++){const bs=await H.$$('#matchRows .opt');const b=(await bs[r].$$('button'))[1];await b.click()}};
-await rowBtn(0,2);await rowBtn(1,1);await rowBtn(2,2);await H.screenshot({path:'lobby_settings.png'});await H.click('#matchDone');
-await H.click('#lbbGo');await H.waitForTimeout(2000);
+await H.click('#lbbSet');await H.waitForTimeout(300);
+await H.click('[data-mode="horde"]');await H.click('[data-fac="robots"]');await H.click('[data-map="cyber"]');await H.screenshot({path:'lobby_settings.png'});
+console.log('host card screen buttons',JSON.stringify(await H.evaluate(()=>['#mcStart','#mcYard','#mcInvite'].map(s=>document.querySelector(s).textContent))));
+await H.click('#mcStart');await H.waitForTimeout(2000);
 console.log('host match',JSON.stringify(await st(H)));console.log('guest match',JSON.stringify(await st(Gp)));
 // end the match, back to the lobby
 await H.evaluate(()=>window.__dw.togglePause());await H.click('#quitBtn');await H.waitForTimeout(800);
