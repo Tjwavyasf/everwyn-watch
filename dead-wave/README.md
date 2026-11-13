@@ -70,6 +70,10 @@ Tap **PLAY** to open the card screen: your survivor's portrait and name at the t
   - **Forest:** dirt trails through thick woods, a few cabins and campfires.
 - **Sci-fi guns:** the Laser Rifle, Arc Gun (lightning jumps to 3 more targets), Railgun (goes through 12 enemies) and Plasma Cannon (explodes). They drop three times as often against robots and monsters, and you can unlock them in the Armory.
 
+## Story intros
+
+Every match (except the lobby) opens with a short cinematic: letterbox bars, a place and time caption, typed narration, and camera shots over the real map. It shows the town, the enemies closing in, a scene for the mode, and then swoops to your survivor with the mode's title card. The lore changes with the map (Marrow Creek, Port Halden, Neo-Kessler, Blackpine Woods), the enemies (what the Wave did to them) and the mode. Objectives tells its scenario's story. Tap to speed up the text, or press **SKIP** (Esc on a keyboard). In co-op, the match starts when the host's intro ends. You can turn intros off under **Controls → Story intros**.
+
 ## Custom art
 
 The card pictures and the lobby backdrop are PNGs in [art/](art/README.md). Replace any of them with your own art and it shows up the next time the game loads.

@@ -23,6 +23,7 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Lobby (the "multiplayer lobby" section): `G.gm='lobby'` via `NEXT_GM`. Gun racks refill (`lobbyRack`), a few weak enemies spawn, there is no loot or XP, and you respawn in 3 s without losing gear. The host's in-game `#lobbyBar` has Invite, Match settings (`#matchScr`) and START MATCH. `#lobbyAgain` on the end screen returns everyone to the lobby.
 - Card screen (the "lobby / mode select (card screen)" section, `#modeScr`): a stone-hall backdrop (`hallArt`), avatar and name banner, and mode/enemy/map cards with art drawn in code (`CARDART`, `enemyArt`, `MAPART`). Contexts: `solo` (PLAY), `host` (picks are broadcast as `cfg`; START MATCH / yard / invite) and `guest` (read-only, follows `cfg`). PLAY on the title, a ready host room, a waiting guest and the yard's "Pick the match" button all open it.
 - Art slots (the "drop-in art" section): `art/lobby_bg.png` and `art/cards/*.png` replace the code-drawn card art and backdrop (`loadArt`, `artOr`). The shipped files are staged renders from the game made by `tools/render_art.js`, which uses capture-only flags `G.cap` (no reticle, labels or numbers, lighter night) and `G.hideP`. See `art/README.md`.
+- Story intros (the "story intros (cutscenes)" section): `startCutscene` runs after `resetRun` (and in `guestStart` when `init.fresh`). The world is frozen while `CUT.on` (the loop calls `cutTick` instead of `update`). Shots pan `cam`, temporary actors are zombies flagged `cut` (removed at the end) plus survivor stand-ins (`CUT.people`). Lore is in `LORE`. The host's end or skip sends `cut` so guests close theirs. Automated browsers skip intros unless the URL has `?story=1`. The setting is `meta.ctl.story`.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
 - Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
@@ -122,6 +123,8 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `controls_touch.js` | Multi-touch stick + FIRE in portrait and landscape, Controls screen, left-handed layout (pass the `dead-wave` folder) |
 | `cards.js` | Card screen in portrait and landscape: pick cards, start (pass the `dead-wave` folder) |
 | `cards_coop.js` | Card lobby over a fake connection: the guest follows the host's picks, can't change them, and joins the match |
+| `cutscene.js` | Survival intro shot by shot (world frozen, then running), and a skipped Robots/Cyberpunk intro (pass the `dead-wave` folder) |
+| `cutscene_coop.js` | Co-op intro: both players get it, and the host's skip starts the match for both |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 
