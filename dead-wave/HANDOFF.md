@@ -15,7 +15,8 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Shove, dodge roll, sprint with stamina; 5 zombie types plus a boss every 5th wave.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
-- Character art from the Liberated Pixel Cup (LPC) set: 8 selectable survivors, 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
+- Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
+- Layered survivor wardrobe: about 280 LPC items across 15 slots (hair, beard, shirt, jacket, pants, shoes, hats, face, neck, arms, belt, back, cape, wounds), recolored in the browser, plus 12 presets. Built by `sprites/lpc/build_parts.py` into `sprites/lpc/parts/` (381 PNGs, about 6 MB, loaded only when a look uses them). Code is the "wardrobe" section of `index.html`.
 
 **Not yet verified:** a real co-op session between two devices over the internet. The sandbox it was built in blocks the PeerJS broker, so co-op was only tested with two browser windows linked by a simulated connection (`tests/coop_bridge.js`). Do a two-phone test first.
 
@@ -85,7 +86,9 @@ python3 build_lpc.py fetch   # pulls just the art the recipes use
 python3 build_lpc.py         # writes sprites/lpc/*.png and sprites/manifest.json
 ```
 
-It expects the clone in a `repo` folder next to the script, and it writes to an absolute path (`OUT`) that you'll need to adjust. It needs Pillow. Regenerate `sprites/lpc/CREDITS.md` if you add parts from new definitions; each definition JSON has a `credits` list. Keep the title-screen credit line: the LPC licenses (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0) require attribution.
+The wardrobe is built the same way with `build_parts.py fetch` and then `build_parts.py`. Set `LPC_REPO` to point at the clone, and edit `CATALOG` / `PRESETS` to add items. It rewrites only the survivor entry of the manifest. `build_lpc.py` writes the old fixed survivors over that entry, so if you run it, run `build_parts.py` afterwards.
+
+`build_lpc.py` expects the clone in a `repo` folder next to the script, and it writes to an absolute path (`OUT`) that you'll need to adjust. It needs Pillow. Regenerate `sprites/lpc/CREDITS.md` if you add parts from new definitions; each definition JSON has a `credits` list. Keep the title-screen credit line: the LPC licenses (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0) require attribution.
 
 ## Testing
 

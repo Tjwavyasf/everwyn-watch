@@ -6,7 +6,16 @@ Open `index.html` in any phone or desktop browser. No install or build step.
 
 ## Your survivor
 
-Tap **Customize your survivor** on the title screen to pick your build, skin tone, hair style and color, eye color, top (including armor), jacket (including a long coat or cape), bottoms, shoes and extras (glasses, beard, cap or wizard hat). Characters are drawn in a chunky fantasy-RPG pixel style with big heads and eyes. Your look is saved on your device, and teammates see it in co-op. Zombies are random townspeople in the same style.
+Tap **Customize your survivor** on the title screen to dress your character. The tabs are:
+
+- **Body:** 12 ready-made presets, build, skin tone and eye color
+- **Hair:** about 85 hair styles, 26 hair colors, 13 beards and mustaches, eyebrows
+- **Top:** 33 shirts, 17 jackets, vests and armor pieces, arm gear, capes
+- **Bottom:** 18 pants, shorts and skirts, 13 kinds of shoes, belts
+- **Head:** 42 hats, hoods and helmets, glasses and face masks, scarves and ties
+- **Gear:** backpacks and packs, bandages and wounds
+
+Most items have their own color row, usually with 20 or more colors. **Randomize** builds a random outfit. Your look is saved on your device, and teammates see it in co-op.
 
 ## Character art (PNG sprite sheets)
 

@@ -106,6 +106,21 @@ You don't have to use this layout. Each animation says where its rows are.
 | `anims.*.loop` | `false` plays once and holds the last frame. |
 | `anims.*.dirs` | `1` means a single row for all directions (common for death). |
 
+### Layered wardrobe (`parts`)
+
+The survivor in the shipped manifest uses `parts` instead of `variants`. `lpc/build_parts.py` writes it. Every clothing item, hair style and accessory is its own sheet in `lpc/parts/`, drawn in one base palette, and the game recolors it in the browser. That way each item comes in every color of its palette without a separate file per color. `parts` holds:
+
+| Field | Meaning |
+|---|---|
+| `builds`, `buildIds` | Body types (`Masculine`/`male`, `Feminine`/`female`). |
+| `palettes` | Named color ramps. `names` are the color names, `ramps` the hex colors, and `base` (optional) the colors the art is drawn in. |
+| `skin`, `eye`, `hair` | Which palettes the skin, eye and shared hair-color rows use. |
+| `body` | Per build, the base body files. |
+| `slots` | Customize rows (`id`, `name`, default option `def`, `options`). An option has a `name`, `files` per build, and optionally `pal` (its color palette) and `def` (its default color). An option without `files` draws nothing. |
+| `presets` | Ready-made looks. |
+
+Each file entry is `[z, sheet, recolors]`. Files are drawn in `z` order, and each recolor is `[palette, base ramp index (-1 = palette base), source]`. The source is `c` (the slot's color), `k` (skin), `e` (eyes) or `h` (hair color). Item sheets load only when a look uses them.
+
 Missing animations fall back sensibly: `run` uses `walk`, `roll` uses `run`, and anything else uses `idle`.
 
 ## Tips for buying or commissioning art
