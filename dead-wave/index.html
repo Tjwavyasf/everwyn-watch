@@ -2038,7 +2038,7 @@ async function prepChar(def,base){
   if(def.sheet)c.variants.push({name:def.name||'Default',img:await loadImg(base+def.sheet)});
   for(const v of def.variants||[])c.variants.push({name:v.name||v.sheet,img:await loadImg(base+v.sheet)});
   for(const L of def.layers||[]){const opts=[];for(const o of L.options||[])opts.push(o.sheet?{name:o.name||o.sheet,img:await loadImg(base+o.sheet)}:{name:o.name||'None',img:null});if(opts.length)c.layers.push({slot:L.slot,name:L.name||L.slot,options:opts})}
-  if(def.parts&&typeof def.parts==='object'&&Array.isArray(def.parts.slots)){c.parts=def.parts;c.parts.base=base}
+  if(def.parts&&typeof def.parts==='object'&&Array.isArray(def.parts.slots)){c.parts=def.parts;c.parts.base=base;c.parts.buildIds=c.parts.buildIds||c.parts.builds.map((_,i)=>String(i))}
   if(!c.variants.length&&!c.layers.length&&!c.parts)throw new Error('needs a "sheet", "variants", "layers" or "parts"');
   return c}
 async function loadSheets(){
@@ -2099,7 +2099,7 @@ function drawCorpse(k){const age=G.time-k.t0,alpha=age>8?Math.max(0,1-(age-8)/2)
    colour and, per slot, [option, colour]. Item sheets load on demand, get recoloured once, and are flattened into one cached sheet per look. */
 const WD={img:new Map(),tint:new Map(),comp:new Map(),last:null,rev:0};
 function wdImg(P,src){let e=WD.img.get(src);if(!e){e={img:null};WD.img.set(src,e);loadImg(P.base+src).then(i=>{e.img=i;WD.rev++}).catch(()=>{e.bad=1;WD.rev++})}return e}
-function wdUsable(P,o,b){return !o.files?(!o.builds||o.builds.includes(P.buildIds[b])):!!o.files[P.buildIds[b]]}
+function wdUsable(P,o,b){return !o?false:!o.files?(!o.builds||o.builds.includes(P.buildIds[b])):!!o.files[P.buildIds[b]]}
 function wdLook(c,look){const P=c.parts,sh=look&&look.sheet||{};
   if(!sh.p){const pr=P.presets[clamp(sh.v|0,0,P.presets.length-1)]||P.presets[0];return wdFromPreset(P,pr)}
   const o={p:1,b:clamp(sh.b|0,0,P.builds.length-1),k:sh.k|0,e:sh.e|0,h:sh.h|0,s:[]};
@@ -2111,7 +2111,7 @@ function wdTint(P,file,L,col){const[,src,rc]=file,e=wdImg(P,src);if(!e.img)retur
     const from=bi<0?pal.base:pal.ramps[bi],to=wdRamp(pal,idx);return from&&to&&from!==to?[from,to]:null}).filter(Boolean);
   if(!want.length)return e.img;const key=src+'|'+want.map(w=>w[1].join('')).join('/');let t=WD.tint.get(key);if(t)return t;
   const m=new Map(),px=h=>{const v=parseInt(h,16);return((v>>16)&255)|(v&0xff00)|((v&255)<<16)};for(const[f,to]of want)f.forEach((h,i)=>{if(to[i])m.set(px(h),px(to[i]))});
-  const cv=cnv(e.img.width,e.img.height),g=cv.getContext('2d');g.drawImage(e.img,0,0);const id=g.getImageData(0,0,cv.width,cv.height),u=new Uint32Array(id.data.buffer);
+  const cv=cnv(e.img.width,e.img.height),g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(e.img,0,0);const id=g.getImageData(0,0,cv.width,cv.height),u=new Uint32Array(id.data.buffer);
   for(let i=0;i<u.length;i++){const p=u[i];if(p>>>24){const r=m.get(p&0xffffff);if(r!==undefined)u[i]=(p&0xff000000)|r}}
   g.putImageData(id,0,0);WD.tint.set(key,cv);if(WD.tint.size>160)WD.tint.delete(WD.tint.keys().next().value);return cv}
 function wardrobeSheet(c,look){const P=c.parts,L=wdLook(c,look),bid=P.buildIds[L.b],key=JSON.stringify(L);let cv=WD.comp.get(key);if(cv)return cv;
