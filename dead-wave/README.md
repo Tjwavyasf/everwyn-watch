@@ -55,6 +55,14 @@ Any player can pause, and it pauses the game for everyone. Anyone can resume it.
 
 Co-op only works when the game is opened from its own web address, such as the GitHub Pages link. Previews that block WebRTC, like the Claude artifact viewer, can only play solo.
 
+## Modes
+
+Pick a mode on the title screen with the arrows next to **Mode**. In co-op, the host's mode is used.
+
+- **Survival:** the original. Board up and outlast wave after wave, with the Abomination every 5th wave.
+- **Objectives:** a story run with one of three scenarios: *Last Ride* (get an old pickup running), *Mayday* (fix a radio and call in a helicopter) or *Cold Chain* (get medicine to the evac truck). Each is a chain of tasks spread over the town: find items, switch things on by standing at them, and hold a spot while zombies swarm. It ends with an extraction you have to hold to escape. A gold arrow and minimap markers show where to go. Zombies roam all the time and get tougher as you progress. Downed players come back after 40 seconds or when the team finishes a task.
+- **Horde:** no breaks. One endless stream that keeps getting bigger and faster, a supply drop every 2 minutes, and the Abomination at every 5th danger level. Downed players come back after 30 seconds if anyone is still standing. Your best time is saved.
+
 ## How it plays
 
 - **Town:** a new town every run with roads, about 50 houses, a store, a park and a parking lot, plus wrecked and burning cars, streetlights and a minimap. You see through a flashlight in the dark.

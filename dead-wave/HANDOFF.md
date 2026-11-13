@@ -14,6 +14,7 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Boardable doors and windows (up to 3 boards). Zombies pathfind to players with a flow field, break boards and climb in.
 - Controls: move stick plus a FIRE button with auto-aim (drag FIRE to aim by hand), RELOAD/ROLL/SHOVE around it, a gamepad, and a Controls screen (auto-aim level, left-handed, fixed stick, push-to-sprint, button size, saved in `meta.ctl`). Works in portrait and landscape. The gamepad code is untested on real hardware.
 - Shove, dodge roll, sprint with stamina; 5 zombie types plus a boss every 5th wave.
+- Game modes (the "game modes" section of `index.html`): Survival (waves), Objectives (3 scenarios in `SCEN`, each a chain of collect / switch / hold steps ending in an extraction hold) and Horde (endless ramp, supply drops). The host runs the director (`objUpdate` / `hordeUpdate`) and sends its state to guests as `ob` messages and in `init`. The chosen mode is saved in `meta.mode`.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
 - Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
@@ -101,6 +102,8 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `siege.js` | A fully boarded house under a wave-6 siege: boards break and zombies get in |
 | `coop_bridge.js` | Two pages linked by a fake connection: same map, shared kills and XP, guest down and respawn |
 | `coop_pause_gear.js` | Same fake connection: a guest goes down and drops their gear, the guest pauses for everyone, the host resumes |
+| `modes.js` | Plays an Objectives run to the end by teleporting to each target, then checks Horde (ramp, supply drop, end screen). Takes a few minutes |
+| `coop_modes.js` | Fake connection: the guest sees the host's objective, and a guest pickup counts for the team |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 
