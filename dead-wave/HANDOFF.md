@@ -15,6 +15,7 @@ Everything below is built, tested in a headless browser, and live on `main`:
 - Controls: move stick plus a FIRE button with auto-aim (drag FIRE to aim by hand), RELOAD/ROLL/SHOVE around it, a gamepad, and a Controls screen (auto-aim level, left-handed, fixed stick, push-to-sprint, button size, saved in `meta.ctl`). Works in portrait and landscape. The gamepad code is untested on real hardware.
 - Shove, dodge roll, sprint with stamina; 5 zombie types plus a boss every 5th wave.
 - Game modes (the "game modes" section of `index.html`): Survival (waves), Objectives (3 scenarios in `SCEN`, each a chain of collect / switch / hold steps ending in an extraction hold) and Horde (endless ramp, supply drops). The host runs the director (`objUpdate` / `hordeUpdate`) and sends its state to guests as `ob` messages and in `init`. The chosen mode is saved in `meta.mode`.
+- Weapons: 11 guns in `GUNDEF` (`randGun` weights their drops); the launcher's rounds explode where they stop (host side). Attachments in `ATT` (5 slots, `gunStats` folds them into a gun's numbers, saved on each gun slot as `att` and carried by gun drops). First aid kits (`P.aid`, `useAid`) heal or revive a downed mate (`revive` message to the host). Firing without a suppressor adds `G.noise`, which raises the zombie cap in Objectives and Horde.
 - XP perks between level-ups, coins and a permanent Armory (saved in `localStorage` under `deadwave.v1`).
 - Online co-op for up to 4 players using the same PeerJS setup as Clocked In.
 - Character art from the Liberated Pixel Cup (LPC) set: 6 walker variants, runner, spitter, bloater, brute, boss, with 4-direction animations.
@@ -104,6 +105,8 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `coop_pause_gear.js` | Same fake connection: a guest goes down and drops their gear, the guest pauses for everyone, the host resumes |
 | `modes.js` | Plays an Objectives run to the end by teleporting to each target, then checks Horde (ramp, supply drop, end screen). Takes a few minutes |
 | `coop_modes.js` | Fake connection: the guest sees the host's objective, and a guest pickup counts for the team |
+| `gear.js` | Every gun deals damage, attachments fit and swap from the ground, a first aid kit heals |
+| `coop_gear.js` | Fake connection: a downed guest's gun keeps its attachments, the host revives the guest with a first aid kit, the guest picks the gun back up |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 
