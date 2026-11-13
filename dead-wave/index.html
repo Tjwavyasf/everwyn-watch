@@ -311,6 +311,7 @@ h1,h2{margin:0;text-wrap:balance;text-align:center}
   <section id="pause" class="screen modal" hidden>
     <div class="panel">
       <div class="tab">PAUSED</div>
+      <p class="hint" id="pauseBy" hidden></p>
       <div class="label">Your perks</div>
       <div class="build" id="pauseBuild"></div>
       <button class="big" id="resumeBtn">RESUME</button>
@@ -1034,7 +1035,17 @@ function hurtP(dmg){
   if(P.inv>0||G.mode!=='play'||P.dead)return;
   dmg=Math.max(1,dmg-S.armor);P.hp-=dmg;P.inv=.3;G.shake=Math.max(G.shake,3);sfx('hurt');P.action=null;
   $('#hurtv').style.opacity=.9;setTimeout(()=>$('#hurtv').style.opacity=0,120);
-  P.hurtT=.3;addNum(P.x,P.y-34,dmg,'hurt');if(P.hp<=0){P.deadT=G.time;P.hp=0;if(netOn()){P.dead=true;P.action=null;P.reload=0;banner('YOU ARE DOWN','You come back when your team clears the wave.');if(NET.role==='guest')netSend({t:'dead'});else netAll({t:'ban',a:'ORANGE IS DOWN',b:''})}else gameOver()}}
+  P.hurtT=.3;addNum(P.x,P.y-34,dmg,'hurt');if(P.hp<=0){P.deadT=G.time;P.hp=0;const gear=takeGear();
+    if(netOn()){P.dead=true;P.action=null;P.reload=0;banner('YOU ARE DOWN','You lost your gear. It is on the ground where you fell.');if(NET.role==='guest')netSend({t:'dead',gear});else{spillGear(gear,P.x,P.y);netAll({t:'ban',a:'ORANGE IS DOWN',b:'Their gear is on the ground where they fell.'})}}
+    else{spillGear(gear,P.x,P.y);gameOver()}}}
+/* Going down costs you everything but the pistol: your other gun and its ammo, planks and grenades drop where you fell,
+   for you or a teammate to pick back up. */
+function takeGear(){const s=P.slots[1],g={planks:P.planks|0,gren:P.gren|0};if(s&&GUNDEF[s.g]&&s.g!=='pistol'){g.g=s.g;g.mag=s.mag|0;g.res=s.res|0}
+  P.slots=[newGun('pistol')];P.cur=0;P.planks=0;P.gren=0;P.reload=0;return g}
+function spillGear(g,x,y){if(!g||typeof g!=='object'||NET.role==='guest')return;
+  if(GUNDEF[g.g]&&g.g!=='pistol')drop('gun',x,y,1,{g:g.g,mag:clamp(g.mag|0,0,GUNDEF[g.g].mag),ammo:Math.max(1,Math.min(999,g.res|0))});
+  let pl=clamp(g.planks|0,0,60);while(pl>0){const n=Math.min(3,pl);drop('planks',x,y,n);pl-=n}
+  for(let i=0,n=clamp(g.gren|0,0,4);i<n;i++)drop('gren',x,y,1)}
 function drop(type,x,y,v=1,o={}){
   if(type==='xp'){let n=0;for(const d of DROPS)if(d.type==='xp')n++;if(n>260){let best=null,bd=1e9;for(const d of DROPS)if(d.type==='xp'){const dd=d2(x,y,d.x,d.y);if(dd<bd){bd=dd;best=d}}if(best){best.v+=v;return}}}
   const a=Math.random()*TAU,s=type==='xp'||type==='coin'?34:20;const d={type,x,y,v,vx:Math.cos(a)*s,vy:Math.sin(a)*s-12,t:0,mag:false,...o};
@@ -1545,7 +1556,7 @@ function snap(){
   netAll({t:'s',w:[G.wave,G.state,Math.ceil(G.breakT),G.spawnLeft+Z.length,G.boss?Math.round(G.boss.hp/G.boss.max*100):-1],z,p,ob,
     n:NADES.map(n=>[Math.round(n.sx),Math.round(n.sy),Math.round(n.tx),Math.round(n.ty),+(n.t/n.dur).toFixed(2)]),e:EB.map(e=>[Math.round(e.x),Math.round(e.y)]),h:HITS.splice(0)})}
 function sendInit(id){const r=REMOTES.get(id);if(!r)return;for(const o of OPENS){o.sb=o.boards;o.sh=Math.round(o.hp)}
-  netTo(id,{t:'init',seed:G.seed,id,col:r.col,w:[G.wave,G.state,Math.ceil(G.breakT)],x:Math.round(P.x),y:Math.round(P.y),ops:OPENS.map(o=>[o.boards,Math.round(o.hp)]),drops:DROPS.map(dropMsg),L:allLooks()})}
+  netTo(id,{t:'init',seed:G.seed,id,col:r.col,w:[G.wave,G.state,Math.ceil(G.breakT)],x:Math.round(P.x),y:Math.round(P.y),ops:OPENS.map(o=>[o.boards,Math.round(o.hp)]),drops:DROPS.map(dropMsg),L:allLooks(),pz:G.paused})}
 function gameOverAll(){netAll({t:'over',w:G.wave,k:G.kills,tm:Math.round(G.time)});gameOver()}
 function hostRecv(id,m){const r=REMOTES.get(id);if(!r||!m||typeof m!=='object')return;
   switch(m.t){
@@ -1561,7 +1572,8 @@ function hostRecv(id,m){const r=REMOTES.get(id);if(!r||!m||typeof m!=='object')r
     case'board':{const op=OPENS[m.oi|0];if(op&&d2(op.tx*T+8,op.ty*T+8,r.x,r.y)<50*50){if(m.add&&op.boards<3)op.boards++;op.max=num(m.hp,10,300,40);op.hp=op.max;if(Math.abs(op.tx*T-cam.x)<VW&&Math.abs(op.ty*T-cam.y)<VH){sfx('board');woodChips(op)}}break}
     case'shove':if(G.mode==='play'){buildGrid();shoveAt(r.x,r.y,num(m.a,-10,10,0),num(m.p,1,3,1),num(m.reach,20,60,34))}break;
     case'gren':if(G.mode==='play')NADES.push({sx:r.x,sy:r.y,tx:num(m.tx,0,MW*T,r.x),ty:num(m.ty,0,MH*T,r.y),t:0,dur:.6,dmg:num(m.dmg,0,400,130)});break;
-    case'dead':if(!r.dead){r.dead=true;bannerAll(r.name.toUpperCase()+' IS DOWN','They come back when the wave is cleared.')}break;
+    case'dead':if(!r.dead){r.dead=true;bannerAll(r.name.toUpperCase()+' IS DOWN','Their gear is on the ground where they fell.');netTo(id,{t:'ban',a:'YOU ARE DOWN',b:'You lost your gear. It is on the ground where you fell.'});if(m.gear)spillGear(m.gear,r.x,r.y)}break;
+    case'pz':if(G.mode==='play'){const on=!!m.on;setPause(on,r.name);netAll({t:'pz',on,by:r.name})}break;
     case'skip':if(G.state!=='fight')G.breakT=0;break;
     case'look':r.look=cleanLook(m.look);netAll({t:'looks',L:allLooks()});break;
   }}
@@ -1608,7 +1620,7 @@ function guestRecv(m){if(!m||typeof m!=='object')return;
   switch(m.t){
     case'reject':netLost(str(m.why)||'That room is full.');break;
     case'wait':lobbyView({title:'CO-OP',msg:`Connected (${m.n|0} players). Waiting for the host to start the game…`,leave:true});break;
-    case'init':guestStart(m);if(m.L)setLooks(m.L);break;
+    case'init':guestStart(m);if(m.L)setLooks(m.L);if(m.pz)setPause(true,'');break;
     case'looks':setLooks(m.L);break;
     case's':if(G.mode==='play'||G.mode==='dead')applySnap(m);break;
     case'd+':if(tile&&m.d)addNetDrop(m.d);break;
@@ -1621,6 +1633,7 @@ function guestRecv(m){if(!m||typeof m!=='object')return;
     case'planks':if(P)P.planks+=num(m.v,0,20,0)|0;break;
     case'fx':netFx(m);break;
     case'ban':banner(str(m.a),str(m.b));break;
+    case'pz':setPause(!!m.on,str(m.by));break;
     case'respawn':if(P){P.dead=false;P.hp=P.maxHp*.5;P.x=num(m.x,0,MW*T,P.x)+8;P.y=num(m.y,0,MH*T,P.y)+8;P.inv=2;collideT(P,P.r,solidP)}break;
     case'over':if(G.mode==='play'){G.wave=m.w|0;G.kills=m.k|0;G.time=m.tm|0;gameOver()}break;
   }}
@@ -1845,7 +1858,7 @@ function loop(now){
   const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
   drawPrev(now);
   if(G.mode==='menu'){updMenu(dt);render();return}
-  if(G.mode==='play'&&(netOn()||(!G.paused&&!G.modal))){update(dt);updHUD(dt)}
+  if(G.mode==='play'&&!G.paused&&(netOn()||!G.modal)){update(dt);updHUD(dt)}
   else if(G.mode==='dead')updAmbient(dt);
   if(banT>0){banT-=dt;if(banT<=0)$('#banner').hidden=true}
   render();
@@ -1887,7 +1900,13 @@ function resetRun(){LOOKS.clear();CORPSES.length=0;
 }
 function play(){if(NET.role==='guest'){lobbyOpen();lobbyView({title:'CO-OP',msg:'You are in a co-op room. The host starts the game.',leave:true});return}initAudio();if(AC&&AC.state==='suspended')AC.resume();hideAll();$('#hud').hidden=false;resetRun();last=performance.now()}
 function hideAll(){for(const id of['title','armory','levelup','pause','over'])$('#'+id).hidden=true}
-function togglePause(){if(G.mode!=='play'||(G.modal&&!G.paused))return;$('#quitBtn').textContent=NET.role==='guest'?'Leave game':'Give up';G.paused=!G.paused;$('#pause').hidden=!G.paused;clearSticks();
+/* In co-op a pause is shared: any player can pause or resume, the host relays it, and everyone's game stops. */
+function togglePause(){if(G.mode!=='play'||(G.modal&&!G.paused))return;
+  if(NET.role==='guest'){netSend({t:'pz',on:!G.paused});return}
+  if(NET.role==='host'){setPause(!G.paused,MATE_NAMES[0]);netAll({t:'pz',on:G.paused,by:MATE_NAMES[0]});return}
+  setPause(!G.paused,'')}
+function setPause(on,by){if(G.mode!=='play'||on===G.paused)return;$('#quitBtn').textContent=NET.role==='guest'?'Leave game':'Give up';G.paused=on;$('#pause').hidden=!on;$('#ctlScr').hidden=true;clearSticks();
+  const pb=$('#pauseBy');pb.hidden=!(on&&netOn());if(on&&netOn())pb.textContent=(by?by+' paused the game.':'Game paused.')+' Anyone can resume it for everyone.';
   if(G.paused){const h=Object.keys(P.perks).map(k=>`<span><img alt="" src="${ICONURL[k]}">${PERK[k].name} ${P.perks[k]}</span>`).join('');$('#pauseBuild').innerHTML=h||'<span>No perks yet</span>'}else last=performance.now()}
 function gameOver(){
   G.mode='dead';sfx('die');clearSticks();
@@ -1930,7 +1949,7 @@ function renderCtl(){const box=$('#ctlOpts');box.innerHTML='';for(const[k,label,
   const bs=d.querySelectorAll('button'),step=n=>{let v=((cur+n)%names.length+names.length)%names.length;meta.ctl[k]=typeof meta.ctl[k]==='boolean'?!!v:v;save();renderCtl();$('#hud').dataset.c=''};bs[0].onclick=()=>step(-1);bs[1].onclick=()=>step(1);box.appendChild(d)}}
 const openCtl=()=>{renderCtl();$('#ctlScr').hidden=false};$('#ctlBtn').onclick=openCtl;$('#ctlBtn2').onclick=openCtl;$('#ctlDone').onclick=()=>{$('#ctlScr').hidden=true};$('#soundBtn2').onclick=toggleSound;
 $('#pauseBtn').onclick=togglePause;$('#resumeBtn').onclick=togglePause;
-$('#quitBtn').onclick=()=>{G.paused=false;$('#pause').hidden=true;if(NET.role==='guest'){netLeave();showTitle()}else if(netOn())gameOverAll();else gameOver()};
+$('#quitBtn').onclick=()=>{G.paused=false;$('#pause').hidden=true;if(NET.role==='host')netAll({t:'pz',on:false,by:''});if(NET.role==='guest'){netLeave();showTitle()}else if(netOn())gameOverAll();else gameOver()};
 $('#reviveBtn').onclick=revive;$('#againBtn').onclick=play;
 $('#overArmory').onclick=()=>{showTitle();openArmory()};$('#overMenu').onclick=showTitle;
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.modal&&!netOn())togglePause()});

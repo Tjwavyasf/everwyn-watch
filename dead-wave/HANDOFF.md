@@ -74,7 +74,7 @@ Sections are marked with `/* ---------------- name ---------------- */` comments
 
 **Units.** One tile is 16 px. The pixel canvas is about 310 px on the short side when the LPC sheets load (`VIEWK`, set from `manifest.json` → `view`), otherwise 250.
 
-**Co-op.** Host-authoritative. The host runs zombies, waves, loot and boards, and sends snapshots (zombies, players, changed openings, grenades, acid, hit numbers). Guests run their own movement and shooting locally and send poses, shots, pickups, boarding, shoves and grenades. XP and coins are shared; perks are per player, and level-up cards wait until between waves in co-op. Players go down and respawn at half HP when the wave is cleared, and the run ends when everyone is down. The PeerJS room ID is `dw1-` plus a 5-letter code. ICE/TURN servers are copied from Clocked In (`peerOpts()`). Co-op only works from an http(s) address; previews that block WebRTC can't do it.
+**Co-op.** Host-authoritative. The host runs zombies, waves, loot and boards, and sends snapshots (zombies, players, changed openings, grenades, acid, hit numbers). Guests run their own movement and shooting locally and send poses, shots, pickups, boarding, shoves and grenades. XP and coins are shared; perks are per player, and level-up cards wait until between waves in co-op. Going down drops everything but the pistol (other gun with its ammo, planks, grenades) where the player fell (`takeGear` / `spillGear`; a guest sends its gear in the `dead` message and the host spawns the drops). Pausing is shared: `togglePause` sends `pz` to the host, which applies it with `setPause` and relays it to everyone, and late joiners get it in `init`. Players respawn at half HP when the wave is cleared, and the run ends when everyone is down. The PeerJS room ID is `dw1-` plus a 5-letter code. ICE/TURN servers are copied from Clocked In (`peerOpts()`). Co-op only works from an http(s) address; previews that block WebRTC can't do it.
 
 **Sprites.** `sprites/manifest.json` lists characters (`survivor`, `walker`, `runner`, `spitter`, `bloater`, `brute`, `boss`) with frame size, anchor, direction order, animations and either `sheet`, `variants` or `layers`. See `sprites/README.md`. Sheets are fetched over HTTP, so opening `index.html` from disk, or in the Claude preview, uses the built-in art instead.
 
@@ -100,6 +100,7 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `solo_board_fight.js` | Start, boarding a door, a short fight, fps |
 | `siege.js` | A fully boarded house under a wave-6 siege: boards break and zombies get in |
 | `coop_bridge.js` | Two pages linked by a fake connection: same map, shared kills and XP, guest down and respawn |
+| `coop_pause_gear.js` | Same fake connection: a guest goes down and drops their gear, the guest pauses for everyone, the host resumes |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 

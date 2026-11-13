@@ -49,7 +49,9 @@ Co-op uses the same connection setup as Clocked In: PeerJS's public matchmaking 
 2. Friends tap **Join co-op** and type the code. They can join before the game starts or in the middle of a run.
 3. The host taps **Start game** (or PLAY).
 
-The host's game runs the zombies, waves, loot and barricades. Every player moves and shoots on their own phone, so controls feel instant. XP, coins and wave rewards are shared, and each player picks their own perks between waves. If you go down, you come back with half health when your team clears the wave. The run ends when everyone is down.
+The host's game runs the zombies, waves, loot and barricades. Every player moves and shoots on their own phone, so controls feel instant. XP, coins and wave rewards are shared, and each player picks their own perks between waves. If you go down, you lose everything but your pistol: your other gun and its ammo, your planks and your grenades drop where you fell, so you or a teammate can grab them back. You come back with half health when your team clears the wave. The run ends when everyone is down.
+
+Any player can pause, and it pauses the game for everyone. Anyone can resume it.
 
 Co-op only works when the game is opened from its own web address, such as the GitHub Pages link. Previews that block WebRTC, like the Claude artifact viewer, can only play solo.
 
