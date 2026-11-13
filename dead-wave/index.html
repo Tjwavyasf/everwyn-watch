@@ -34,7 +34,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .stick{position:absolute;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;pointer-events:none;border:3px solid rgba(242,193,78,.45);background:radial-gradient(rgba(59,50,82,.35),rgba(20,15,31,.15))}
 .stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#8a7ab8,#3b3252);border:2px solid var(--edge);box-shadow:0 0 0 2px rgba(242,193,78,.5)}
 #ctlScr{z-index:60}
-#modeScr{z-index:40;background:#14161e center/cover no-repeat;image-rendering:pixelated;gap:10px;padding:max(12px,env(safe-area-inset-top,0px)) 12px 16px}
+#modeScr{z-index:40;background:#14161e center/cover no-repeat fixed;image-rendering:pixelated;gap:10px;padding:max(12px,env(safe-area-inset-top,0px)) 12px 16px}
 #modeScr>*{image-rendering:auto}
 #modeScr .mtop{align-self:stretch;display:flex;align-items:center;gap:10px}
 #modeScr .mav{width:64px;height:64px;padding:0;background:#3a3248;border:3px solid #6a5a8a;box-shadow:inset 0 0 0 2px #241e30,0 0 0 2px #140f1f;display:grid;place-items:center}
@@ -49,7 +49,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .mcard{min-width:0;position:relative;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:6px 6px 8px;background:linear-gradient(#2a2438,#1a1626);border:3px solid #4a4060;box-shadow:0 0 0 2px #140f1f,inset 0 0 0 2px #120e1c;transition:transform .12s}
 .mcard .ttl{overflow:hidden;white-space:nowrap;font:700 clamp(7px,min(2.1vw,2.8vh),12px)/1.1 var(--title);color:#e8e4f0;text-align:center;text-shadow:2px 2px 0 #140f1f;padding-top:12px}
 .mcard.msmall .ttl{font-size:10px;padding-top:0;order:2}
-.mcard .art{width:100%;height:auto;image-rendering:pixelated;border:2px solid #120e1c;background:#000}
+.mcard .art{width:100%;height:auto;object-fit:cover;image-rendering:pixelated;border:2px solid #120e1c;background:#000}
 .mcard.mbig .art{aspect-ratio:3/4}.mcard.msmall .art{aspect-ratio:1}
 .mcard .sk{position:absolute;top:-12px;width:26px;height:26px;background:center/contain no-repeat;image-rendering:pixelated;filter:drop-shadow(1px 1px 0 #140f1f)}.mcard .sk.l{left:-8px}.mcard .sk.r{right:-8px}
 .mcard.on{border-color:#c89aff;box-shadow:0 0 0 2px #140f1f,0 0 18px rgba(180,120,255,.75),inset 0 0 0 2px #5a3a8a;transform:translateY(-4px)}
@@ -936,8 +936,8 @@ TX[WL]=TX[FW];TX[WN]=TX[FW];TX[DR]=TX[FW];TX[FN]=TX[G0];TX[CR]=TX[RD];TX[TR]=TX[
    The forest also thins the houses out into cabins among dense trees. The generator stays deterministic per seed and map,
    so co-op players get the same layout. */
 const MAPS=[{id:'suburb',name:'Suburbs',desc:'The town at dusk: houses, a store, a park and a parking lot.'},
-  {id:'city',name:'Abandoned City',desc:'Grey ruins, burning wrecks, dead trees and almost no working lights.'},
-  {id:'cyber',name:'Cyberpunk City',desc:'Neon streets in the rain, dark towers and glowing signs.'},
+  {id:'city',name:'Abandoned City',short:'Ruins',desc:'Grey ruins, burning wrecks, dead trees and almost no working lights.'},
+  {id:'cyber',name:'Cyberpunk City',short:'Neon City',desc:'Neon streets in the rain, dark towers and glowing signs.'},
   {id:'forest',name:'Forest',desc:'Dirt trails through thick woods, a few cabins and campfires.'}];
 const TX_BASE={...TX};const HOUSEPAL_BASE=HOUSEPAL.slice();
 let TH={id:'suburb',trees:null,treeN:120,lampOn:.7,clutter:1,fire:1,car:1,lotSkip:0,night:'rgba(6,8,22,.78)',lane:'#c8a030',lamp:'lamp',rain:0,flies:0,mini:null};
@@ -1492,7 +1492,7 @@ const FACART={
     bloater:()=>genChar(bugDraw({col:'#7a7a3a',len:30,wid:18,sac:1})),
     brute:()=>genChar(bugDraw({col:'#6a4a3a',len:40,wid:22,armor:1,horn:1})),
     boss:()=>genChar(bugDraw({col:'#5a2a6a',len:42,wid:24,crown:1,wings:1,sac:0,eye:'#ffe066'}),{scale:1.5})}};
-function facSheet(type){const f=fac();if(f==='zombies')return null;const g=GEN[f]||(GEN[f]={});if(!g[type]&&FACART[f][type])g[type]=FACART[f][type]();return g[type]||null}
+function facSheet(type){const f=fac();if(f==='zombies')return null;const L=SHEETS.fac[f]&&SHEETS.fac[f][type];if(L)return L;const g=GEN[f]||(GEN[f]={});if(!g[type]&&FACART[f][type])g[type]=FACART[f][type]();return g[type]||null}
 
 /* ---------------- game modes ----------------
    survival: the original waves. objectives: a story chain of tasks spread over the town, ending in an extraction you
@@ -1707,6 +1707,13 @@ function arcChain(z0,b){const hit=new Set([z0]);let from=z0;const pts=[[Math.rou
   if(pts.length>1){zapFx(pts);if(NET.role==='host')netAll({t:'fx',k:'zap',pts})}}
 function zapFx(pts){for(let i=1;i<pts.length;i++){const[a,b2]=[pts[i-1],pts[i]];for(let k=0;k<=8;k++){const t=k/8;PT.push({x:a[0]+(b2[0]-a[0])*t+rand(-3,3),y:a[1]+(b2[1]-a[1])*t+12+rand(-3,3),vx:0,vy:0,t:.12,c:k%2?'#d8f0ff':'#7ac8ff',s:2,light:k===4?1:0})}}sfx('zap')}
 
+/* ---------------- drop-in art ----------------
+   Optional PNGs in art/ replace the art drawn in code: art/lobby_bg.png (the card screen backdrop) and
+   art/cards/mode_<id>.png, art/cards/fac_<id>.png, art/cards/map_<id>.png (card pictures). See art/README.md. */
+const ART={};
+async function loadArt(){if(location.protocol==='file:')return;const keys=['lobby_bg',...MODES.map(m=>'cards/mode_'+m.id),...FACS.map(m=>'cards/fac_'+m.id),...MAPS.map(m=>'cards/map_'+m.id)];
+  await Promise.all(keys.map(k=>loadImg('art/'+k+'.png').then(im=>{ART[k]=im}).catch(()=>{})));if(typeof CS!=='undefined'&&CS.open){CARDS_BUILT=false;buildCards();renderCards()}}
+function artOr(key,fallback){const im=ART[key];if(!im)return fallback;const c=new Image();c.src=im.src;c.alt='';return c}
 /* ---------------- lobby / mode select (card screen) ----------------
    A stone-hall backdrop with your survivor's portrait, a name banner, and illustrated cards for the mode, the enemies and
    the map. Used for solo PLAY, for the co-op host (who picks and starts the match), and for guests (who see the host's picks).
@@ -1766,15 +1773,15 @@ function enemyArt(id){return pxCanvas(56,56,t=>{t.fillStyle={zombies:'#1a1410',r
   if(c){const im=c.variants[0].img,fr=sheetFrame(c,'walk','down',.3);t.imageSmoothingEnabled=false;t.drawImage(im,fr.sx+8,fr.sy+8,48,52,2,0,52,56)}
   else{const s=SPR.walker0||Object.values(SPR)[0];if(s&&s.r)t.drawImage(s.r[0],15,12)}})}
 function cardEl(kind,item,art,big){const b=document.createElement('button');b.className='mcard'+(big?' mbig':' msmall');b.dataset[kind]=item.id;
-  b.innerHTML=`<span class="ttl">${item.name}</span>${big?'<i class="sk l"></i><i class="sk r"></i>':''}`;const c=art;c.className='art';b.insertBefore(c,b.firstChild.nextSibling);
+  b.innerHTML=`<span class="ttl">${big?item.name:item.short||item.name}</span>${big?'<i class="sk l"></i><i class="sk r"></i>':''}`;const c=art;c.className='art';b.insertBefore(c,b.firstChild.nextSibling);
   b.onclick=()=>{if(CS.ctx==='guest')return;meta[kind]=item.id;save();cfgSend();renderCards()};return b}
 function openCards(ctx){CS.ctx=ctx;CS.open=true;$('#lobby').hidden=true;$('#title').hidden=true;$('#modeScr').hidden=false;buildCards();renderCards()}
 function closeCards(){CS.open=false;$('#modeScr').hidden=true}
 let CARDS_BUILT=false;
-function buildCards(){if(!CARDS_BUILT){CARDS_BUILT=true;$('#modeScr').style.backgroundImage=`url(${hallArt().toDataURL()})`;}
-  const m=$('#mcModes');m.innerHTML='';for(const it of MODES)m.appendChild(cardEl('mode',it,pxCanvas(72,96,CARDART[it.id]),1));
-  const e=$('#mcFac');e.innerHTML='';for(const it of FACS)e.appendChild(cardEl('fac',it,enemyArt(it.id)));
-  const p=$('#mcMap');p.innerHTML='';for(const it of MAPS)p.appendChild(cardEl('map',it,pxCanvas(56,56,MAPART[it.id])));
+function buildCards(){if(!CARDS_BUILT){CARDS_BUILT=true;$('#modeScr').style.backgroundImage=ART.lobby_bg?`linear-gradient(rgba(10,8,18,.35),rgba(10,8,18,.55)),url(${ART.lobby_bg.src})`:`url(${hallArt().toDataURL()})`;$('#modeScr').classList.toggle('photo',!!ART.lobby_bg)}
+  const m=$('#mcModes');m.innerHTML='';for(const it of MODES)m.appendChild(cardEl('mode',it,artOr('cards/mode_'+it.id,pxCanvas(72,96,CARDART[it.id])),1));
+  const e=$('#mcFac');e.innerHTML='';for(const it of FACS)e.appendChild(cardEl('fac',it,artOr('cards/fac_'+it.id,enemyArt(it.id))));
+  const p=$('#mcMap');p.innerHTML='';for(const it of MAPS)p.appendChild(cardEl('map',it,artOr('cards/map_'+it.id,pxCanvas(56,56,MAPART[it.id]))));
   for(const sk of document.querySelectorAll('#modeScr .sk'))sk.style.backgroundImage=`url(${ICONURL.skull})`}
 function curCfg(){if(CS.ctx==='guest'&&G.hostCfg)return G.hostCfg;return{mode:meta.mode,fac:meta.fac,map:meta.map}}
 function renderCards(){if(!CS.open)return;const c=curCfg();
@@ -2031,7 +2038,7 @@ function render(){
   const shadow=(x,y,i)=>{const s=SHADOW[i];ctx.drawImage(s,Math.round(x-s.width/2),Math.round(y-s.height/2))};
   for(const z of zs)shadow(z.x,z.y,z.type==='boss'?2:z.type==='brute'?1:0);
   const MT=showP?mates():[];for(const m of MT)shadow(m.x,m.y,0);
-  if(showP){shadow(P.x,P.y,0);if(!P.dead)ctx.drawImage(RING,Math.round(P.x-12),Math.round(P.y-5))}
+  if(showP&&!G.hideP){shadow(P.x,P.y,0);if(!P.dead&&!G.cap)ctx.drawImage(RING,Math.round(P.x-12),Math.round(P.y-5))}
   // drops
   for(const d of DROPS){if(Math.abs(d.x-cam.x)>VW/2+20||Math.abs(d.y-cam.y)>VH/2+40)continue;const bob=Math.round(Math.sin(G.time*5+d.x)*1.5);let img;
     if(d.type==='xp')img=GEM[d.v>=20?2:d.v>=5?1:0];else if(d.type==='coin')img=COIN;else if(d.type==='gun')img=GUN[d.g];else if(d.type==='obj')img=OBJIMG[d.g]||OBJIMG.part;else if(d.type==='att')img=IC['att_'+(ATT[d.g]?ATT[d.g].slot:'optic')];else img=IC[d.type==='planks'?'plank':d.type];
@@ -2075,7 +2082,7 @@ function drawMate(m){const hc=sheetFor('survivor');
   const gun=()=>{const img=GUN[m.gun]||GUN.pistol;ctx.save();ctx.translate(Math.round(m.x+face*5),Math.round(m.y-11));ctx.rotate(a);if(Math.cos(a)<0)ctx.scale(1,-1);ctx.drawImage(img,-2,-Math.floor(img.height/2));ctx.restore()};
   if(infOn()){if(infRole(m.id)!=='x')drawSet(set,fr,m.x,m.y,face,false);return}
   if(back)gun();drawSet(set,fr,m.x,m.y,face,false);if(!back)gun()}
-function drawPlayer(){
+function drawPlayer(){if(G.hideP)return;
   const hc=sheetFor('survivor');
   if(hc){const aiming=P.shootT>0||fb.on||usingMouse,dir=P.rollT>0?dir4(P.rdx,P.rdy):(aiming||!P.moving)&&!P.running?dir4(Math.cos(P.aim),Math.sin(P.aim),P.dir):dir4(mvx,mvy,P.dir);P.dir=dir;
     P.flash=P.inv>0&&P.rollT<=0&&P.hurtT>0&&!hc.anims.hurt;
@@ -2098,7 +2105,7 @@ function renderFX(ox,oy,showP){
   fx.setTransform(1,0,0,1,0,0);fx.globalCompositeOperation='source-over';fx.globalAlpha=1;fx.clearRect(0,0,W,H);
   for(const s of SMOKE){const k=s.t/s.max,r=s.r*KX;fx.globalAlpha=s.a*Math.min(1,k*1.6);fx.drawImage(PUFF,X(s.x)-r,Y(s.y)-r,r*2,r*2)}fx.globalAlpha=1;
   lm.globalCompositeOperation='source-over';lm.clearRect(0,0,LM.width,LM.height);
-  lm.fillStyle=G.boss?'rgba(30,4,12,.8)':TH.night;lm.fillRect(0,0,LM.width,LM.height);
+  lm.fillStyle=G.boss?'rgba(30,4,12,.8)':G.cap?TH.night.replace(/,\.\d+\)$/,',.5)'):TH.night;lm.fillRect(0,0,LM.width,LM.height);
   lm.globalCompositeOperation='destination-out';
   const L=(x,y,r,a=1)=>{const R=r*LKX;lm.globalAlpha=a;lm.drawImage(LIGHT,(x-ox)*LKX-R,(y-oy)*LKY-R,R*2,R*2);lm.globalAlpha=1};
   const glows=[];const Gw=(x,y,r,g,a=1)=>glows.push([x,y,r,g,a]);const t=G.time;const zs=G.mode==='menu'?menuZ:Z;
@@ -2149,13 +2156,13 @@ function renderFX(ox,oy,showP){
       fx.save();fx.translate(ax,ay);fx.rotate(a);fx.fillStyle=`rgba(255,224,102,${.55+.45*pulse})`;fx.strokeStyle='#1a1020';fx.lineWidth=2*DPR;fx.beginPath();fx.moveTo(14*DPR,0);fx.lineTo(-8*DPR,-10*DPR);fx.lineTo(-3*DPR,0);fx.lineTo(-8*DPR,10*DPR);fx.closePath();fx.fill();fx.stroke();fx.restore();
       fx.font=`700 ${10*DPR}px Silkscreen, monospace`;fx.textAlign='center';fx.lineWidth=3*DPR;fx.strokeStyle='#1a1020';const txt=Math.round(Math.sqrt(nd)/T)+'m';fx.strokeText(txt,ax-Math.cos(a)*22*DPR,ay-Math.sin(a)*22*DPR+3*DPR);fx.fillStyle='#ffe066';fx.fillText(txt,ax-Math.cos(a)*22*DPR,ay-Math.sin(a)*22*DPR+3*DPR)}}}
   // auto-aim lock
-  if(AIMZ&&!P.dead&&!usingMouse){const z=AIMZ,r=(z.r+5)*KX,cx=X(z.x),cy=Y(z.y-10),k=r*.45,on=fb.on||P.shootT>0;fx.strokeStyle=on?'rgba(255,90,60,.95)':'rgba(255,220,150,.55)';fx.lineWidth=2*DPR;fx.beginPath();
+  if(!G.cap&&AIMZ&&!P.dead&&!usingMouse){const z=AIMZ,r=(z.r+5)*KX,cx=X(z.x),cy=Y(z.y-10),k=r*.45,on=fb.on||P.shootT>0;fx.strokeStyle=on?'rgba(255,90,60,.95)':'rgba(255,220,150,.55)';fx.lineWidth=2*DPR;fx.beginPath();
     for(const[sx,sy]of[[-1,-1],[1,-1],[1,1],[-1,1]]){fx.moveTo(cx+sx*r,cy+sy*(r-k));fx.lineTo(cx+sx*r,cy+sy*r);fx.lineTo(cx+sx*(r-k),cy+sy*r)}fx.stroke()}
   // aim reticle
-  if(!P.running&&P.rollT<=0){const rx=X(P.x+Math.cos(P.aim)*56),ry=Y(P.y-12+Math.sin(P.aim)*56);fx.strokeStyle='rgba(255,240,200,.7)';fx.lineWidth=1.5*DPR;fx.beginPath();fx.arc(rx,ry,5*DPR,0,TAU);fx.stroke();fx.fillStyle='rgba(255,240,200,.8)';fx.fillRect(rx-DPR,ry-DPR,2*DPR,2*DPR)}
+  if(!G.cap&&!P.running&&P.rollT<=0){const rx=X(P.x+Math.cos(P.aim)*56),ry=Y(P.y-12+Math.sin(P.aim)*56);fx.strokeStyle='rgba(255,240,200,.7)';fx.lineWidth=1.5*DPR;fx.beginPath();fx.arc(rx,ry,5*DPR,0,TAU);fx.stroke();fx.fillStyle='rgba(255,240,200,.8)';fx.fillRect(rx-DPR,ry-DPR,2*DPR,2*DPR)}
   // damage numbers
   fx.textAlign='center';fx.textBaseline='middle';fx.lineJoin='round';
-  for(const n of NUM){const age=.75-n.t,pop=age<.12?1.4-age*3:1,base=n.k==='crit'?15:n.k?11:10;const sz=base*pop*DPR;
+  for(const n of (G.cap?[]:NUM)){const age=.75-n.t,pop=age<.12?1.4-age*3:1,base=n.k==='crit'?15:n.k?11:10;const sz=base*pop*DPR;
     fx.font=`700 ${sz}px Silkscreen, 'Courier New', monospace`;fx.globalAlpha=Math.min(1,n.t*3);
     const txt=n.k==='AMMO'?'+AMMO':n.k==='PLANK'?`+${n.v} PLANK${n.v>1?'S':''}`:(n.k==='heal'?'+':n.k==='hurt'?'-':'')+n.v+(n.k==='crit'?'!':'');
     fx.lineWidth=3.5*DPR;fx.strokeStyle='#1a1020';fx.strokeText(txt,X(n.x),Y(n.y));
@@ -2167,7 +2174,7 @@ function renderFX(ox,oy,showP){
     const w=22*KX,h=3*DPR;fx.fillStyle='#140f1f';fx.fillRect(x-w/2-DPR,y+6*DPR-DPR,w+2*DPR,h+2*DPR);fx.fillStyle='#45aaff';fx.fillRect(x-w/2,y+6*DPR,w*clamp(m.hp/m.maxHp,0,1),h)}
   // gun pickup labels
   fx.font=`700 ${9*DPR}px 'Pixelify Sans', sans-serif`;
-  for(const d of DROPS){if(d.type!=='gun'||d2(d.x,d.y,P.x,P.y)>70*70)continue;const txt=GUNDEF[d.g].name;fx.lineWidth=3*DPR;fx.strokeStyle='#140f1f';fx.strokeText(txt,X(d.x),Y(d.y-16));fx.fillStyle='#f2c14e';fx.fillText(txt,X(d.x),Y(d.y-16))}
+  for(const d of DROPS){if(G.cap||d.type!=='gun'||d2(d.x,d.y,P.x,P.y)>70*70)continue;const txt=GUNDEF[d.g].name;fx.lineWidth=3*DPR;fx.strokeStyle='#140f1f';fx.strokeText(txt,X(d.x),Y(d.y-16));fx.fillStyle='#f2c14e';fx.fillText(txt,X(d.x),Y(d.y-16))}
   if(G.boss){const z=G.boss,dx=z.x-P.x,dy=z.y-P.y;if(Math.abs(dx)>VW/2||Math.abs(dy)>VH/2){const a=Math.atan2(dy,dx),r=Math.min(W,H)/2-50*DPR;fx.save();fx.translate(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);fx.rotate(a);fx.fillStyle='#ff4a3a';fx.strokeStyle='#140f1f';fx.lineWidth=2*DPR;fx.beginPath();fx.moveTo(12*DPR,0);fx.lineTo(-8*DPR,-9*DPR);fx.lineTo(-8*DPR,9*DPR);fx.closePath();fx.fill();fx.stroke();fx.restore()}}
 }
 function drawMini(){mctx.imageSmoothingEnabled=false;mctx.drawImage(MINIBASE,0,0);
@@ -2370,7 +2377,7 @@ $('#lbCopy').onclick=()=>{const link=location.origin+location.pathname+'?join='+
 /* ---------------- PNG sprite sheets ----------------
    Art is described by sprites/manifest.json (see sprites/README.md). Any character listed there is drawn from its PNG sheet;
    anything missing falls back to the built-in placeholder art, so the game always runs. */
-const SHEETS={chars:{},ready:false,url:'',errors:[]};
+const SHEETS={chars:{},fac:{},ready:false,url:'',errors:[]};
 const DIRS4=['down','left','right','up'];
 const SHEET_KEYS=['survivor','walker','runner','spitter','bloater','brute','boss'];
 function dir4(x,y,prev){if(Math.abs(x)<.01&&Math.abs(y)<.01)return prev||'down';return Math.abs(x)>=Math.abs(y)*.9?(x>0?'right':'left'):(y>0?'down':'up')}
@@ -2393,6 +2400,7 @@ async function loadSheets(){
   const base=url.slice(0,url.lastIndexOf('/')+1);
   for(const[key,def]of Object.entries(man.characters)){if(!SHEET_KEYS.includes(key)){SHEETS.errors.push(key+': unknown character name');continue}
     try{SHEETS.chars[key]=await prepChar(def,base)}catch(e){SHEETS.errors.push(key+': '+e.message)}}
+  if(man.factions&&typeof man.factions==='object')for(const[f,defs]of Object.entries(man.factions)){if(!FACX[f])continue;SHEETS.fac[f]={};for(const[k,def]of Object.entries(defs)){if(!SHEET_KEYS.includes(k))continue;try{SHEETS.fac[f][k]=await prepChar(def,base)}catch(e){SHEETS.errors.push(f+'/'+k+': '+e.message)}}}
   if(SHEETS.errors.length)console.warn('Sprite sheet problems:\n'+SHEETS.errors.join('\n'));
   SHEETS.ready=Object.keys(SHEETS.chars).length>0;SHEETS.url=url;if(SHEETS.ready&&+man.view>150)VIEWK=Math.min(400,+man.view);resize();if(SHEETS.ready)$('#artCredit').hidden=false;
   if(SHEETS.ready&&!$('#custom').hidden)renderOpts()}
@@ -2660,8 +2668,8 @@ $('#reviveBtn').onclick=revive;$('#againBtn').onclick=play;
 $('#overArmory').onclick=()=>{showTitle();openArmory()};$('#overMenu').onclick=showTitle;
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play'&&!G.paused&&!G.modal&&!netOn())togglePause()});
 
-window.__dw={SPR,MATE_LOOKS,SHEETS,CORPSES,lookSet,NET,REMOTES,OTHERS,hostRecv,guestRecv,snap,G,get P(){return P},get Z(){return Z},get OPENS(){return OPENS},get HOUSES(){return HOUSES},get DROPS(){return DROPS},meta,spawnZ,startWave,choose,doUse,shove,roll,fire,cam,tAt,get tile(){return tile},get ctl(){return{AIMZ,fb,mv,usingMouse,usingPad,gun:curGun()}},joyHome,togglePause,get ob(){return G.ob},SCEN,objTargets,objKind,ATT,GUNDEF,gunStats,magOfS,attach,useAid,drop,collect,get inf(){return G.inf},infShove,infMeet,meetVote,shove,setMap,get TH(){return TH},facSheet,enterLobby,get racks(){return G.racks},genTown};
-function start(){loadSheets();showTitle();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);const jc=new URLSearchParams(location.search).get('join');if(jc&&/^[A-Za-z]{5}$/.test(jc))joinOpen(jc)}
+window.__dw={SPR,MATE_LOOKS,SHEETS,CORPSES,lookSet,NET,REMOTES,OTHERS,hostRecv,guestRecv,snap,G,get P(){return P},get Z(){return Z},get OPENS(){return OPENS},get HOUSES(){return HOUSES},get DROPS(){return DROPS},meta,spawnZ,startWave,choose,doUse,shove,roll,fire,cam,tAt,get tile(){return tile},get ctl(){return{AIMZ,fb,mv,usingMouse,usingPad,gun:curGun()}},joyHome,togglePause,get ob(){return G.ob},SCEN,objTargets,objKind,ATT,GUNDEF,gunStats,magOfS,attach,useAid,drop,collect,get inf(){return G.inf},infShove,infMeet,meetVote,shove,setMap,get TH(){return TH},facSheet,enterLobby,get racks(){return G.racks},genTown,get FIRES(){return FIRES},get LAMPS(){return LAMPS},objStep,randomWardrobe,sheetFor,startRun:(mode,f,map)=>{meta.mode=mode;meta.fac=f;meta.map=map;play()},zoom:k=>{VIEWK=k;resize()},get ART(){return ART}};
+function start(){loadSheets().then(()=>loadArt());showTitle();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);const jc=new URLSearchParams(location.search).get('join');if(jc&&/^[A-Za-z]{5}$/.test(jc))joinOpen(jc)}
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
 })();
 </script>

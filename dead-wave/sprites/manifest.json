@@ -22701,5 +22701,663 @@
    "sheet": "lpc/boss.png"
   }
  },
- "view": 310
+ "view": 310,
+ "factions": {
+  "robots": {
+   "walker": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "robot_drone_1",
+      "sheet": "lpc/fac/robot_drone_1.png"
+     },
+     {
+      "name": "robot_drone_2",
+      "sheet": "lpc/fac/robot_drone_2.png"
+     },
+     {
+      "name": "robot_drone_3",
+      "sheet": "lpc/fac/robot_drone_3.png"
+     }
+    ]
+   },
+   "runner": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "robot_hunter",
+      "sheet": "lpc/fac/robot_hunter.png"
+     }
+    ]
+   },
+   "spitter": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "robot_gunner",
+      "sheet": "lpc/fac/robot_gunner.png"
+     }
+    ]
+   },
+   "bloater": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "robot_bomber",
+      "sheet": "lpc/fac/robot_bomber.png"
+     }
+    ]
+   },
+   "brute": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "robot_tank",
+      "sheet": "lpc/fac/robot_tank.png"
+     }
+    ]
+   },
+   "boss": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1.5,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "robot_warmech",
+      "sheet": "lpc/fac/robot_warmech.png"
+     }
+    ]
+   }
+  },
+  "monsters": {
+   "walker": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "mon_goblin",
+      "sheet": "lpc/fac/mon_goblin.png"
+     },
+     {
+      "name": "mon_orc",
+      "sheet": "lpc/fac/mon_orc.png"
+     },
+     {
+      "name": "mon_boarman",
+      "sheet": "lpc/fac/mon_boarman.png"
+     }
+    ]
+   },
+   "runner": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "mon_wolf",
+      "sheet": "lpc/fac/mon_wolf.png"
+     }
+    ]
+   },
+   "spitter": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "mon_lizard",
+      "sheet": "lpc/fac/mon_lizard.png"
+     }
+    ]
+   },
+   "bloater": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "mon_troll",
+      "sheet": "lpc/fac/mon_troll.png"
+     }
+    ]
+   },
+   "brute": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "mon_minotaur",
+      "sheet": "lpc/fac/mon_minotaur.png"
+     }
+    ]
+   },
+   "boss": {
+    "frame": [
+     64,
+     64
+    ],
+    "anchor": [
+     32,
+     60
+    ],
+    "scale": 1.5,
+    "dirs": [
+     "up",
+     "left",
+     "down",
+     "right"
+    ],
+    "anims": {
+     "walk": {
+      "row": 0,
+      "frames": 8,
+      "fps": 10
+     },
+     "run": {
+      "row": 4,
+      "frames": 8,
+      "fps": 14
+     },
+     "idle": {
+      "row": 8,
+      "frames": 2,
+      "fps": 2
+     },
+     "attack": {
+      "row": 12,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+     },
+     "death": {
+      "row": 16,
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "dirs": 1
+     }
+    },
+    "variants": [
+     {
+      "name": "mon_warlord",
+      "sheet": "lpc/fac/mon_warlord.png"
+     }
+    ]
+   }
+  }
+ }
 }

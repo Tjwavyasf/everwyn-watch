@@ -61,14 +61,18 @@ Tap **PLAY** to open the card screen: your survivor's portrait and name at the t
 
 - **Enemies:**
   - **Zombies:** walkers, runners, spitters, bloaters and brutes. Boss: the Abomination.
-  - **Robots:** drones, hunters, gunners that shoot lasers, bombers and treaded tanks. Boss: the Warmech. A bit tougher and slower.
-  - **Monsters:** giant bugs: crawlers, skitters, acid spitters, bile sacs and armored chargers. Boss: the Brood Queen. A bit weaker and faster.
+  - **Robots:** chrome endoskeleton drones (steel, gunmetal and brass), hunters, armored gunners that shoot lasers, bombers and armored tanks. Boss: the gold-and-crimson Warmech. A bit tougher and slower.
+  - **Monsters:** goblins, orcs and boarmen, wolf-men, acid-spitting lizardmen, bloated trolls and minotaurs. Boss: a winged warlord. A bit weaker and faster.
 - **Maps:**
   - **Suburbs:** the original town.
   - **Abandoned City:** grey ruins, burning wrecks, dead trees and very few working lights.
   - **Cyberpunk City:** dark towers, neon streetlights and rain.
   - **Forest:** dirt trails through thick woods, a few cabins and campfires.
 - **Sci-fi guns:** the Laser Rifle, Arc Gun (lightning jumps to 3 more targets), Railgun (goes through 12 enemies) and Plasma Cannon (explodes). They drop three times as often against robots and monsters, and you can unlock them in the Armory.
+
+## Custom art
+
+The card pictures and the lobby backdrop are PNGs in [art/](art/README.md). Replace any of them with your own art and it shows up the next time the game loads.
 
 ## Lobby
 
