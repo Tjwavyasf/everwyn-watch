@@ -1094,6 +1094,8 @@ function resizeCore(){const w=app.clientWidth||innerWidth,h=app.clientHeight||in
   DPR=Math.min(2,window.devicePixelRatio||1);FXC.width=Math.round(w*DPR);FXC.height=Math.round(h*DPR);
   LM.width=Math.ceil(w/4);LM.height=Math.ceil(h/4);KX=FXC.width/VW;KY=FXC.height/VH;LKX=LM.width/VW;LKY=LM.height/VH;try{if(!mv.on)restJoy()}catch(e){}}
 addEventListener('resize',resize);resize();
+/* phones report the new size late after a rotation: check again shortly after, and on the visual viewport */
+const resizeSoon=()=>{resize();setTimeout(resize,120);setTimeout(resize,450)};addEventListener('orientationchange',resizeSoon);if(window.visualViewport)visualViewport.addEventListener('resize',resizeSoon);
 
 /* ---------------- content ---------------- */
 const GUNDEF={
@@ -1928,7 +1930,7 @@ function homeBuild(){setMap('forest');genTown(9137);HOME.built=true;
   const truck={img:PR.cars[2]||PR.cars[0],x:HOME.ax+40,y:HOME.ay-38};PROPS.push(truck);PROPS.sort((a,b)=>a.y-b.y);
   HOME.lights=[[truck.x+truck.img.width/2-3,truck.y-8],[truck.x+truck.img.width/2-3,truck.y-14]];chunkCache=new Map()}
 function homeEnter(){if(!HOME.on)HOME.prevView=VIEWK;HOME.on=true;if(!HOME.built||G.map!=='forest')homeBuild();menuZ.length=0;homeRefresh()}
-function homeLeave(){if(!HOME.on)return;HOME.on=false;VIEWK=HOME.prevView||VIEWK;HOME.built=false}
+function homeLeave(){if(!HOME.on)return;HOME.on=false;VIEWK=HOME.prevView||VIEWK;HOME.built=false;resizeCore()}
 function squadList(){const look=cleanLook(meta.look);
   if(NET.role==='host')return[{id:0,name:MATE_NAMES[0],col:0,look,me:1},...[...REMOTES.values()].filter(r=>r.live).map(r=>({id:r.id,name:r.name,col:r.col,look:r.look||{}}))];
   if(NET.role==='guest'&&G.hostCfg&&G.hostCfg.pl&&G.hostCfg.pl.length)return G.hostCfg.pl.map(p=>({...p,me:p.id===NET.myId||p.col===G.myCol}));
@@ -2705,6 +2707,7 @@ $('#cDone').onclick=()=>{$('#custom').hidden=true;if(NET.role==='guest')netSend(
 let last=performance.now(),raf=0;
 function loop(now){
   raf=requestAnimationFrame(loop);
+  {const w=app.clientWidth||innerWidth,h=app.clientHeight||innerHeight;if(w!==CSSW||h!==CSSH||Math.abs(C.width/C.height-w/h)>.02*(w/h))resize()}
   const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
   drawPrev(now);drawAvatar(now);
   if(G.mode==='menu'){updMenu(dt);render();return}
@@ -2719,6 +2722,7 @@ const setT=(id,v)=>{if(hudC[id]!==v){hudC[id]=v;$(id).textContent=v}};
 const setH=(id,v)=>{if(hudC[id+'h']!==v){hudC[id+'h']=v;$(id).hidden=v}};
 function updHUD(dt){
   const hud=$('#hud'),cls='mouse'+(usingMouse||usingPad?'':'x')+' lefty'+(meta.ctl.lefty?'':'x')+' bs'+meta.ctl.size;if(hud.dataset.c!==cls){hud.dataset.c=cls;hud.classList.toggle('mouse',usingMouse||usingPad);hud.classList.toggle('lefty',!!meta.ctl.lefty);hud.classList.remove('bs0','bs1','bs2');hud.classList.add('bs'+meta.ctl.size);if(!mv.on)restJoy()}
+  {const wb=$('#wavebox'),vt=$('#vitals');if(CSSW>CSSH&&CSSH<=520){const b=Math.round(wb.getBoundingClientRect().bottom+6)+'px';if(vt.style.top!==b)vt.style.top=b}else if(vt.style.top)vt.style.top=''}
   {const gn=curGun();fireEl.classList.toggle('empty',!!(gn&&gn.mag<=0&&P.reload<=0))}
   $('#xpfill').style.width=(P.xp/P.need*100).toFixed(1)+'%';setT('#lvl','LV '+P.lvl+(G.queue.length&&netOn()&&G.state==='fight'?' · perk ready after this wave':''));
   $('#hud').classList.toggle('inf',gm()==='infection');$('#cine').hidden=!(infOn()&&G.inf.ph==='intro');

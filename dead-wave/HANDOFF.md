@@ -127,6 +127,7 @@ The scripts in `tests/` use Playwright with the preinstalled Chromium. Pass the 
 | `cutscene.js` | Survival intro shot by shot (world frozen, then running), and a skipped Robots/Cyberpunk intro (pass the `dead-wave` folder) |
 | `cutscene_coop.js` | Co-op intro: both players get it, and the host's skip starts the match for both |
 | `home.js` | Home screen in landscape and portrait, a squad of 3 standing together over fake connections, DEPLOY starting the match (pass the `dead-wave` folder) |
+| `resolution.js` | Deploy from the home screen and rotate the phone: game zoom restored, canvas keeps the screen's shape, HUD panels don't overlap (pass the `dead-wave` folder) |
 | `customize.js` | Customize screen and the chosen look in game |
 | `sprites_http.js` | Sheet loading. Serve the folder first: `python3 -m http.server 8765` in `dead-wave/` |
 
